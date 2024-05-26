@@ -66,8 +66,8 @@ endif ()
 
 #
 SET(CMAKE_CXX_STANDARD 17)
-SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
-SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -std=c++17 -O0 -Wall -g2 -ggdb")
+SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -std=c++17 -O3 -Wall")
 
 ADD_COMPILE_OPTIONS(-fPIC)
 
@@ -103,13 +103,24 @@ if (BUILD_V3)
     ADD_SUBDIRECTORY(PortGen)
 
     ADD_EXECUTABLE(tltest_v3lt Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3)
-    TARGET_LINK_LIBRARIES(tltest_v3lt 
-        Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3 pthread
-        "-Wl,--whole-archive"
-        ${VERILATED_PATH}/libvltdut.a
-        "-Wl,--no-whole-archive"
-        "-rdynamic"
-        ${CMAKE_DL_LIBS})
+
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        TARGET_LINK_LIBRARIES(tltest_v3lt 
+            Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3 pthread atomic
+            "-Wl,--whole-archive"
+            ${VERILATED_PATH}/libvltdut.a
+            "-Wl,--no-whole-archive"
+            "-rdynamic"
+            ${CMAKE_DL_LIBS})
+    else ()
+        TARGET_LINK_LIBRARIES(tltest_v3lt 
+            Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3 pthread
+            "-Wl,--whole-archive"
+            ${VERILATED_PATH}/libvltdut.a
+            "-Wl,--no-whole-archive"
+            "-rdynamic"
+            ${CMAKE_DL_LIBS})
+    endif ()
 
 
     if (NOT TLTEST_PORTGEN_DYNAMIC)
