@@ -3,7 +3,10 @@
 #ifndef TLC_TEST_V3_PORTGEN_DYNAMIC_H
 #define TLC_TEST_V3_PORTGEN_DYNAMIC_H
 
-#include "../../../verilated/VTestTop.h"
+#include "../Utils/autoinclude.h"
+
+#include AUTOINCLUDE_VERILATED(VTestTop.h)
+
 #include "../Sequencer/TLSequencer.hpp"
 
 #include <cstdint>

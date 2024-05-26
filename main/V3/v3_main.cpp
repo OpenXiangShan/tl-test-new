@@ -1,31 +1,7 @@
-#define __STR0(x) #x
-#define __STR1(x) __STR0(x)
-
-#ifndef VERILATED_PATH_TOKEN
-// This default path could be changed for IDE language server, normally not used in compilation
-#   define VERILATED_PATH_TOKEN ../../../verilated
-#endif
-
-#ifndef VERILATED_PATH
-// This default path could be changed for IDE language server, normally not used in compilation
-#   define VERILATED_PATH "../../../verilated"  
-#endif
-
-#ifndef CURRENT_PATH
-#   define CURRENT_PATH "."
-#endif
-
-#ifndef VERILATOR_INCLUDE
-#   define VERILATOR_INCLUDE "."
-#endif
-
-#define __AUTOINCLUDE_VERILATED(file)   VERILATED_PATH_TOKEN/file
-
-#define AUTOINCLUDE_VERILATED(file)     __STR1(__AUTOINCLUDE_VERILATED(file))
-
-
 #include <cstdint>
 #include <chrono>
+
+#include "../Utils/autoinclude.h"
 
 #include AUTOINCLUDE_VERILATED(VTestTop.h)
 
