@@ -186,6 +186,9 @@ int main(int argc, char **argv)
     }
 
     //
+    int error = 0;
+
+    //
     if (tltest->IsFinished())
     {
         LogInfo("test_top", 
@@ -197,12 +200,16 @@ int main(int argc, char **argv)
         LogInfo("test_top",
             Append("TL-Test TileLink subsystem FAILED.")
             .EndLine());
+
+        error = 1;
     }
     else 
     {
         LogInfo("test_top", 
             Append("TL-Test TileLink subsystem no longer ALIVE.")
             .EndLine());
+
+        error = 1;
     }
 
     if (wave_enable)
@@ -211,5 +218,5 @@ int main(int argc, char **argv)
     //
     TLFinalize(&tltest, &plugins);
 
-    return 0;
+    return error;
 }
