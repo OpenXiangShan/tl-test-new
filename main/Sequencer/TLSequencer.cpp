@@ -347,13 +347,13 @@ void TLSequencer::Finalize() noexcept
 
         if (state == State::FINISHED)
         {
-            LogInfo(cycles, Append("\"\033[1;32m                                                           \033[0m\"").EndLine()); 
-            LogInfo(cycles, Append("\"\033[1;32m ███████ ██ ███   ██ ██ ███████ ██   ██ ███████ ██████  ██ \033[0m\"").EndLine()); 
-            LogInfo(cycles, Append("\"\033[1;32m ██      ██ ████  ██ ██ ██      ██   ██ ██      ██   ██ ██ \033[0m\"").EndLine()); 
-            LogInfo(cycles, Append("\"\033[1;32m █████   ██ ██ ██ ██ ██ ███████ ███████ █████   ██   ██ ██ \033[0m\"").EndLine()); 
-            LogInfo(cycles, Append("\"\033[1;32m ██      ██ ██  ████ ██      ██ ██   ██ ██      ██   ██    \033[0m\"").EndLine()); 
-            LogInfo(cycles, Append("\"\033[1;32m ██      ██ ██   ███ ██ ███████ ██   ██ ███████ ██████  ██ \033[0m\"").EndLine()); 
-            LogInfo(cycles, Append("\"\033[1;32m                                                           \033[0m\"").EndLine());  
+            LogFinal(cycles, Append("\"\033[1;32m                                                           \033[0m\"").EndLine()); 
+            LogFinal(cycles, Append("\"\033[1;32m ███████ ██ ███   ██ ██ ███████ ██   ██ ███████ ██████  ██ \033[0m\"").EndLine()); 
+            LogFinal(cycles, Append("\"\033[1;32m ██      ██ ████  ██ ██ ██      ██   ██ ██      ██   ██ ██ \033[0m\"").EndLine()); 
+            LogFinal(cycles, Append("\"\033[1;32m █████   ██ ██ ██ ██ ██ ███████ ███████ █████   ██   ██ ██ \033[0m\"").EndLine()); 
+            LogFinal(cycles, Append("\"\033[1;32m ██      ██ ██  ████ ██      ██ ██   ██ ██      ██   ██    \033[0m\"").EndLine()); 
+            LogFinal(cycles, Append("\"\033[1;32m ██      ██ ██   ███ ██ ███████ ██   ██ ███████ ██████  ██ \033[0m\"").EndLine()); 
+            LogFinal(cycles, Append("\"\033[1;32m                                                           \033[0m\"").EndLine());  
 
             /*
             LogInfo(cycles, Append("\033[32m      ___                     ___                       ___           ___      \033[0m").EndLine());
