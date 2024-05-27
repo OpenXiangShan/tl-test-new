@@ -67,7 +67,7 @@ coupledL2-verilog-clean:
 coupledL2-verilate:
 	rm -rf verilated
 	mkdir verilated
-	verilator --trace -cc -build --lib-create vltdut --Mdir ./verilated ./dut/CoupledL2/build/*.v -Wno-fatal \
+	verilator --trace-fst -cc -build --lib-create vltdut --Mdir ./verilated ./dut/CoupledL2/build/*.v -Wno-fatal \
 		--top TestTop -j `nproc` -DSIM_TOP_MODULE_NAME=TestTop
 
 coupledL2-verilate-clean:

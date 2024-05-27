@@ -11,14 +11,14 @@
 #include "../PortGen/portgen_dynamic.hpp"
 
 #include <iomanip>
-#include <verilated_vcd_c.h>
+#include <verilated_fst_c.h>
 
 
 static bool wave_enable     = true;
 static uint64_t wave_begin  = 0;
 static uint64_t wave_end    = 0;
 
-static VerilatedVcdC*   vcd;
+static VerilatedFstC*   fst;
 static VTestTop*        top;
 
 
@@ -33,7 +33,7 @@ inline static bool IsInWaveTime(uint64_t time)
     return time >= wave_begin && time <= wave_end;
 }
 
-inline static std::string GetVcdFileName()
+inline static std::string GetFstFileName()
 {
     auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
@@ -42,7 +42,7 @@ inline static std::string GetVcdFileName()
         .Append(std::put_time(
             std::localtime(&t),
             "%Y%m%d-%H-%M-%S"))
-        .Append(".vcd")
+        .Append(".fst")
         .ToString();
 }
 
@@ -55,13 +55,13 @@ inline static void V3Reset(uint64_t& time, VTestTop* top, uint64_t n)
         top->clock = 0;
         top->eval(); 
         if (wave_enable && IsInWaveTime(time))
-            vcd->dump(time);
+            fst->dump(time);
         time++;
 
         top->clock = 1;
         top->eval(); 
         if (wave_enable && IsInWaveTime(time))
-            vcd->dump(time);
+            fst->dump(time);
         time++;
     }
 
@@ -74,7 +74,7 @@ inline static void V3EvalNegedge(uint64_t& time, VTestTop* top)
     top->eval();
 
     if (wave_enable && IsInWaveTime(time))
-        vcd->dump(time);
+        fst->dump(time);
 
     time++;
 }
@@ -85,7 +85,7 @@ inline static void V3EvalPosedge(uint64_t& time, VTestTop* top)
     top->eval();
 
     if (wave_enable && IsInWaveTime(time))
-        vcd->dump(time);
+        fst->dump(time);
 
     time++;
 }
@@ -144,15 +144,15 @@ int main(int argc, char **argv)
             .ToString());
 
     //
-    vcd = nullptr;
+    fst = nullptr;
     top = new VTestTop;
 
     if (wave_enable)
     {
         Verilated::traceEverOn(true);
-        vcd = new VerilatedVcdC;
-        top->trace(vcd, 99);
-        vcd->open(GetVcdFileName().c_str());
+        fst = new VerilatedFstC;
+        top->trace(fst, 99);
+        fst->open(GetFstFileName().c_str());
     }
 
     V3Reset(time, top, 10);
@@ -217,7 +217,7 @@ int main(int argc, char **argv)
     }
 
     if (wave_enable)
-        vcd->close();
+        fst->close();
 
     //
     TLFinalize(&tltest, &plugins);
