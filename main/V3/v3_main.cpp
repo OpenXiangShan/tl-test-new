@@ -183,6 +183,10 @@ int main(int argc, char **argv)
         V3EvalNegedge(time, top);
 
         V3EvalPosedge(time, top);
+
+        //
+        if (!(time % 10000))
+            std::cout << "[" << time << "] [tl-test-new] Simulation time elapsed: " << time << "ps" << std::endl;
     }
 
     //
