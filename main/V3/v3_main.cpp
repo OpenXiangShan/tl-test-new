@@ -1,31 +1,7 @@
-#define __STR0(x) #x
-#define __STR1(x) __STR0(x)
-
-#ifndef VERILATED_PATH_TOKEN
-// This default path could be changed for IDE language server, normally not used in compilation
-#   define VERILATED_PATH_TOKEN ../../../verilated
-#endif
-
-#ifndef VERILATED_PATH
-// This default path could be changed for IDE language server, normally not used in compilation
-#   define VERILATED_PATH "../../../verilated"  
-#endif
-
-#ifndef CURRENT_PATH
-#   define CURRENT_PATH "."
-#endif
-
-#ifndef VERILATOR_INCLUDE
-#   define VERILATOR_INCLUDE "."
-#endif
-
-#define __AUTOINCLUDE_VERILATED(file)   VERILATED_PATH_TOKEN/file
-
-#define AUTOINCLUDE_VERILATED(file)     __STR1(__AUTOINCLUDE_VERILATED(file))
-
-
 #include <cstdint>
 #include <chrono>
+
+#include "../Utils/autoinclude.h"
 
 #include AUTOINCLUDE_VERILATED(VTestTop.h)
 
@@ -207,7 +183,14 @@ int main(int argc, char **argv)
         V3EvalNegedge(time, top);
 
         V3EvalPosedge(time, top);
+
+        //
+        if (!(time % 10000))
+            std::cout << "[" << time << "] [tl-test-new] Simulation time elapsed: " << time << "ps" << std::endl;
     }
+
+    //
+    int error = 0;
 
     //
     if (tltest->IsFinished())
@@ -221,12 +204,16 @@ int main(int argc, char **argv)
         LogInfo("test_top",
             Append("TL-Test TileLink subsystem FAILED.")
             .EndLine());
+
+        error = 1;
     }
     else 
     {
         LogInfo("test_top", 
             Append("TL-Test TileLink subsystem no longer ALIVE.")
             .EndLine());
+
+        error = 1;
     }
 
     if (wave_enable)
@@ -235,5 +222,5 @@ int main(int argc, char **argv)
     //
     TLFinalize(&tltest, &plugins);
 
-    return 0;
+    return error;
 }

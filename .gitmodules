@@ -1,0 +1,3 @@
+[submodule "dut/CoupledL2"]
+	path = dut/CoupledL2
+	url = git@github.com:OpenXiangShan/CoupledL2.git

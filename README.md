@@ -73,6 +73,74 @@
     └── V3                  <- Verilator host main
 ```
 
+
+## TLDR Out-of-the-Box
+### Getting started
+&emsp;&emsp;Use these commands to clone and initialize TL-Test-New working directory:  
+```bash
+git clone https://github.com/OpenXiangShan/tl-test-new.git
+cd tl-test-new # or move it to whatever working directory you want, does not matter
+               # but make sure that no spaces in the absolute path
+make init
+```  
+&emsp;&emsp;See the following chapters for the Out-of-the-Box usage of different integrated DUTs.
+
+### Build and Run
+&emsp;&emsp;For building TL-Test-New seperately (after verilated DUT):    
+```
+make tltest-build-all
+```
+&emsp;&emsp;For running after build:  
+```
+make run
+```  
+&emsp;&emsp;Build specified test case completely:  
+```
+make <test_case_name>
+```  
+&emsp;&emsp;Build specified test case for **DPI Guest Mode** only:  
+```
+make <test_case_name>-dpi
+```
+&emsp;&emsp;Build specified test case for **Verilator Host Mode** only:  
+```
+make <test_case_name>-v3
+```
+
+### Configuration  
+&emsp;&emsp;Configuration files sit in **```configs```** directory.  
+&emsp;&emsp;For detailed explanation of configuration file, see: Chapter [Post Build Configuration](#post-build-configuration).  
+&emsp;&emsp;The user-defined custom configuration entries should be written into **```configs/user.tltest.ini```**.    
+&emsp;&emsp;It's not recommended to add or change the section ```[tltest.config]``` (configuration entires related to core count and port organizations) in **```configs/user.tltest.ini```**.  
+
+### For CoupledL2
+#### 1. Build and Run
+
+&emsp;&emsp;Currently integrated out-of-the-box test cases:  
+* ```coupledL2-test-l2l3```
+    * Pre-set configuration: **```configs/coupledL2-test-l2l3.tltest.ini```**  
+* ```coupledL2-test-l2l3l2```   
+    * Pre-set configuration: **```configs/coupledL2-test-l2l3l2.tltest.ini```**  
+
+&emsp;&emsp;Verilating CoupledL2:  
+```
+make coupledL2-verilate
+```  
+
+> **Examples**  
+> * Build CoupledL2 test case ```coupledl2-test-l2l3l2``` and run verilator host immediately after build:  
+> ```
+> make coupledL2-test-l2l3l2 run
+> ```
+> * Build CoupledL2 test case ```coupledl2-test-l2l3l2``` in minimal (Verilator Host Mode only) and run verilator host immediately after build:    
+> ```
+> make coupledL2-test-l2l3l2-v3 run
+> ```
+
+#### 2. Configuration
+&emsp;&emsp;To change the pre-set configurations of CoupledL2 test cases, modify files **```configs/coupledL2-test-l2l3.tltest.ini```** and **```configs/coupledL2-test-l2l3l2.test.ini```**.   
+
+
 ## Build
 ### 1. Build
 #### 1.1 Before you build
@@ -101,21 +169,6 @@ cmake ..
 ```bash
 verilator --trace --cc --build --lib-create vltdut --Mdir ./verilated ./coupledL2/build/*.v -Wno-fatal --top TestTop
 ```
-> **INFO:**  
-> For this error emitting on verilating CoupledL2: 
-> ```log
-> %Error: coupledL2/build/LogPerfHelper.v:14:24: Can't find definition of scope/variable: 'SimTop'
->  14 | assign timer         = SimTop.timer;
->     |                        ^~~~~~
-> ```  
-> In file **```LogPerfHelper.v```**: 
-> ```verilog
-> `ifndef SIM_TOP_MODULE_NAME
->     `define SIM_TOP_MODULE_NAME SimTop
-> `endif
-> ```
-> Modify the default ```SIM_TOP_MODULE_NAME``` macro definition from ```SimTop``` to ```TestTop```. 
-> 
 
 #### 1.3 Building
 ```bash
@@ -188,6 +241,34 @@ make clean
     * ```cmake .. -DVERILATOR_INCLUDE=<dir>```  
 * Passing to compiler:  
     * ```-DVERILATOR_INCLUDE="${VERILATOR_INCLUDE}"``` as global macro ```VERILATOR_INCLUDE```  
+
+#### 1.5 ```DUT_PATH```
+&emsp;&emsp;Specify the **source directory of DUT**.  
+* Configuring:  
+    * ```cmake .. -DDUT_PATH=<dir>```  
+* Passing to compiler:
+    * ```-DDUT_PATH="${DUT_PATH}"``` as global macro ```DUT_PATH```  
+    * ```-DDUT_PATH_TOKEN=${DUT_PATH}``` as global macro ```DUT_PATH_TOKEN```  
+
+#### 1.6 ```DUT_BUILD_PATH```  
+&emsp;&emsp;Specify the **build directory of DUT**.  
+* Configuring:  
+    * ```cmake .. -DDUT_BUILD_PATH=<dir>```  
+* By default:
+    * ```DUT_BUILD_PATH=${DUT_PATH}/build```  
+* Passing to compiler:  
+    * ```-DDUT_BUILD_PATH="${DUT_BUILD_PATH}"``` as global macro ```DUT_BUILD_PATH```  
+    * ```-DDUT_BUILD_PATH_TOKEN=${DUT_BUILD_PATH}``` as global macro ```DUT_BUILD_PATH_TOKEN```  
+
+#### 1.7 ```CHISELDB_PATH```  
+&emsp;&emsp;Specify the **directory of generated ChiselDB**.  
+* Configuring:  
+    * ```cmake .. -DCHISELDB_PATH=<dir>```  
+* By default:
+    * ```CHISELDB_PATH=${DUT_PATH}/build```  
+* Passing to compiler:  
+    * ```-DCHISELDB_PATH="${CHISELDB_PATH}"``` as global macro ```CHISELDB_PATH```  
+    * ```-DCHISELDB_PATH_TOKEN=${CHISELDB_PATH}``` as global macro ```CHISELDB_PATH_TOKEN``` 
 
 ### 2. PortGen  
 

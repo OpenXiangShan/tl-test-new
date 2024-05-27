@@ -21,12 +21,24 @@ endif ()
 
 
 #
+if (NOT DEFINED DUT_PATH)
+    SET(DUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../dut/CoupledL2")
+endif ()
+
+if (NOT DEFINED DUT_BUILD_PATH)
+    SET(DUT_BUILD_PATH "${DUT_PATH}/build")
+endif ()
+
+if (NOT DEFINED CHISELDB_PATH)
+    SET(CHISELDB_PATH "${DUT_PATH}/build")
+endif ()
+
 if (NOT DEFINED VERILATOR_INCLUDE)
     SET(VERILATOR_INCLUDE "/usr/local/share/verilator/include")
 endif ()
 
 if (NOT DEFINED VERIALTED_PATH)
-    SET(VERILATED_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../verilated")
+    SET(VERILATED_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../verilated")
 endif ()
 
 if (NOT DEFINED TLTEST_PORTGEN_DYNAMIC)
@@ -37,6 +49,12 @@ endif ()
 #
 ADD_DEFINITIONS(-DCXX_COMPILER="${CMAKE_CXX_COMPILER}")
 ADD_DEFINITIONS(-DCURRENT_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
+ADD_DEFINITIONS(-DDUT_PATH="${DUT_PATH}")
+ADD_DEFINITIONS(-DDUT_PATH_TOKEN=${DUT_PATH})
+ADD_DEFINITIONS(-DDUT_BUILD_PATH="${DUT_BUILD_PATH}")
+ADD_DEFINITIONS(-DDUT_BUILD_PATH_TOKEN=${DUT_BUILD_PATH})
+ADD_DEFINITIONS(-DCHISELDB_PATH="${CHISELDB_PATH}")
+ADD_DEFINITIONS(-DCHISELDB_PATH_TOKEN=${CHISELDB_PATH})
 ADD_DEFINITIONS(-DVERILATED_PATH="${VERILATED_PATH}")
 ADD_DEFINITIONS(-DVERILATED_PATH_TOKEN=${VERILATED_PATH})
 ADD_DEFINITIONS(-DVERILATOR_INCLUDE="${VERILATOR_INCLUDE}")
@@ -48,8 +66,8 @@ endif ()
 
 #
 SET(CMAKE_CXX_STANDARD 17)
-SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
-SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -std=c++17 -O0 -Wall -g2 -ggdb")
+SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -std=c++17 -O3 -Wall")
 
 ADD_COMPILE_OPTIONS(-fPIC)
 
@@ -85,13 +103,24 @@ if (BUILD_V3)
     ADD_SUBDIRECTORY(PortGen)
 
     ADD_EXECUTABLE(tltest_v3lt Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3)
-    TARGET_LINK_LIBRARIES(tltest_v3lt 
-        Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3 pthread
-        "-Wl,--whole-archive"
-        ${VERILATED_PATH}/libvltdut.a
-        "-Wl,--no-whole-archive"
-        "-rdynamic"
-        ${CMAKE_DL_LIBS})
+
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        TARGET_LINK_LIBRARIES(tltest_v3lt 
+            Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3 pthread atomic
+            "-Wl,--whole-archive"
+            ${VERILATED_PATH}/libvltdut.a
+            "-Wl,--no-whole-archive"
+            "-rdynamic"
+            ${CMAKE_DL_LIBS})
+    else ()
+        TARGET_LINK_LIBRARIES(tltest_v3lt 
+            Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3 pthread
+            "-Wl,--whole-archive"
+            ${VERILATED_PATH}/libvltdut.a
+            "-Wl,--no-whole-archive"
+            "-rdynamic"
+            ${CMAKE_DL_LIBS})
+    endif ()
 
 
     if (NOT TLTEST_PORTGEN_DYNAMIC)

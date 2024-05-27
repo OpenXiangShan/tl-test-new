@@ -1,4 +1,8 @@
 build
 cmake-build-debug
+verilated
+run
 .idea
 .vscode
+.metals
+.scala-build
