@@ -106,7 +106,7 @@ if (BUILD_V3)
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         TARGET_LINK_LIBRARIES(tltest_v3lt 
-            Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3 pthread atomic
+            Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3 pthread z atomic
             "-Wl,--whole-archive"
             ${VERILATED_PATH}/libvltdut.a
             "-Wl,--no-whole-archive"
@@ -114,7 +114,7 @@ if (BUILD_V3)
             ${CMAKE_DL_LIBS})
     else ()
         TARGET_LINK_LIBRARIES(tltest_v3lt 
-            Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3 pthread
+            Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3 pthread z
             "-Wl,--whole-archive"
             ${VERILATED_PATH}/libvltdut.a
             "-Wl,--no-whole-archive"
