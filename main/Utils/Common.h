@@ -28,7 +28,7 @@ enum {
     DATASIZE = 64, // Cache line is 64B
     BEATSIZE = 32,
     NR_SOURCEID = 16,
-    TIMEOUT_INTERVAL = 5000
+    TIMEOUT_INTERVAL = 50000
 };
 
 //
