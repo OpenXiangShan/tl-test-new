@@ -21,6 +21,7 @@ tltest-clean:
 	$(MAKE) -C ./main/build clean -s
 
 tltest-config-user:
+	@test -d ./main/build || mkdir -p ./main/build
 	@cat ./configs/user.tltest.ini
 	@echo ""
 	@cat ./configs/user.tltest.ini > ./main/build/tltest.ini

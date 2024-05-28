@@ -81,6 +81,8 @@ ADD_SUBDIRECTORY(System)
 ADD_SUBDIRECTORY(Plugins)
 
 FIND_PACKAGE(SQLite3 REQUIRED)
+FIND_PACKAGE(ZLIB REQUIRED)
+FIND_PACKAGE(Threads REQUIRED)
 INCLUDE_DIRECTORIES(${SQLite3_INCLUDE_DIRS})
 
 #
@@ -106,18 +108,21 @@ if (BUILD_V3)
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         TARGET_LINK_LIBRARIES(tltest_v3lt 
-            Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3 pthread z atomic
-            "-Wl,--whole-archive"
+            Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3
+            "-lz"
+	    "-Wl,--whole-archive"
             ${VERILATED_PATH}/libvltdut.a
             "-Wl,--no-whole-archive"
-            "-rdynamic"
+	    Threads::Threads ZLIB::ZLIB atomic
+	    "-rdynamic"
             ${CMAKE_DL_LIBS})
     else ()
         TARGET_LINK_LIBRARIES(tltest_v3lt 
-            Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3 pthread z
-            "-Wl,--whole-archive"
+            Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3
+	    "-Wl,--whole-archive"
             ${VERILATED_PATH}/libvltdut.a
             "-Wl,--no-whole-archive"
+	    Threads::Threads ZLIB::ZLIB
             "-rdynamic"
             ${CMAKE_DL_LIBS})
     endif ()
