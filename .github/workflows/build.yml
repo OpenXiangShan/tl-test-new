@@ -1,0 +1,218 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0'
+
+env:
+  CI_OS_NAME: linux
+  CI_COMMIT: ${{ github.sha }}
+  CCACHE_COMPRESS: 1
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_LIMIT_MULTIPLE: 0.95
+  INSTALL_DIR: ${{ github.workspace }}/install
+
+defaults:
+  run:
+    shell: bash
+    working-directory: repo
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_reqeust' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+
+  prebuild-ootb-coupledL2:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    name: Pre-Build | OOTB CoupledL2
+    env:
+      COUPLEDL2_ARCHIVE: coupledL2-${{ github.sha }}.tar.gz
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        path: repo
+        submodules: recursive
+
+    - name: Setup Scala
+      uses: olafurpg/setup-scala@v10
+
+    - name: Setup Mill
+      run: |
+        sh -c "curl -L https://github.com/com-lihaoyi/mill/releases/download/0.11.1/0.11.1 > /usr/local/bin/mill && chmod +x /usr/local/bin/mill"
+
+    - name: Compile
+      run: |
+        make coupledL2-compile
+
+    - name: Build verilog
+      run: |
+        make coupledL2-verilog-test-top-l2l3l2
+
+    - name: Tar up repository
+      working-directory: ${{ github.workspace }}
+      run: tar -zcf ${{ env.COUPLEDL2_ARCHIVE }} repo/dut/CoupledL2
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        path: ${{ github.workspace }}/${{ env.COUPLEDL2_ARCHIVE }}
+        name: ${{ env.COUPLEDL2_ARCHIVE }}
+
+  build:
+    needs: prebuild-ootb-coupledL2
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04, compiler: { cc: clang-16, cxx: clang++-16 } }
+          - { os: ubuntu-22.04, compiler: { cc: gcc,      cxx: g++ } }
+          - { os: ubuntu-20.04, compiler: { cc: clang-16, cxx: clang++-16 } }
+    runs-on: ${{ matrix.os }}
+    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
+    env:
+      CI_BUILD_STAGE_NAME: build
+      CI_RUNS_ON: ${{ matrix.os }}
+      CC: ${{ matrix.compiler.cc }}
+      CXX: ${{ matrix.compiler.cxx }}
+      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}
+      CCACHE_MAXSIZE: 256M
+      COUPLEDL2_ARCHIVE: coupledL2-${{ github.sha }}.tar.gz
+      TLTEST_ARCHIVE: tl-test-new-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        path: repo
+
+    - name: Setup Clang 16
+      if: matrix.compiler.cc == 'clang-16'
+      working-directory: ${{ github.workspace }}
+      run: |
+        wget https://apt.llvm.org/llvm.sh
+        chmod u+x llvm.sh
+        sudo ./llvm.sh 16
+
+    - name: Setup Verilator
+      working-directory: ${{ github.workspace }}
+      run: |
+        sudo apt-get install git help2man perl python3 make autoconf g++ flex bison clang
+        sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
+        sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
+        sudo apt-get install zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
+        git clone https://github.com/verilator/verilator
+        unset VERILATOR_ROOT
+        cd verilator
+        git checkout v5.020
+        autoconf
+        ./configure CC=${{ matrix.compiler.cc }} CXX=${{ matrix.compiler.cxx }} LINK=${{ matrix.compiler.cxx }}
+        make -j4
+        sudo make install
+        verilator --version
+
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ env.COUPLEDL2_ARCHIVE }}
+        path: ${{ github.workspace }}
+
+    - name: Unpack artifact
+      working-directory: ${{ github.workspace }}
+      run: tar -zxf ${{ env.COUPLEDL2_ARCHIVE }}
+
+    - name: Cache $CCACHE_DIR
+      uses: actions/cache@v4
+      env:
+        CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
+      with:
+        path: ${{ env.CCACHE_DIR }}
+        key: ${{ env.CACHE_KEY }}-${{ github.sha }}
+        restore_keys: |
+          ${{ env.CACHE_KEY }}-
+
+    - name: Verilate CoupledL2
+      run: |
+        make THREADS_BUILD=4 coupledL2-verilate
+
+    - name: Configurate TL-Test-New for CoupledL2
+      run: |
+        make THREADS_BUILD=4 tltest-config-coupledL2-test-l2l3l2
+
+    - name: Build TL-Test-New for CoupledL2
+      run: |
+        make THREADS_BUILD=4 tltest-build-all
+
+    - name: Tar up repository
+      working-directory: ${{ github.workspace }}
+      run: tar -zcf ${{ env.TLTEST_ARCHIVE }} repo
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        path: ${{ github.workspace }}/${{ env.TLTEST_ARCHIVE }}
+        name: ${{ env.TLTEST_ARCHIVE }}
+
+  run:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04, compiler: { cc: clang-16, cxx: clang++-16 } }
+          - { os: ubuntu-22.04, compiler: { cc: gcc,      cxx: g++ } }
+          - { os: ubuntu-20.04, compiler: { cc: clang-16, cxx: clang++-16 } }
+    runs-on: ${{ matrix.os }}
+    name: Run | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
+    env:
+      CI_BUILD_STAGE_NAME: build
+      CI_RUNS_ON: ${{ matrix.os }}
+      CC: ${{ matrix.compiler.cc }}
+      CXX: ${{ matrix.compiler.cxx }}
+      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}
+      CCACHE_MAXSIZE: 256M
+      TLTEST_ARCHIVE: tl-test-new-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
+      RUN_ARCHIVE: tl-test-new-run-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
+    steps:
+
+    - name: Setup Clang 16
+      if: matrix.compiler.cc == 'clang-16'
+      working-directory: ${{ github.workspace }}
+      run: |
+        wget https://apt.llvm.org/llvm.sh
+        chmod u+x llvm.sh
+        sudo ./llvm.sh 16
+
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ env.TLTEST_ARCHIVE }}
+        path: ${{ github.workspace }}
+
+    - name: Unpack artifact
+      working-directory: ${{ github.workspace }}
+      run: tar -zxf ${{ env.TLTEST_ARCHIVE }}
+
+    - name: Run TL-Test-New for CoupledL2
+      run: |
+        make run
+
+    - name: Tar up repository
+      working-directory: ${{ github.workspace }}
+      run: tar -zcf ${{ env.RUN_ARCHIVE }} repo
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        path: ${{ github.workspace }}/${{ env.RUN_ARCHIVE }}
+        name: ${{ env.RUN_ARCHIVE }}
