@@ -132,9 +132,9 @@ make coupledL2-verilate
 > ```
 > make coupledL2-test-l2l3l2 run
 > ```
-> * Build CoupledL2 test case ```coupledl2-test-l2l3l2``` in minimal (Verilator Host Mode only) and run verilator host immediately after build:    
+> * Build CoupledL2 test case ```coupledl2-test-l2l3l2``` in 4 threads in minimal (Verilator Host Mode only) and run verilator host immediately after build:    
 > ```
-> make coupledL2-test-l2l3l2-v3 run
+> make coupledL2-test-l2l3l2-v3 run THREADS_BUILD=4
 > ```
 
 #### 2. Configuration
