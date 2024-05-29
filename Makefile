@@ -1,3 +1,5 @@
+THREADS_BUILD 	?= 1
+
 init:
 	git submodule update --init --recursive
 	$(MAKE) -C ./dut/CoupledL2 init
@@ -15,7 +17,7 @@ tltest-prepare-v3:
 	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF
 
 tltest-portgen:
-	$(MAKE) -C ./main/build portgen -j `nproc` -s --always-make
+	$(MAKE) -C ./main/build portgen -j$(THREADS_BUILD) -s --always-make
 
 tltest-clean:
 	$(MAKE) -C ./main/build clean -s
@@ -40,8 +42,8 @@ tltest-config-coupledL2-test-l2l3l2: tltest-config-user
 	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-l2l3l2" > ./main/build/Makefile.config
 
 tltest-build:
-	$(MAKE) -C ./main/build -j `nproc` -s
-	$(MAKE) -C ./main/build portgen -j `nproc` -s --always-make
+	$(MAKE) -C ./main/build -j$(THREADS_BUILD) -s
+	$(MAKE) -C ./main/build portgen -j$(THREADS_BUILD) -s --always-make
 
 tltest-build-all: tltest-prepare-all tltest-build
 
@@ -68,8 +70,8 @@ coupledL2-verilog-clean:
 coupledL2-verilate:
 	rm -rf verilated
 	mkdir verilated
-	verilator --trace-fst -cc -build --lib-create vltdut --Mdir ./verilated ./dut/CoupledL2/build/*.v -Wno-fatal \
-		--top TestTop -j `nproc` -DSIM_TOP_MODULE_NAME=TestTop
+	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/CoupledL2/build/*.v -Wno-fatal \
+		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
 
 coupledL2-verilate-clean:
 	rm -rf verilated
