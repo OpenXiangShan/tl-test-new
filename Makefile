@@ -47,6 +47,8 @@ tltest-config-coupledL2-test-l2l3l2: tltest-config-user
 	@cat ./configs/coupledL2-test-l2l3l2.tltest.ini >> ./main/build/tltest.ini
 	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-l2l3l2" > ./main/build/Makefile.config
 
+tltest-config-postbuild:
+
 tltest-build:
 	$(MAKE) -C ./main/build -j$(THREADS_BUILD) -s
 	$(MAKE) -C ./main/build portgen -j$(THREADS_BUILD) -s --always-make
