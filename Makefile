@@ -1,5 +1,11 @@
 THREADS_BUILD 	?= 1
 
+CMAKE_CXX_COMPILER :=
+ifneq ($(origin CXX_COMPILER), undefined)
+	CMAKE_CXX_COMPILER := -DCMAKE_CXX_COMPILER=$(CXX_COMPILER)
+endif
+
+
 init:
 	git submodule update --init --recursive
 	$(MAKE) -C ./dut/CoupledL2 init
@@ -8,13 +14,13 @@ FORCE:
 
 
 tltest-prepare-all:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON
+	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER)
 
 tltest-prepare-dpi:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF
+	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER)
 
 tltest-prepare-v3:
-	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF
+	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER)
 
 tltest-portgen:
 	$(MAKE) -C ./main/build portgen -j$(THREADS_BUILD) -s --always-make
