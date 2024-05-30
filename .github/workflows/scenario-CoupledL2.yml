@@ -1,4 +1,4 @@
-name: build
+name: scenario-CoupledL2
 
 on:
   push:
