@@ -113,7 +113,7 @@ run: FORCE tltest-config-postbuild
 	@cp ./main/build/tltest_v3lt ./run/
 	@cp ./main/build/tltest_portgen.so ./run/
 	@cp ./main/build/tltest.ini ./run/
-	@cd ./run && ./tltest_v3lt 2>&1 | tee tltest_v3lt.log
+	@bash ./scripts/run_v3lt.sh
 
 run-with-portgen: FORCE tltest-config-postbuild tltest-portgen
 	@rm -rf ./run
@@ -121,7 +121,7 @@ run-with-portgen: FORCE tltest-config-postbuild tltest-portgen
 	@cp ./main/build/tltest_v3lt ./run/
 	@cp ./main/build/tltest_portgen.so ./run/
 	@cp ./main/build/tltest.ini ./run/
-	@cd ./run && ./tltest_v3lt 2>&1 | tee tltest_v3lt.log
+	@bash ./scripts/run_v3lt.sh
 
 
 clean: coupledL2-verilate-clean coupledL2-verilog-clean tltest-clean
