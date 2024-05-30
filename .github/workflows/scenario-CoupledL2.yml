@@ -61,7 +61,7 @@ jobs:
 
     - name: Tar up repository
       working-directory: ${{ github.workspace }}
-      run: tar -zcf ${{ env.COUPLEDL2_ARCHIVE }} repo/dut/CoupledL2
+      run: tar -zcf ${{ env.COUPLEDL2_ARCHIVE }} repo/dut/CoupledL2/build
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
