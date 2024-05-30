@@ -79,7 +79,7 @@ coupledL2-verilate:
 	rm -rf verilated
 	mkdir verilated
 	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/CoupledL2/build/*.v -Wno-fatal \
-		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
+		--top TestTop -j $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
 
 coupledL2-verilate-clean:
 	rm -rf verilated
