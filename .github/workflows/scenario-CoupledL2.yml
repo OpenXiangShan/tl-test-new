@@ -10,9 +10,6 @@ on:
 env:
   CI_OS_NAME: linux
   CI_COMMIT: ${{ github.sha }}
-  CCACHE_COMPRESS: 1
-  CCACHE_DIR: ${{ github.workspace }}/.ccache
-  CCACHE_LIMIT_MULTIPLE: 0.95
   INSTALL_DIR: ${{ github.workspace }}/install
 
 defaults:
@@ -85,8 +82,6 @@ jobs:
       CI_RUNS_ON: ${{ matrix.os }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}
-      CCACHE_MAXSIZE: 256M
       COUPLEDL2_ARCHIVE: coupledL2-${{ github.sha }}.tar.gz
       TLTEST_ARCHIVE: tl-test-new-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
     steps:
@@ -95,14 +90,6 @@ jobs:
       uses: actions/checkout@v4
       with:
         path: repo
-
-    - name: Cache $CCACHE_DIR
-      uses: actions/cache@v4
-      env:
-        CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
-      with:
-        path: ${{ env.CCACHE_DIR }}
-        key: ${{ env.CACHE_KEY }}
 
     - name: Setup Clang 16
       if: matrix.compiler.cc == 'clang-16'
@@ -115,7 +102,7 @@ jobs:
     - name: Setup Verilator
       working-directory: ${{ github.workspace }}
       run: |
-        sudo apt-get install -y git help2man perl python3 make autoconf g++ flex bison clang ccache
+        sudo apt-get install -y git help2man perl python3 make autoconf g++ flex bison clang
         sudo apt-get install -y libfl2  # Ubuntu only (ignore if gives error)
         sudo apt-get install -y libfl-dev  # Ubuntu only (ignore if gives error)
         sudo apt-get install -y zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
@@ -177,8 +164,6 @@ jobs:
       CI_RUNS_ON: ${{ matrix.os }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}
-      CCACHE_MAXSIZE: 256M
       TLTEST_ARCHIVE: tl-test-new-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
       RUN_ARCHIVE: tl-test-new-run-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
     steps:
