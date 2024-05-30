@@ -107,10 +107,10 @@ jobs:
     - name: Setup Verilator
       working-directory: ${{ github.workspace }}
       run: |
-        sudo apt-get install git help2man perl python3 make autoconf g++ flex bison clang
-        sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
-        sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
-        sudo apt-get install zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
+        sudo apt-get install -y git help2man perl python3 make autoconf g++ flex bison clang ccache
+        sudo apt-get install -y libfl2  # Ubuntu only (ignore if gives error)
+        sudo apt-get install -y libfl-dev  # Ubuntu only (ignore if gives error)
+        sudo apt-get install -y zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
         git clone https://github.com/verilator/verilator
         unset VERILATOR_ROOT
         cd verilator
@@ -138,7 +138,7 @@ jobs:
       with:
         path: ${{ env.CCACHE_DIR }}
         key: ${{ env.CACHE_KEY }}-${{ github.sha }}
-        restore_keys: |
+        restore-keys: |
           ${{ env.CACHE_KEY }}-
 
     - name: Verilate CoupledL2
@@ -207,12 +207,12 @@ jobs:
       run: |
         make run
 
-    - name: Tar up repository
-      working-directory: ${{ github.workspace }}
-      run: tar -zcf ${{ env.RUN_ARCHIVE }} repo
+#   - name: Tar up repository
+#     working-directory: ${{ github.workspace }}
+#     run: tar -zcf ${{ env.RUN_ARCHIVE }} repo
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        path: ${{ github.workspace }}/${{ env.RUN_ARCHIVE }}
-        name: ${{ env.RUN_ARCHIVE }}
+#   - name: Upload artifact
+#     uses: actions/upload-artifact@v4
+#     with:
+#       path: ${{ github.workspace }}/${{ env.RUN_ARCHIVE }}
+#       name: ${{ env.RUN_ARCHIVE }}
