@@ -1,6 +1,6 @@
 # TL-Test-New
 
-![Scenario: CoupledL2](https://github.com/OpenXiangShan/tl-test-new/actions/workflows/scenario-CoupledL2.yml/badge.svg?branch=master)  
+[![scenario-CoupledL2](https://github.com/OpenXiangShan/tl-test-new/actions/workflows/scenario-CoupledL2.yml/badge.svg?branch=master)](https://github.com/OpenXiangShan/tl-test-new/actions/workflows/scenario-CoupledL2.yml)
 
 > TL-Test-New  
 > The **Unified TileLink Memory Subsystem Tester for XiangShan**
