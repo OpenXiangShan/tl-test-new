@@ -155,7 +155,7 @@ jobs:
 
     - name: Tar up repository
       working-directory: ${{ github.workspace }}
-      run: tar -zcf ${{ env.TLTEST_ARCHIVE }} repo/main/build repo/configs repo/Makefile
+      run: tar -zcf ${{ env.TLTEST_ARCHIVE }} repo/main/build repo/configs repo/scripts repo/Makefile
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
