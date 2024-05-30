@@ -109,7 +109,7 @@ jobs:
         git clone https://github.com/verilator/verilator
         unset VERILATOR_ROOT
         cd verilator
-        git checkout v5.020
+        git checkout v4.218
         autoconf
         ./configure CC=${{ matrix.compiler.cc }} CXX=${{ matrix.compiler.cxx }} LINK=${{ matrix.compiler.cxx }}
         make -j4
