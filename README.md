@@ -2,22 +2,26 @@
 
 [![scenario-CoupledL2](https://github.com/OpenXiangShan/tl-test-new/actions/workflows/scenario-CoupledL2.yml/badge.svg?branch=master)](https://github.com/OpenXiangShan/tl-test-new/actions/workflows/scenario-CoupledL2.yml)
 
-> TL-Test-New  
+> TL-Test-**New**  
 > The **Unified TileLink Memory Subsystem Tester for XiangShan**
 > 
 
->   
-> **"WELCOME TO THE NEW WORLD !"**  
-> The Next Generation TL-Test
-> ```
-> ████████╗██╗           ████████╗███████╗███████╗████████╗      ███╗   ██╗███████╗██╗    ██╗ 
-> ╚══██╔══╝██║           ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝      ████╗  ██║██╔════╝██║    ██║ 
->    ██║   ██║     █████╗   ██║   █████╗  ███████╗   ██║   █████╗██╔██╗ ██║█████╗  ██║ █╗ ██║ 
->    ██║   ██║     ╚════╝   ██║   ██╔══╝  ╚════██║   ██║   ╚════╝██║╚██╗██║██╔══╝  ██║███╗██║ 
->    ██║   ███████╗         ██║   ███████╗███████║   ██║         ██║ ╚████║███████╗╚███╔███╔╝ 
->    ╚═╝   ╚══════╝         ╚═╝   ╚══════╝╚══════╝   ╚═╝         ╚═╝  ╚═══╝╚══════╝ ╚══╝╚══╝    
-> ```  
+[**TLDR: Out-of-the-Box Build and Run**](#tldr-out-of-the-box)
 
+
+## Contents
+* [Features](#features)  
+* [Project tree](#project-tree)
+* [**TLDR Out-of-the-Box**](#tldr-out-of-the-box)  
+    * [Getting started](#getting-started)
+    * [Build and Run](#build-and-run)
+    * [Configuration](#configuration)
+    * [**For CoupledL2**](#for-coupledl2)
+* [Build](#build)
+* [Pre-build Configuration](#pre-build-configuration)
+* [Run as Verilator Host](#run-as-verilator-host)
+* [Load as DPI Guest](#load-as-dpi-guest)
+* [Post-build Configuration](#post-build-configuration)
 
 
 ## Features
@@ -38,7 +42,6 @@
 * [BullsEye Gravity](https://github.com/arch-simulator-sig/BullsEye/tree/master) **EventBus utility** for event-driven extensive controls  
 * Full support for **ChiselDB** through plug-in  
 * Detailed and fine-grained controllable verbose information    
-* Now **zero memory leakage** in TileLink testing sub-system  
 * Almost zero change required for current L1, L2 RTL design   
 * **TODO:** TileLink Protocol Analyzer (TLPA - TLEye) through ChiselDB  
 * **TODO:** XiangShan L1 Trace support  
@@ -212,7 +215,7 @@ make -j `nproc`
 make clean
 ```
 
-## Build Configuration
+## Pre-build Configuration
 ### 1. Paths and executables  
 #### 1.1 ```CMAKE_CXX_COMPILER```  
 &emsp;&emsp;Specify the **user-defined C++ compiler** for build-time and run-time procedures on demand.  
