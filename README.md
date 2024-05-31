@@ -6,6 +6,10 @@
 > The **Unified TileLink Memory Subsystem Tester for XiangShan**
 > 
 
+### Requirements
+* **C/C++ Compiler**: ```GCC 11,12+``` or ```Clang 16,17+```
+* **Verilator:** ```Verilator 5.006+``` 
+
 [**TLDR: Out-of-the-Box Build and Run**](#tldr-out-of-the-box)
 
 
