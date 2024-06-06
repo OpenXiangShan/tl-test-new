@@ -30,7 +30,7 @@ namespace tl_agent {
         uint8_t             opcode;
         uint8_t             param;
         uint8_t             size;
-        uint8_t             source;
+        uint64_t            source;
         uint32_t            mask;
         paddr_t             address;
         shared_tldata_t<N>  data;
@@ -45,7 +45,7 @@ namespace tl_agent {
         uint8_t             opcode;
         uint8_t             param;
         uint8_t             size;
-        uint8_t             source;
+        uint64_t            source;
         paddr_t             address;
         uint8_t             corrupt;
         uint8_t             alias;
@@ -58,7 +58,7 @@ namespace tl_agent {
         uint8_t             opcode;
         uint8_t             param;
         uint8_t             size;
-        uint8_t             source;
+        uint64_t            source;
         paddr_t             address;
         Usr                 usr;
         Echo                echo;
@@ -74,8 +74,8 @@ namespace tl_agent {
         uint8_t             opcode;
         uint8_t             param;
         uint8_t             size;
-        uint8_t             source;
-        uint8_t             sink;
+        uint64_t            source;
+        uint64_t            sink;
         uint8_t             denied;
         Usr                 usr;
         Echo                echo;
@@ -86,7 +86,7 @@ namespace tl_agent {
 
     class BundleChannelE : public DecoupledBundle {
     public:
-        uint8_t             sink;
+        uint64_t            sink;
         paddr_t             addr;  // used for index scoreboard
         uint8_t             alias;
     };
