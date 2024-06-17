@@ -164,22 +164,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        case_id: [l2l3, l2l3l2]
-        include:
-          - { case_id: l2l3l2, case_name: L2-L3-L2 }
-          - { case_id: l2l3,   case_name: L2-L3    }
-          - { os: ubuntu-22.04, compiler: { cc: clang-16, cxx: clang++-16 } }
-          - { os: ubuntu-22.04, compiler: { cc: gcc,      cxx: g++ } }
-          - { os: ubuntu-20.04, compiler: { cc: clang-16, cxx: clang++-16 } }
+        os: [ubuntu-20.04, ubuntu-22.04]
+        case:
+          - { id: l2l3,   name: L2-L3    }
+          - { id: l2l3l2, name: L2-L3-L2 }
+        compiler:
+          - { cc: clang-16, cxx: clang++-16 }
+          - { cc: gcc,      cxx: g++        }
+        exclude:
+          - { os: ubuntu-20.04, compiler: { cc: gcc, cxx: g++ } }
     runs-on: ${{ matrix.os }}
-    name: Run | ${{ matrix.case_name }} | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
+    name: Run | ${{ matrix.case.name }} | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
     env:
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ${{ matrix.os }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      TLTEST_ARCHIVE: tl-test-new-${{ matrix.case_id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
-      RUN_ARCHIVE: tl-test-new-run-${{ matrix.case_id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
+      TLTEST_ARCHIVE: tl-test-new-${{ matrix.case.id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
+      RUN_ARCHIVE: tl-test-new-run-${{ matrix.case.id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
     steps:
 
     - name: Setup Clang 16
