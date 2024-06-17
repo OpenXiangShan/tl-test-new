@@ -122,7 +122,7 @@ if (BUILD_V3)
 	    "-Wl,--whole-archive"
             ${VERILATED_PATH}/libvltdut.a
             "-Wl,--no-whole-archive"
-	    Threads::Threads ZLIB::ZLIB
+	    Threads::Threads ZLIB::ZLIB atomic
             "-rdynamic"
             ${CMAKE_DL_LIBS})
     endif ()
