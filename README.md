@@ -10,7 +10,7 @@
 * **C/C++ Compiler**: ```GCC 11,12+``` or ```Clang 16,17+```
 * **Verilator:** ```Verilator 5.006+``` 
 
-[**TLDR: Out-of-the-Box Build and Run**](#tldr-out-of-the-box)
+[**TLDR: Out-of-the-Box Build and Run**](#tldr-out-of-the-box) for quick uasge.
 
 
 ## Contents
@@ -18,9 +18,9 @@
 * [Project tree](#project-tree)
 * [**TLDR Out-of-the-Box**](#tldr-out-of-the-box)  
     * [Getting started](#getting-started)
+    * [**For CoupledL2**](#for-coupledl2)
     * [Build and Run](#build-and-run)
     * [Configuration](#configuration)
-    * [**For CoupledL2**](#for-coupledl2)
 * [Build](#build)
 * [Pre-build Configuration](#pre-build-configuration)
 * [Run as Verilator Host](#run-as-verilator-host)
@@ -93,8 +93,37 @@ make init
 ```  
 &emsp;&emsp;See the following chapters for the Out-of-the-Box usage of different integrated DUTs.
 
+### For CoupledL2
+#### 1. Build and Run
+
+&emsp;&emsp;Currently integrated out-of-the-box test cases:  
+* ```coupledL2-test-l2l3```
+    * Pre-set configuration: **```configs/coupledL2-test-l2l3.tltest.ini```**  
+* ```coupledL2-test-l2l3l2```   
+    * Pre-set configuration: **```configs/coupledL2-test-l2l3l2.tltest.ini```**  
+
+&emsp;&emsp;Verilating CoupledL2:  
+```
+make coupledL2-verilate
+```  
+
+> **Examples**  
+> * Build CoupledL2 test case ```coupledl2-test-l2l3l2``` and run verilator host immediately after build:  
+> ```
+> make coupledL2-test-l2l3l2 run
+> ```
+> * Build CoupledL2 test case ```coupledl2-test-l2l3l2``` in 4 threads with Clang++ 17 in minimal (Verilator Host Mode only) and run verilator host immediately after build:    
+> ```
+> make coupledL2-test-l2l3l2-v3 run THREADS_BUILD=4 CXX_COMPILER=clang++-17
+> ```
+
+#### 2. Configuration
+&emsp;&emsp;Refer to [Configuration](#configuration) for detailed configuration control.  
+&emsp;&emsp;To change the pre-set configurations of CoupledL2 test cases, modify files **```configs/coupledL2-test-l2l3.tltest.ini```** and **```configs/coupledL2-test-l2l3l2.test.ini```**.   
+
+
 ### Build and Run
-&emsp;&emsp;For building TL-Test-New seperately (after verilated DUT):    
+&emsp;&emsp;For building TL-Test-New seperately **(after verilated DUT)**:    
 ```
 make tltest-build-all
 ```
@@ -121,33 +150,6 @@ make <test_case_name>-v3
 &emsp;&emsp;The user-defined custom configuration entries should be written into **```configs/user.tltest.ini```**.    
 &emsp;&emsp;It's not recommended to add or change the section ```[tltest.config]``` (configuration entires related to core count and port organizations) in **```configs/user.tltest.ini```**.  
 
-### For CoupledL2
-#### 1. Build and Run
-
-&emsp;&emsp;Currently integrated out-of-the-box test cases:  
-* ```coupledL2-test-l2l3```
-    * Pre-set configuration: **```configs/coupledL2-test-l2l3.tltest.ini```**  
-* ```coupledL2-test-l2l3l2```   
-    * Pre-set configuration: **```configs/coupledL2-test-l2l3l2.tltest.ini```**  
-
-&emsp;&emsp;Verilating CoupledL2:  
-```
-make coupledL2-verilate
-```  
-
-> **Examples**  
-> * Build CoupledL2 test case ```coupledl2-test-l2l3l2``` and run verilator host immediately after build:  
-> ```
-> make coupledL2-test-l2l3l2 run
-> ```
-> * Build CoupledL2 test case ```coupledl2-test-l2l3l2``` in 4 threads with Clang++ 17 in minimal (Verilator Host Mode only) and run verilator host immediately after build:    
-> ```
-> make coupledL2-test-l2l3l2-v3 run THREADS_BUILD=4 CXX_COMPILER=clang++-17
-> ```
-
-#### 2. Configuration
-&emsp;&emsp;To change the pre-set configurations of CoupledL2 test cases, modify files **```configs/coupledL2-test-l2l3.tltest.ini```** and **```configs/coupledL2-test-l2l3l2.test.ini```**.   
-
 
 ## Build
 ### 1. Build
@@ -166,7 +168,7 @@ cmake ..
 > ```bash
 > cmake .. -DBUILD_V3=0
 > ```   
-> For more information, see chatper [**Build Configuration**](#build-configuration).
+> For more information, see chatper [**Pre-Build Configuration**](#pre-build-configuration).
 > 
 &emsp;&emsp;Then you need to generate cpp files and library files using verilator.  
 &emsp;&emsp;Requirements of verilating:
@@ -184,9 +186,9 @@ make -j `nproc`
 ```  
 > **NOTICE:** 
 > Before you **make**:  
-> * You need to set-up related project path and environment variables correctly, see chapter [**Build Configuration**](#build-configuration)  
-> * You need to set-up verilator include path correctly for **Verilator Host Mode**, see chapter [**Build Configuration**](#build-configuration)  
-> * You need to **set-up PortGen** correctly for **Verilator Host Mode**, see chapter [**Build Configuration**](#build-configuration)  
+> * You need to set-up related project path and environment variables correctly, see chapter [**Pre-Build Configuration**](#pre-build-configuration)  
+> * You need to set-up verilator include path correctly for **Verilator Host Mode**, see chapter [**Pre-Build Configuration**](#pre-build-configuration)  
+> * You need to **set-up PortGen** correctly for **Verilator Host Mode**, see chapter [**Pre-Build Configuration**](#pre-build-configuration)  
 > 
 &emsp;&emsp;The default working tree without user configuration is:  
 ```
