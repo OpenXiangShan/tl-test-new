@@ -30,10 +30,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
+        case:
+          - { id: l2l3,   name: L2-L3    }
+          - { id: l2l3l2, name: L2-L3-L2 }
+
     runs-on: ${{ matrix.os }}
-    name: Pre-Build | OOTB CoupledL2
+    name: Pre-Build | ${{ matrix.case.name }} | OOTB CoupledL2
     env:
-      COUPLEDL2_ARCHIVE: coupledL2-${{ github.sha }}.tar.gz
+      COUPLEDL2_ARCHIVE: coupledL2-${{ matrix.case.id }}-${{ github.sha }}.tar.gz
 
     steps:
 
@@ -56,7 +60,7 @@ jobs:
 
     - name: Build verilog
       run: |
-        make coupledL2-verilog-test-top-l2l3l2
+        make coupledL2-verilog-test-top-${{ matrix.case.id }}
 
     - name: Tar up repository
       working-directory: ${{ github.workspace }}
@@ -73,19 +77,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { os: ubuntu-22.04, compiler: { cc: clang-16, cxx: clang++-16 } }
-          - { os: ubuntu-22.04, compiler: { cc: gcc,      cxx: g++ } }
-          - { os: ubuntu-20.04, compiler: { cc: clang-16, cxx: clang++-16 } }
+        os: [ubuntu-20.04, ubuntu-22.04]
+        case:
+          - { id: l2l3,   name: L2-L3    }
+          - { id: l2l3l2, name: L2-L3-L2 }
+        compiler:
+          - { cc: clang-16, cxx: clang++-16 }
+          - { cc: gcc,      cxx: g++        }
+        exclude:
+          - { os: ubuntu-20.04, compiler: { cc: gcc, cxx: g++ } }
     runs-on: ${{ matrix.os }}
-    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
+    name: Build | ${{ matrix.case.name }} | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
     env:
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ${{ matrix.os }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      COUPLEDL2_ARCHIVE: coupledL2-${{ github.sha }}.tar.gz
-      TLTEST_ARCHIVE: tl-test-new-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
+      COUPLEDL2_ARCHIVE: coupledL2-${{ matrix.case.id }}-${{ github.sha }}.tar.gz
+      TLTEST_ARCHIVE: tl-test-new-${{ matrix.case.id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
     steps:
 
     - name: Checkout
@@ -134,7 +143,7 @@ jobs:
 
     - name: Configurate TL-Test-New for CoupledL2
       run: |
-        make THREADS_BUILD=4 tltest-config-coupledL2-test-l2l3l2
+        make THREADS_BUILD=4 tltest-config-coupledL2-test-${{ matrix.case.id }}
 
     - name: Build TL-Test-New for CoupledL2
       run: |
@@ -155,19 +164,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { os: ubuntu-22.04, compiler: { cc: clang-16, cxx: clang++-16 } }
-          - { os: ubuntu-22.04, compiler: { cc: gcc,      cxx: g++ } }
-          - { os: ubuntu-20.04, compiler: { cc: clang-16, cxx: clang++-16 } }
+        os: [ubuntu-20.04, ubuntu-22.04]
+        case:
+          - { id: l2l3,   name: L2-L3    }
+          - { id: l2l3l2, name: L2-L3-L2 }
+        compiler:
+          - { cc: clang-16, cxx: clang++-16 }
+          - { cc: gcc,      cxx: g++        }
+        exclude:
+          - { os: ubuntu-20.04, compiler: { cc: gcc, cxx: g++ } }
     runs-on: ${{ matrix.os }}
-    name: Run | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
+    name: Run | ${{ matrix.case.name }} | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
     env:
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ${{ matrix.os }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      TLTEST_ARCHIVE: tl-test-new-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
-      RUN_ARCHIVE: tl-test-new-run-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
+      TLTEST_ARCHIVE: tl-test-new-${{ matrix.case.id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
+      RUN_ARCHIVE: tl-test-new-run-${{ matrix.case.id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
     steps:
 
     - name: Setup Clang 16
