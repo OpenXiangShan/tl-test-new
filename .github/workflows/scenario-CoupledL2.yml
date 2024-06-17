@@ -2,7 +2,9 @@ name: scenario-CoupledL2
 
 on:
   push:
+    branches: [ master ]
   pull_request:
+    branches: [ master ]
   workflow_dispatch:
   schedule:
   - cron: '0 0 * * 0'
