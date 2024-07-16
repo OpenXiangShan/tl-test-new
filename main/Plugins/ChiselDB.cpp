@@ -52,7 +52,7 @@ namespace ChiselDB {
 
     void PluginInstance::OnDisable()
     {
-        const char* file = "logs/chiseldb.db";
+        const char* file = "chiseldb.db";
 
         LogInfo("ChiselDB", Append("Saving DB to: ", file).EndLine());
 
