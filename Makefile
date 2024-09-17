@@ -75,6 +75,26 @@ coupledL2-verilog-clean:
 	$(MAKE) -C ./dut/CoupledL2 clean
 
 
+VERILATOR := verilator
+VERILATOR_COMMON_ARGS := ./dut/CoupledL2/build/*.v \
+		--Mdir ./verilated \
+		-O3 \
+		--trace-fst \
+		--top TestTop \
+		--build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) \
+		-DSIM_TOP_MODULE_NAME=TestTop \
+		-Wno-fatal
+
+coupledL2-verilate-cc:
+	rm -rf verilated
+	mkdir verilated
+	$(VERILATOR) $(VERILATOR_COMMON_ARGS) --cc
+
+coupledL2-verilate-build:
+	$(VERILATOR) $(VERILATOR_COMMON_ARGS) --cc --exe --build -o tltest_v3lt \
+		libtltest_v3lt.a \
+		-LDFLAGS "-lsqlite3 -ldl" -CFLAGS "-rdynamic"
+
 coupledL2-verilate:
 	rm -rf verilated
 	mkdir verilated
