@@ -298,10 +298,13 @@ namespace tl_agent {
                 } else if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck)) 
                 { 
                     // finish pending status in GlobalBoard
+                    uncachedBoards->appendAll(this, info->address, 
+                        this->globalBoard->query(this, info->address)->data);
                     this->globalBoard->unpending(this, info->address);
                 }
                 localBoard->erase(this, chnD.source);
-                uncachedBoards->finish(this, id, info->address, pendingD.info->source);
+                if (hasData)
+                    uncachedBoards->finish(this, id, info->address, pendingD.info->source);
                 this->idpool.freeid(chnD.source);
             }
         }
