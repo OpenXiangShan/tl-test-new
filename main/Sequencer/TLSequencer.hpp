@@ -9,6 +9,7 @@
 #include <cstdint>
 
 #include "../Utils/ScoreBoard.h"
+#include "../Utils/ULScoreBoard.h"
 #include "../Utils/Common.h"
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
@@ -54,6 +55,7 @@ private:
     State                   state;
 
     GlobalBoard<paddr_t>*   globalBoard;
+    UncachedBoard<paddr_t>* uncachedBoard;
 
     TLLocalConfig           config;
 

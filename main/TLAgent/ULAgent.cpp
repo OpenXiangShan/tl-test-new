@@ -10,10 +10,11 @@
 
 namespace tl_agent {
 
-    ULAgent::ULAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t> *gb, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
+    ULAgent::ULAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t> *gb, UncachedBoard<paddr_t>* ubs, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
             BaseAgent(cfg, sysId, seed), pendingA(), pendingD()
     {
         this->globalBoard = gb;
+        this->uncachedBoards = ubs;
         this->cycles = cycles;
         this->localBoard = new LocalScoreBoard();
     }
@@ -37,6 +38,7 @@ namespace tl_agent {
                 auto entry 
                     = std::make_shared<UL_SBEntry>(this, TLOpcodeA::Get, S_SENDING_A, a->address);
                 localBoard->update(this, a->source, entry);
+
                 break;
             }
 
@@ -136,7 +138,8 @@ namespace tl_agent {
                     .EndLine().ToString());
             }
 
-            bool hasData = TLEnumEquals(chnA.opcode, TLOpcodeA::PutFullData, TLOpcodeA::PutPartialData);
+            bool hasData  = TLEnumEquals(chnA.opcode, TLOpcodeA::PutFullData, TLOpcodeA::PutPartialData);
+            bool recvData = TLEnumEquals(chnA.opcode, TLOpcodeA::Get);
             chnA.valid = false;
             tlc_assert(pendingA.is_pending(), this, "No pending A but A fired!");
             pendingA.update(this);
@@ -180,6 +183,23 @@ namespace tl_agent {
                     }
                     global_SBEntry->status = Global_SBEntry::SB_PENDING;
                     this->globalBoard->update(this, pendingA.info->address, global_SBEntry);
+                }
+
+                if (recvData) {
+                    if (!globalBoard->haskey(chnA.address))
+                        uncachedBoards->allocateZero(this, id, chnA.address, chnA.source);
+                    else
+                    {
+                        auto global_SBEntry = globalBoard->query(this, chnA.address);
+                        
+                        if (global_SBEntry->status == Global_SBEntry::SB_VALID)
+                            uncachedBoards->allocate(this, id, chnA.address, chnA.source,
+                                global_SBEntry->data);
+
+                        if (global_SBEntry->status == Global_SBEntry::SB_PENDING)
+                            uncachedBoards->allocate(this, id, chnA.address, chnA.source,
+                                global_SBEntry->pending_data);
+                    }
                 }
             }
         }
@@ -274,13 +294,14 @@ namespace tl_agent {
                 }
 
                 if (hasData) {
-                    this->globalBoard->verify(this, info->address, pendingD.info->data);
+                    uncachedBoards->verify(this, id, info->address, pendingD.info->source, pendingD.info->data);
                 } else if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck)) 
                 { 
                     // finish pending status in GlobalBoard
                     this->globalBoard->unpending(this, info->address);
                 }
                 localBoard->erase(this, chnD.source);
+                uncachedBoards->finish(this, id, info->address, pendingD.info->source);
                 this->idpool.freeid(chnD.source);
             }
         }

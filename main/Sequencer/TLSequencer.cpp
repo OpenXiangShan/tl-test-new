@@ -18,6 +18,7 @@
 TLSequencer::TLSequencer() noexcept
     : state         (State::NOT_INITIALIZED)
     , globalBoard   (nullptr)
+    , uncachedBoard (nullptr)
     , config        ()
     , agents        (nullptr)
     , fuzzers       (nullptr)
@@ -59,17 +60,17 @@ bool TLSequencer::IsFinished() const noexcept
 
 size_t TLSequencer::GetCAgentCount() const noexcept
 {
-    return config.coreCount * config.masterCountPerCoreTLC;
+    return config.GetCAgentCount();
 }
 
 size_t TLSequencer::GetULAgentCount() const noexcept
 {
-    return config.coreCount * config.masterCountPerCoreTLUL;
+    return config.GetULAgentCount();
 }
 
 size_t TLSequencer::GetAgentCount() const noexcept
 {
-    return GetCAgentCount() + GetULAgentCount();
+    return config.GetAgentCount();
 }
 
 void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
@@ -192,6 +193,9 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
         agents  = new BaseAgent*    [total_n_agents];
         fuzzers = new Fuzzer*       [total_n_agents];
 
+        // UL Scoreboard
+        uncachedBoard   = new UncachedBoard<paddr_t>(total_n_agents);
+
         /*
         * Device ID of TileLink ports organization:
         *
@@ -232,7 +236,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             {
                 //
                 io      [i] = new IOPort;
-                agents  [i] = new CAgent(&this->config, globalBoard, i, cfg.seed, &cycles);
+                agents  [i] = new CAgent(&this->config, globalBoard, uncachedBoard, i, cfg.seed, &cycles);
                 agents  [i]->connect(io[i]);
 
                 //
@@ -251,7 +255,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             {
                 //
                 io      [i] = new IOPort;
-                agents  [i] = new ULAgent(&this->config, globalBoard, i, cfg.seed, &cycles);
+                agents  [i] = new ULAgent(&this->config, globalBoard, uncachedBoard, i, cfg.seed, &cycles);
                 agents  [i]->connect(io[i]);
 
                 //
@@ -344,6 +348,9 @@ void TLSequencer::Finalize() noexcept
 
         delete globalBoard;
         globalBoard = nullptr;
+
+        delete uncachedBoard;
+        uncachedBoard = nullptr;
 
         if (state == State::FINISHED)
         {
