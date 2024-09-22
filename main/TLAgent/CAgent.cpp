@@ -94,10 +94,11 @@ namespace tl_agent {
         }
     }
 
-    CAgent::CAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t> *const gb, int sysId, unsigned int seed, uint64_t *cycles) noexcept :
+    CAgent::CAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ubs, int sysId, unsigned int seed, uint64_t *cycles) noexcept :
         BaseAgent(cfg, sysId, seed), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(), probeIDpool(NR_SOURCEID, NR_SOURCEID+1)
     {
         this->globalBoard = gb;
+        this->uncachedBoards = ubs;
         this->cycles = cycles;
         this->localBoard = new LocalScoreBoard();
         this->idMap = new IDMapScoreBoard();
@@ -665,12 +666,16 @@ namespace tl_agent {
                     }
                     global_SBEntry->status = Global_SBEntry::SB_PENDING;
                     this->globalBoard->update(this, pendingC.info->address, global_SBEntry);
+
+                    uncachedBoards->appendAll(this, pendingC.info->address, global_SBEntry->pending_data);
                 }
                 if (TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAckData)) {
                     auto global_SBEntry = std::make_shared<Global_SBEntry>();
                     global_SBEntry->data = pendingC.info->data;
                     global_SBEntry->status = Global_SBEntry::SB_VALID;
                     this->globalBoard->update(this, pendingC.info->address, global_SBEntry);
+
+                    uncachedBoards->appendAll(this, pendingC.info->address, global_SBEntry->data);
                 }
                 if (TLEnumEquals(chnC.opcode, TLOpcodeC::ReleaseData, TLOpcodeC::Release)) {
                     info->update_pending_priviledge(

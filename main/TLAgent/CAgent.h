@@ -98,7 +98,7 @@ namespace tl_agent {
                 Debug(ctx, Append("TL-C local scoreboard update (dirty): ")
                     .ShowBase()
                     .Dec().Append("[alias = ", alias, "]")
-                    .Hex().Append(" dirty = ", PrivilegeToString(dirty))
+                    .Hex().Append(" dirty = ", dirty)
                     .EndLine());
 #           endif
         }
@@ -230,7 +230,7 @@ namespace tl_agent {
         void timeout_check() override;
 
     public:
-        CAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t> * const gb, int id, unsigned int seed, uint64_t* cycles) noexcept;
+        CAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ub, int id, unsigned int seed, uint64_t* cycles) noexcept;
         virtual ~CAgent() noexcept;
 
         uint64_t    cycle() const noexcept override;

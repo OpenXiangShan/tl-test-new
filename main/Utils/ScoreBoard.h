@@ -4,7 +4,7 @@
 
 #include <cstddef>
 #include <iterator>
-#include <map>
+#include <unordered_map>
 #include <array>
 #include <memory>
 #include <type_traits>
@@ -104,12 +104,12 @@ template<typename Tk, typename Tv, typename TUpdateCallback = ScoreBoardUpdateCa
 class ScoreBoard {
     friend class ScoreBoardUpdateCallback<Tk, Tv>;
 protected:
-    TUpdateCallback                     updateCallback;
-    std::map<Tk, std::shared_ptr<Tv>>   mapping;
+    TUpdateCallback                             updateCallback;
+    std::unordered_map<Tk, std::shared_ptr<Tv>> mapping;
 public:
     ScoreBoard();
     ~ScoreBoard();
-    std::map<Tk, std::shared_ptr<Tv>>& get();
+    std::unordered_map<Tk, std::shared_ptr<Tv>>& get();
     void update(const TLLocalContext* ctx,const Tk& key, std::shared_ptr<Tv>& data);
     std::shared_ptr<Tv> query(const TLLocalContext* ctx, const Tk& key);
     void erase(const TLLocalContext* ctx, const Tk& key);
@@ -166,8 +166,8 @@ struct ScoreBoardUpdateCallbackGlobalEntry : public ScoreBoardUpdateCallback<Tk,
             std::cout << std::endl;
 
             std::cout << "data - pend : ";
-            if (data->data != nullptr)
-                data_dump<DATASIZE>(data->data->data);
+            if (data->pending_data != nullptr)
+                data_dump<DATASIZE>(data->pending_data->data);
             else
                 std::cout << "<non-initialized>";
             std::cout << std::endl;
@@ -199,7 +199,7 @@ ScoreBoard<Tk, Tv, TUpdateCallback>::~ScoreBoard() {
 }
 
 template<typename Tk, typename Tv, typename TUpdateCallback>
-std::map<Tk, std::shared_ptr<Tv>>& ScoreBoard<Tk, Tv, TUpdateCallback>::get() {
+std::unordered_map<Tk, std::shared_ptr<Tv>>& ScoreBoard<Tk, Tv, TUpdateCallback>::get() {
     return this->mapping;
 }
 

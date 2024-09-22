@@ -7,9 +7,11 @@
 
 #include <set>
 #include <random>
+#include <array>
 #include "Bundle.h"
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
+#include "../Utils/ULScoreBoard.h"
 #include "../Base/TLLocal.hpp"
 
 
@@ -155,11 +157,12 @@ namespace tl_agent {
         using tlport_t = Bundle<ReqField, RespField, EchoField, BEATSIZE>;
 
     protected:
-        TLLocalConfig*          cfg;
-        const int id;
-        tlport_t                *port;
-        GlobalBoard<paddr_t>    *globalBoard;
-        IDPool                  idpool;
+        TLLocalConfig*              cfg;
+        const int                   id;
+        tlport_t*                   port;
+        GlobalBoard<paddr_t>*       globalBoard;
+        UncachedBoard<paddr_t>*     uncachedBoards;
+        IDPool                      idpool;
         virtual void timeout_check() = 0;
 
         const unsigned int      seed;
