@@ -174,14 +174,17 @@ int main(int argc, char **argv)
 
         // Pull
         V3::PortGen::PullChannelA(top, tltest);
-        V3::PortGen::PullChannelB(top, tltest);
         V3::PortGen::PullChannelC(top, tltest);
         V3::PortGen::PullChannelE(top, tltest);
-        V3::PortGen::PullChannelD(top, tltest);
 
         //
         V3EvalNegedge(time, top);
 
+        // Pull 'ready's
+        V3::PortGen::PullChannelB(top, tltest);
+        V3::PortGen::PullChannelD(top, tltest);
+
+        //
         V3EvalPosedge(time, top);
 
         //
