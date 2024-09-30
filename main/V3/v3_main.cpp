@@ -163,10 +163,7 @@ int main(int argc, char **argv)
         tltest->Tick(time);
 
         // Push
-        V3::PortGen::PushChannelA(top, tltest);
         V3::PortGen::PushChannelB(top, tltest);
-        V3::PortGen::PushChannelC(top, tltest);
-        V3::PortGen::PushChannelE(top, tltest);
         V3::PortGen::PushChannelD(top, tltest);
 
         // Tock
@@ -183,6 +180,11 @@ int main(int argc, char **argv)
         // Pull 'ready's
         V3::PortGen::PullChannelB(top, tltest);
         V3::PortGen::PullChannelD(top, tltest);
+
+        // Push 'ready's
+        V3::PortGen::PushChannelA(top, tltest);
+        V3::PortGen::PushChannelC(top, tltest);
+        V3::PortGen::PushChannelE(top, tltest);
 
         //
         V3EvalPosedge(time, top);
