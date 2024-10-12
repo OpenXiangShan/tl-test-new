@@ -110,6 +110,8 @@ extern "C" void TileLinkPullChannelC(
     uint8_t*            size,
     uint8_t*            source,
     uint64_t*           address,
+    uint8_t*            user_needHint,
+    uint64_t*           user_vaddr,
     uint8_t*            user_alias,
     uint64_t*           data0,
     uint64_t*           data1,

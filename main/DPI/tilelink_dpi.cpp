@@ -244,6 +244,8 @@ extern "C" void TileLinkPullChannelC(
     uint8_t*            size,
     uint8_t*            source,
     uint64_t*           address,
+    uint8_t*            user_needHint,
+    uint64_t*           user_vaddr,
     uint8_t*            user_alias,
     uint64_t*           data0,
     uint64_t*           data1,
@@ -252,13 +254,15 @@ extern "C" void TileLinkPullChannelC(
     uint8_t*            corrupt)
 {
     TLSequencer::IOPort& port = passive->IO(deviceId);
-    *valid      =  port.c.valid;
-    *opcode     =  port.c.opcode;
-    *param      =  port.c.param;
-    *size       =  port.c.size;
-    *source     =  port.c.source;
-    *address    =  port.c.address;
-    *user_alias =  0;
+    *valid          =  port.c.valid;
+    *opcode         =  port.c.opcode;
+    *param          =  port.c.param;
+    *size           =  port.c.size;
+    *source         =  port.c.source;
+    *address        =  port.c.address;
+    *user_needHint  =  port.c.needHint;
+    *user_vaddr     =  port.c.vaddr;
+    *user_alias     =  0;
     *data0      = (uint64_t(port.c.data->data[0]))
                 | (uint64_t(port.c.data->data[1])   <<  8)
                 | (uint64_t(port.c.data->data[2])   << 16)

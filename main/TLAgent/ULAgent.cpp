@@ -8,6 +8,13 @@
 #include <memory>
 #include "ULAgent.h"
 
+
+//
+#ifndef ULAGENT_TRAIN_PREFETCH
+#   define ULAGENT_TRAIN_PREFETCH        1
+#endif
+
+
 namespace tl_agent {
 
     ULAgent::ULAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t> *gb, UncachedBoard<paddr_t>* ubs, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
@@ -346,6 +353,12 @@ namespace tl_agent {
         req_a->size     = ceil(log2((double)DATASIZE));
         req_a->mask     = 0xffffffffUL;
         req_a->source   = this->idpool.getid();
+        req_a->vaddr    = address;
+#ifdef ULAGENT_TRAIN_PREFETCH
+        req_a->needHint = 1;
+#else
+        req_a->needHint = 0;
+#endif
         pendingA.init(req_a, 1);
 
         if (glbl.cfg.verbose_xact_sequenced)
@@ -370,6 +383,11 @@ namespace tl_agent {
         req_a->size     = size;
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
+#ifdef ULAGENT_TRAIN_PREFETCH
+        req_a->needHint = 1;
+#else
+        req_a->needHint = 0;
+#endif
         pendingA.init(req_a, 1);
 
         if (glbl.cfg.verbose_xact_sequenced)
@@ -398,6 +416,11 @@ namespace tl_agent {
         req_a->mask     = 0xffffffffUL;
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
+#ifdef ULAGENT_TRAIN_PREFETCH
+        req_a->needHint = 1;
+#else
+        req_a->needHint = 0;
+#endif
         pendingA.init(req_a, DATASIZE / BEATSIZE);
 
         if (glbl.cfg.verbose_xact_sequenced)
@@ -426,6 +449,11 @@ namespace tl_agent {
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
+#ifdef ULAGENT_TRAIN_PREFETCH
+        req_a->needHint = 1;
+#else
+        req_a->needHint = 0;
+#endif
         int nrBeat = ceil((float)pow(2, size) / (float)BEATSIZE);
         pendingA.init(req_a, nrBeat);
 

@@ -37,8 +37,12 @@
 
 
 //
-#ifndef CAGENT_TRAIN_PREFETCH
-#   define CAGENT_TRAIN_PREFETCH        1
+#ifndef CAGENT_TRAIN_PREFETCH_A
+#   define CAGENT_TRAIN_PREFETCH_A      1
+#endif
+
+#ifndef CAGENT_TRAIN_PREFETCH_C
+#   define CAGENT_TRAIN_PREFETCH_C      1
 #endif
 
 
@@ -228,6 +232,12 @@ namespace tl_agent {
         req_c->source   = this->probeIDpool.getid();
         req_c->dirty    = 1;
         req_c->alias    = b->alias;
+        req_c->vaddr    = b->address;
+#if CAGENT_TRAIN_PREFETCH_C
+        req_c->needHint = 1;
+#else
+        req_c->needHint = 0;
+#endif
         // Log("== id == handleB %d\n", *req_c->source);
         Log(this, ShowBase().Hex().Append("Accepting over Probe to ProbeAck: ", uint64_t(b->source), " -> ", uint64_t(req_c->source)).EndLine());
         if (exact_status[b->alias] == S_SENDING_A || exact_status[b->alias] == S_INVALID || exact_status[b->alias] == S_A_WAITING_D) {
@@ -978,7 +988,7 @@ namespace tl_agent {
         req_a->source   = this->idpool.getid();
         req_a->alias    = alias;
         req_a->vaddr    = address;
-#if CAGENT_TRAIN_PREFETCH
+#if CAGENT_TRAIN_PREFETCH_A
         req_a->needHint = 1;
 #else
         req_a->needHint = 0;
@@ -1048,7 +1058,7 @@ namespace tl_agent {
         req_a->source   = this->idpool.getid();
         req_a->alias    = alias;
         req_a->vaddr    = address;
-#if CAGENT_TRAIN_PREFETCH
+#if CAGENT_TRAIN_PREFETCH_A
         req_a->needHint = 1;
 #else
         req_a->needHint = 0;
@@ -1097,6 +1107,12 @@ namespace tl_agent {
         // Log("== id == release %d\n", *req_c->source);
         req_c->data     = data;
         req_c->alias    = alias;
+        req_c->vaddr    = address;
+#if CAGENT_TRAIN_PREFETCH_C
+        req_c->needHint = 1;
+#else
+        req_c->needHint = 0;
+#endif
         pendingC.init(req_c, DATASIZE / BEATSIZE);
 
         if (glbl.cfg.verbose_xact_sequenced)
@@ -1176,6 +1192,12 @@ namespace tl_agent {
             req_c->source   = this->idpool.getid();
             req_c->dirty    = 0;
             req_c->alias    = alias;
+            req_c->vaddr    = address;
+#if CAGENT_TRAIN_PREFETCH_C
+            req_c->needHint = 1;
+#else
+            req_c->needHint = 0;
+#endif
 
 #           if CAGENT_INCLUSIVE_SYSTEM == 1
             {
@@ -1233,6 +1255,12 @@ namespace tl_agent {
             req_c->size     = ceil(log2((double)DATASIZE));
             req_c->source   = this->idpool.getid();
             req_c->alias    = alias;
+            req_c->vaddr    = address;
+#if CAGENT_TRAIN_PREFETCH_C
+            req_c->needHint = 1;
+#else
+            req_c->needHint = 0;
+#endif
 
             bool acquirePermPrev = false;
             if (acquirePermBoard->haskey(address))
