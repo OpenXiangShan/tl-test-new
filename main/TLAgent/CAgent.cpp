@@ -36,6 +36,12 @@
 #endif
 
 
+//
+#ifndef CAGENT_TRAIN_PREFETCH
+#   define CAGENT_TRAIN_PREFETCH        1
+#endif
+
+
 namespace tl_agent {
 
     TLPermission capGenPrivByProbe(TLLocalContext* ctx, TLParamProbe param) {
@@ -186,6 +192,8 @@ namespace tl_agent {
         this->port->a.param    = a->param;
         this->port->a.mask     = a->mask;
         this->port->a.source   = a->source;
+        this->port->a.needHint = a->needHint;
+        this->port->a.vaddr    = a->vaddr;
         this->port->a.alias    = a->alias;
         this->port->a.valid    = true;
         return OK;
@@ -969,6 +977,12 @@ namespace tl_agent {
         req_a->mask     = (0xffffffffUL);
         req_a->source   = this->idpool.getid();
         req_a->alias    = alias;
+        req_a->vaddr    = address;
+#if CAGENT_TRAIN_PREFETCH
+        req_a->needHint = 1;
+#else
+        req_a->needHint = 0;
+#endif
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
 
@@ -1033,6 +1047,12 @@ namespace tl_agent {
         req_a->mask     = (0xffffffffUL);
         req_a->source   = this->idpool.getid();
         req_a->alias    = alias;
+        req_a->vaddr    = address;
+#if CAGENT_TRAIN_PREFETCH
+        req_a->needHint = 1;
+#else
+        req_a->needHint = 0;
+#endif
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
 

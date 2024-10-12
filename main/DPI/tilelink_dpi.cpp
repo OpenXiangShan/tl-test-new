@@ -128,6 +128,8 @@ extern "C" void TileLinkPullChannelA(
     uint8_t*            size,
     uint8_t*            source,
     uint64_t*           address,
+    uint8_t*            user_needHint,
+    uint64_t*           user_vaddr,
     uint8_t*            user_alias,
     uint32_t*           mask,
     uint64_t*           data0,
@@ -138,47 +140,49 @@ extern "C" void TileLinkPullChannelA(
 {
     TLSequencer::IOPort& port = passive->IO(deviceId);
 
-    *valid      =  port.a.valid;
-    *opcode     =  port.a.opcode;
-    *param      =  port.a.param;
-    *size       =  port.a.size;
-    *source     =  port.a.source;
-    *address    =  port.a.address;
-    *user_alias =  port.a.alias;
-    *mask       =  port.a.mask;
-    *data0      = (uint64_t(port.a.data->data[0]))
-                | (uint64_t(port.a.data->data[1])   << 8)
-                | (uint64_t(port.a.data->data[2])   << 16)
-                | (uint64_t(port.a.data->data[3])   << 24)
-                | (uint64_t(port.a.data->data[4])   << 32)
-                | (uint64_t(port.a.data->data[5])   << 40)
-                | (uint64_t(port.a.data->data[6])   << 48)
-                | (uint64_t(port.a.data->data[7])   << 56);
-    *data1      = (uint64_t(port.a.data->data[8]))
-                | (uint64_t(port.a.data->data[9])   << 8)
-                | (uint64_t(port.a.data->data[10])  << 16)
-                | (uint64_t(port.a.data->data[11])  << 24)
-                | (uint64_t(port.a.data->data[12])  << 32)
-                | (uint64_t(port.a.data->data[13])  << 40)
-                | (uint64_t(port.a.data->data[14])  << 48)
-                | (uint64_t(port.a.data->data[15])  << 56);
-    *data2      = (uint64_t(port.a.data->data[16]))
-                | (uint64_t(port.a.data->data[17])  << 8)
-                | (uint64_t(port.a.data->data[18])  << 16)
-                | (uint64_t(port.a.data->data[19])  << 24)
-                | (uint64_t(port.a.data->data[20])  << 32)
-                | (uint64_t(port.a.data->data[21])  << 40)
-                | (uint64_t(port.a.data->data[22])  << 48)
-                | (uint64_t(port.a.data->data[23])  << 56);
-    *data3      = (uint64_t(port.a.data->data[24]))
-                | (uint64_t(port.a.data->data[25])  << 8)
-                | (uint64_t(port.a.data->data[26])  << 16)
-                | (uint64_t(port.a.data->data[27])  << 24)
-                | (uint64_t(port.a.data->data[28])  << 32)
-                | (uint64_t(port.a.data->data[29])  << 40)
-                | (uint64_t(port.a.data->data[30])  << 48)
-                | (uint64_t(port.a.data->data[31])  << 56);
-    *corrupt    =  0;
+    *valid          =  port.a.valid;
+    *opcode         =  port.a.opcode;
+    *param          =  port.a.param;
+    *size           =  port.a.size;
+    *source         =  port.a.source;
+    *address        =  port.a.address;
+    *user_needHint  =  port.a.needHint;
+    *user_vaddr     =  port.a.vaddr;
+    *user_alias     =  port.a.alias;
+    *mask           =  port.a.mask;
+    *data0          = (uint64_t(port.a.data->data[0]))
+                    | (uint64_t(port.a.data->data[1])   << 8)
+                    | (uint64_t(port.a.data->data[2])   << 16)
+                    | (uint64_t(port.a.data->data[3])   << 24)
+                    | (uint64_t(port.a.data->data[4])   << 32)
+                    | (uint64_t(port.a.data->data[5])   << 40)
+                    | (uint64_t(port.a.data->data[6])   << 48)
+                    | (uint64_t(port.a.data->data[7])   << 56);
+    *data1          = (uint64_t(port.a.data->data[8]))
+                    | (uint64_t(port.a.data->data[9])   << 8)
+                    | (uint64_t(port.a.data->data[10])  << 16)
+                    | (uint64_t(port.a.data->data[11])  << 24)
+                    | (uint64_t(port.a.data->data[12])  << 32)
+                    | (uint64_t(port.a.data->data[13])  << 40)
+                    | (uint64_t(port.a.data->data[14])  << 48)
+                    | (uint64_t(port.a.data->data[15])  << 56);
+    *data2          = (uint64_t(port.a.data->data[16]))
+                    | (uint64_t(port.a.data->data[17])  << 8)
+                    | (uint64_t(port.a.data->data[18])  << 16)
+                    | (uint64_t(port.a.data->data[19])  << 24)
+                    | (uint64_t(port.a.data->data[20])  << 32)
+                    | (uint64_t(port.a.data->data[21])  << 40)
+                    | (uint64_t(port.a.data->data[22])  << 48)
+                    | (uint64_t(port.a.data->data[23])  << 56);
+    *data3          = (uint64_t(port.a.data->data[24]))
+                    | (uint64_t(port.a.data->data[25])  << 8)
+                    | (uint64_t(port.a.data->data[26])  << 16)
+                    | (uint64_t(port.a.data->data[27])  << 24)
+                    | (uint64_t(port.a.data->data[28])  << 32)
+                    | (uint64_t(port.a.data->data[29])  << 40)
+                    | (uint64_t(port.a.data->data[30])  << 48)
+                    | (uint64_t(port.a.data->data[31])  << 56);
+    *corrupt        =  0;
 }
 //
 

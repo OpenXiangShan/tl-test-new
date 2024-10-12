@@ -37,6 +37,8 @@ namespace tl_agent {
         Usr                 usr;
         Echo                echo;
         uint8_t             corrupt;
+        uint8_t             needHint;
+        paddr_t             vaddr;
         uint8_t             alias;
     };
 
