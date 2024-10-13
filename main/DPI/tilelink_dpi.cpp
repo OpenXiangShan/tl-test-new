@@ -126,7 +126,7 @@ extern "C" void TileLinkPullChannelA(
     uint8_t*            opcode,
     uint8_t*            param,
     uint8_t*            size,
-    uint8_t*            source,
+    uint64_t*           source,
     uint64_t*           address,
     uint8_t*            user_needHint,
     uint64_t*           user_vaddr,
@@ -196,7 +196,7 @@ extern "C" void TileLinkPushChannelB(
     const uint8_t       opcode,
     const uint8_t       param,
     const uint8_t       size,
-    const uint8_t       source,
+    const uint64_t      source,
     const uint64_t      address,
     const uint32_t      mask,
     const uint64_t      data0,
@@ -242,7 +242,7 @@ extern "C" void TileLinkPullChannelC(
     uint8_t*            opcode,
     uint8_t*            param,
     uint8_t*            size,
-    uint8_t*            source,
+    uint64_t*           source,
     uint64_t*           address,
     uint8_t*            user_needHint,
     uint64_t*           user_vaddr,
@@ -309,8 +309,8 @@ extern "C" void TileLinkPushChannelD(
     const uint8_t       opcode,
     const uint8_t       param,
     const uint8_t       size,
-    const uint8_t       source,
-    const uint8_t       sink,
+    const uint64_t      source,
+    const uint64_t      sink,
     const uint8_t       denied,
     const uint64_t      data0,
     const uint64_t      data1,
@@ -385,7 +385,7 @@ extern "C" void TileLinkPushChannelE(
 extern "C" void TileLinkPullChannelE(
     const int           deviceId,
     uint8_t*            valid,
-    uint8_t*            sink)
+    uint64_t*           sink)
 {
     TLSequencer::IOPort& port = passive->IO(deviceId);
     *valid = port.e.valid;
