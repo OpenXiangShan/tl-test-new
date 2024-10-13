@@ -82,7 +82,7 @@ import "DPI-C" function void TileLinkPullChannelA (
     output  byte            opcode,
     output  byte            param,
     output  byte            size,
-    output  byte            source,
+    output  longint         source,
     output  longint         address,
     output  byte            user_needHint,
     output  longint         user_vaddr,
@@ -102,7 +102,7 @@ function void SvTileLinkPullChannelA (
     output  logic [2:0]     opcode,
     output  logic [2:0]     param,
     output  logic [2:0]     size,
-    output  logic [4:0]     source,
+    output  logic [63:0]    source,
     output  logic [35:0]    address,
     output  logic           user_needHint,
     output  logic [35:0]    user_vaddr,
@@ -147,7 +147,7 @@ import "DPI-C" function void TileLinkPushChannelB (
     input   byte            opcode,
     input   byte            param,
     input   byte            size,
-    input   byte            source,
+    input   longint         source,
     input   longint         address,
     input   int             mask,
     input   longint         data0,
@@ -164,7 +164,7 @@ function void SvTileLinkPushChannelB (
     input   logic [2:0]     opcode,
     input   logic [1:0]     param,
     input   logic [2:0]     size,
-    input   logic [4:0]     source,
+    input   logic [63:0]    source,
     input   logic [35:0]    address,
     input   logic [31:0]    mask,
     input   logic [255:0]   data,
@@ -263,7 +263,7 @@ import "DPI-C" function void TileLinkPullChannelC (
     output  byte            opcode,
     output  byte            param,
     output  byte            size,
-    output  byte            source,
+    output  longint         source,
     output  longint         address,
     output  byte            user_needHint,
     output  longint         user_vaddr,
@@ -282,7 +282,7 @@ function void SvTileLinkPullChannelC (
     output  logic [2:0]     opcode,
     output  logic [2:0]     param,
     output  logic [2:0]     size,
-    output  logic [4:0]     source,
+    output  logic [63:0]    source,
     output  logic [35:0]    address,
     output  logic           user_needHint,
     output  logic [35:0]    user_vaddr,
@@ -325,8 +325,8 @@ import "DPI-C" function void TileLinkPushChannelD (
     input   byte            opcode,
     input   byte            param,
     input   byte            size,
-    input   byte            source,
-    input   byte            sink,
+    input   longint         source,
+    input   longint         sink,
     input   byte            denied,
     input   longint         data0,
     input   longint         data1,
@@ -342,8 +342,8 @@ function void SvTileLinkPushChannelD (
     input   logic [2:0]     opcode,
     input   logic [1:0]     param,
     input   logic [2:0]     size,
-    input   logic [4:0]     source,
-    input   logic [7:0]     sink,
+    input   logic [63:0]    source,
+    input   logic [63:0]    sink,
     input   logic           denied,
     input   logic [255:0]   data,
     input   logic           corrupt
@@ -453,14 +453,14 @@ endfunction
 import "DPI-C" function void TileLinkPullChannelE (
     input   int             device_id,
     output  byte            valid,
-    output  byte            sink
+    output  longint         sink
 );
 
 function void SvTileLinkPullChannelE (
     input   int             device_id,
     input   logic           resetn,
     output  logic           valid,
-    output  logic [7:0]     sink
+    output  logic [63:0]    sink
 );
 
     if (1) begin
