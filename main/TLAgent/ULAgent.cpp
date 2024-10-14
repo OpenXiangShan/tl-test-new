@@ -383,6 +383,7 @@ namespace tl_agent {
         req_a->size     = size;
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
+        req_a->vaddr    = address;
 #ifdef ULAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
@@ -416,6 +417,7 @@ namespace tl_agent {
         req_a->mask     = 0xffffffffUL;
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
+        req_a->vaddr    = address;
 #ifdef ULAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
@@ -449,6 +451,7 @@ namespace tl_agent {
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
+        req_a->vaddr    = address;
 #ifdef ULAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
