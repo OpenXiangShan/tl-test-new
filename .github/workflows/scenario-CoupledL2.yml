@@ -181,7 +181,7 @@ jobs:
 
     - name: Install Verilator
       working-directory: ${{ github.workspace }}
-      run:
+      run: |
         tar -zxf ${{ env.VERILATOR_ARCHIVE }}
         cd verilator
         sudo make install
