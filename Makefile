@@ -135,6 +135,23 @@ run: FORCE tltest-config-postbuild
 	@cp ./main/build/tltest.ini ./run/
 	@bash ./scripts/run_v3lt.sh
 
+run_coupledL2-test-l2l3: FORCE tltest-config-coupledL2-test-l2l3
+	@rm -rf ./run
+	@mkdir ./run
+	@cp ./main/build/tltest_v3lt ./run/
+	@cp ./main/build/tltest_portgen.so ./run/
+	@cp ./main/build/tltest.ini ./run/
+	@bash ./scripts/run_v3lt.sh
+
+run_coupledL2-test-l2l3l2: FORCE tltest-config-coupledL2-test-l2l3l2
+	@rm -rf ./run
+	@mkdir ./run
+	@cp ./main/build/tltest_v3lt ./run/
+	@cp ./main/build/tltest_portgen.so ./run/
+	@cp ./main/build/tltest.ini ./run/
+	@bash ./scripts/run_v3lt.sh
+
+
 run-with-portgen: FORCE tltest-config-postbuild tltest-portgen
 	@rm -rf ./run
 	@mkdir ./run

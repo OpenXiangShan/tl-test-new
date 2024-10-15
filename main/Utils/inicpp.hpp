@@ -32,6 +32,8 @@
 #include <cstdio>
 #include <ctime>
 #include <map>
+#include <cstdint>
+#include <sstream>
 
 #include <codecvt>
 #include <locale>
@@ -162,18 +164,24 @@ namespace inicpp
 			return _sectionMap.empty();
 		}
 
-		int toInt(const std::string &Key)
+		uint64_t toInt(const std::string &Key)
 		{
 			if (!_sectionMap.count(Key))
 			{
 				return 0;
 			}
 
-			int result = 0;
+			uint64_t result = 0;
 
 			try
 			{
-				result = std::stoi(_sectionMap[Key].Value);
+				std::string value = _sectionMap[Key].Value;
+				std::istringstream iss(value);
+
+				if (value.find("0x") == 0)
+					iss >> std::hex >> result;
+				else
+				 	iss >> std::dec >> result;
 			}
 			catch (const std::invalid_argument &e)
 			{

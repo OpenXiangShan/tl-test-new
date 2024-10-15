@@ -166,15 +166,17 @@ jobs:
       matrix:
         os: [ubuntu-20.04, ubuntu-22.04]
         case:
-          - { id: l2l3,   name: L2-L3    }
-          - { id: l2l3l2, name: L2-L3-L2 }
+          - { id: l2l3,   name: L2-L3   , mode: FUZZ_ARI }
+          - { id: l2l3l2, name: L2-L3-L2, mode: FUZZ_ARI }
+          - { id: l2l3,   name: L2-L3   , mode: FUZZ_STREAM }
+          - { id: l2l3l2, name: L2-L3-L2, mode: FUZZ_STREAM }
         compiler:
           - { cc: clang-16, cxx: clang++-16 }
           - { cc: gcc,      cxx: g++        }
         exclude:
           - { os: ubuntu-20.04, compiler: { cc: gcc, cxx: g++ } }
     runs-on: ${{ matrix.os }}
-    name: Run | ${{ matrix.case.name }} | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
+    name: Run | ${{ matrix.case.name }} | ${{ matrix.case.mode }} | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
     env:
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ${{ matrix.os }}
@@ -200,7 +202,25 @@ jobs:
 
     - name: Unpack artifact
       working-directory: ${{ github.workspace }}
-      run: tar -zxf ${{ env.TLTEST_ARCHIVE }}
+      run: tar -zxvf ${{ env.TLTEST_ARCHIVE }}
+
+    - name: Setup mode configuration FUZZ_ARI
+      if: matrix.case.mode == 'FUZZ_ARI'
+      run: |
+        pwd
+        ls
+        sed -i 's/mode.0.*/mode.0 = FUZZ_ARI/g' ./configs/user.tltest.ini
+        sed -i 's/mode.1.*/mode.1 = FUZZ_ARI/g' ./configs/user.tltest.ini
+        cat ./configs/user.tltest.ini
+
+    - name: Setup mode configuration FUZZ_STREAM
+      if: matrix.case.mode == 'FUZZ_STREAM'
+      run: |
+        pwd
+        ls
+        sed -i 's/mode.0.*/mode.0 = FUZZ_STREAM/g' ./configs/user.tltest.ini
+        sed -i 's/mode.1.*/mode.1 = FUZZ_STREAM/g' ./configs/user.tltest.ini
+        cat ./configs/user.tltest.ini
 
     - name: Run TL-Test-New for CoupledL2
       run: |

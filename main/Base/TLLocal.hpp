@@ -5,7 +5,18 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <unordered_map>
 
+
+enum class TLSequenceMode {
+    PASSIVE         = 0,
+    FUZZ_ARI,
+    FUZZ_STREAM,
+    FUZZ_COUNTER,
+    FUZZ_COUNTER_SYNC,
+    STREAM_COPY2,
+    STREAM_MULTI
+};
 
 struct TLLocalConfig {
 public:
@@ -15,8 +26,15 @@ public:
     unsigned int        masterCountPerCoreTLC;              // TL-C master count per core
     unsigned int        masterCountPerCoreTLUL;             // TL-UL master count per core
 
-    uint64_t            ariInterval;                        // Auto Range Iteration interval
-    uint64_t            ariTarget;                          // Auto Range Iteration target
+    std::unordered_map<int, TLSequenceMode> sequenceModes;  // Agent sequence modes
+
+    uint64_t            fuzzARIInterval;                        // Fuzz Auto Range Iteration interval
+    uint64_t            fuzzARITarget;                          // Fuzz Auto Range Iteration target
+
+    uint64_t            fuzzStreamInterval;                     // Fuzz Stream interval
+    uint64_t            fuzzStreamStep;                         // Fuzz Stream step
+    uint64_t            fuzzStreamStart;                        // Fuzz Stream start address
+    uint64_t            fuzzStreamEnd;                          // Fuzz Stream end address
 
 public:
     size_t                          GetAgentCount() const noexcept;
