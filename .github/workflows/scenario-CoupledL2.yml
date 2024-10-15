@@ -185,6 +185,9 @@ jobs:
       with:
         path: repo
 
+    - name: Checkout CoupledL2
+      run: git submodule update --init dut/CoupledL2
+
     - name: Setup Clang 16
       if: matrix.compiler.cc == 'clang-16'
       working-directory: ${{ github.workspace }}
