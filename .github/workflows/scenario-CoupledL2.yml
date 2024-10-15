@@ -166,15 +166,17 @@ jobs:
       matrix:
         os: [ubuntu-20.04, ubuntu-22.04]
         case:
-          - { id: l2l3,   name: L2-L3    }
-          - { id: l2l3l2, name: L2-L3-L2 }
+          - { id: l2l3,   name: L2-L3   , mode: FUZZ_ARI }
+          - { id: l2l3l2, name: L2-L3-L2, mode: FUZZ_ARI }
+          - { id: l2l3,   name: L2-L3   , mode: FUZZ_STREAM }
+          - { id: l2l3l2, name: L2-L3-L2, mode: FUZZ_STREAM }
         compiler:
           - { cc: clang-16, cxx: clang++-16 }
           - { cc: gcc,      cxx: g++        }
         exclude:
           - { os: ubuntu-20.04, compiler: { cc: gcc, cxx: g++ } }
     runs-on: ${{ matrix.os }}
-    name: Run | ${{ matrix.case.name }} | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
+    name: Run | ${{ matrix.case.name }} | ${{ matrix.case.mode }} | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
     env:
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ${{ matrix.os }}
@@ -197,6 +199,20 @@ jobs:
       with:
         name: ${{ env.TLTEST_ARCHIVE }}
         path: ${{ github.workspace }}
+
+    - name: Setup mode configuration FUZZ_ARI
+      working-directory: ${{ github.workspace }}
+      if: matrix.case.mode == 'FUZZ_ARI'
+      run: |
+        rm configs/user.tltest.ini
+        cp configs/user.tltest.FUZZ_ARI.ini configs/user.tltest.ini
+
+    - name: Setup mode configuration FUZZ_STREAM
+      working-directory: ${{ github.workspace }}
+      if: matrix.case.mode == 'FUZZ_STREAM'
+      run: |
+        rm configs/user.tltest.ini
+        cp configs/user.tltest.FUZZ_STREAM.ini configs/user.tltest.ini
 
     - name: Unpack artifact
       working-directory: ${{ github.workspace }}
