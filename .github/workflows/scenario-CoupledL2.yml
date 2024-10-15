@@ -214,7 +214,7 @@ jobs:
       id: get_sha_CoupledL2
       working-directory: ${{ github.workspace }}
       run: |
-        cd dut/CoupledL2
+        cd repo/dut/CoupledL2
         CURRENT_HASH=$(git rev-parse HEAD)
         echo "${CURRENT_HASH}"
         echo "CURRENT_HASH=${CURRENT_HASH}" >> $GITHUB_ENV
