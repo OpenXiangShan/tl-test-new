@@ -209,18 +209,18 @@ jobs:
       run: |
         pwd
         ls
-        sed -i 's/mode.0.*/mode.0 = FUZZ_ARI/g' ./main/build/tltest.ini
-        sed -i 's/mode.1.*/mode.1 = FUZZ_ARI/g' ./main/build/tltest.ini
-        cat ./main/build/tltest.ini
+        sed -i 's/mode.0.*/mode.0 = FUZZ_ARI/g' ./configs/user.tltest.ini
+        sed -i 's/mode.1.*/mode.1 = FUZZ_ARI/g' ./configs/user.tltest.ini
+        cat ./configs/user.tltest.ini
 
     - name: Setup mode configuration FUZZ_STREAM
       if: matrix.case.mode == 'FUZZ_STREAM'
       run: |
         pwd
         ls
-        sed -i 's/mode.0.*/mode.0 = FUZZ_STREAM/g' ./main/build/tltest.ini
-        sed -i 's/mode.1.*/mode.1 = FUZZ_STREAM/g' ./main/build/tltest.ini
-        cat ./main/build/tltest.ini
+        sed -i 's/mode.0.*/mode.0 = FUZZ_STREAM/g' ./configs/user.tltest.ini
+        sed -i 's/mode.1.*/mode.1 = FUZZ_STREAM/g' ./configs/user.tltest.ini
+        cat ./configs/user.tltest.ini
 
     - name: Run TL-Test-New for CoupledL2
       run: |
