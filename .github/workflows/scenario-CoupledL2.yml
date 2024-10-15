@@ -47,7 +47,7 @@ jobs:
         path: repo
 
     - name: Checkout CoupledL2
-      run: git submodule update dut/CoupledL2 --init
+      run: git submodule init dut/CoupledL2
 
     - name: Extract submodule SHA
       id: get_sha_CoupledL2
