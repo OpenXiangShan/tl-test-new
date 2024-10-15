@@ -56,7 +56,7 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
 
     if (this->mode == TLSequenceMode::FUZZ_ARI)
     {
-        LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] in FUZZ_ARI mode"));
+        LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] in FUZZ_ARI mode").EndLine());
 
         for (size_t i = 0; i < FUZZ_ARI_RANGES.size(); i++)
             this->fuzzARIRangeOrdinal.push_back(i);
@@ -76,13 +76,13 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
     }
     else if (this->mode == TLSequenceMode::FUZZ_STREAM)
     {
-        LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] in FUZZ_STREAM mode"));
+        LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] in FUZZ_STREAM mode").EndLine());
         LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] stream steps ")
-            .Hex().ShowBase().Append(this->fuzzStreamStep));
+            .Hex().ShowBase().Append(this->fuzzStreamStep).EndLine());
         LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] stream starts at ")
-            .Hex().ShowBase().Append(this->fuzzStreamStart));
+            .Hex().ShowBase().Append(this->fuzzStreamStart).EndLine());
         LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] stream ends at ")
-            .Hex().ShowBase().Append(this->fuzzStreamEnd));
+            .Hex().ShowBase().Append(this->fuzzStreamEnd).EndLine());
     }
 }
 
