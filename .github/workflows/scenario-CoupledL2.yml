@@ -208,15 +208,15 @@ jobs:
       working-directory: ${{ github.workspace }}
       if: matrix.case.mode == 'FUZZ_ARI'
       run: |
-        rm configs/user.tltest.ini
-        cp configs/user.tltest.FUZZ_ARI.ini configs/user.tltest.ini
+        sed -i 's/mode.0.*/mode.0 = FUZZ_ARI/g' ./main/build/tltest.ini
+        sed -i 's/mode.1.*/mode.1 = FUZZ_ARI/g' ./main/build/tltest.ini
 
     - name: Setup mode configuration FUZZ_STREAM
       working-directory: ${{ github.workspace }}
       if: matrix.case.mode == 'FUZZ_STREAM'
       run: |
-        rm configs/user.tltest.ini
-        cp configs/user.tltest.FUZZ_STREAM.ini configs/user.tltest.ini
+        sed -i 's/mode.0.*/mode.0 = FUZZ_STREAM/g' ./main/build/tltest.ini
+        sed -i 's/mode.1.*/mode.1 = FUZZ_STREAM/g' ./main/build/tltest.ini
 
     - name: Run TL-Test-New for CoupledL2
       working-directory: ${{ github.workspace }}
