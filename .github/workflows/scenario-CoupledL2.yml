@@ -202,24 +202,25 @@ jobs:
 
     - name: Unpack artifact
       working-directory: ${{ github.workspace }}
-      run: tar -zxf ${{ env.TLTEST_ARCHIVE }}
+      run: tar -zxvf ${{ env.TLTEST_ARCHIVE }}
 
     - name: Setup mode configuration FUZZ_ARI
-      working-directory: ${{ github.workspace }}
       if: matrix.case.mode == 'FUZZ_ARI'
       run: |
+        pwd
+        ls
         sed -i 's/mode.0.*/mode.0 = FUZZ_ARI/g' ./main/build/tltest.ini
         sed -i 's/mode.1.*/mode.1 = FUZZ_ARI/g' ./main/build/tltest.ini
 
     - name: Setup mode configuration FUZZ_STREAM
-      working-directory: ${{ github.workspace }}
       if: matrix.case.mode == 'FUZZ_STREAM'
       run: |
+        pwd
+        ls
         sed -i 's/mode.0.*/mode.0 = FUZZ_STREAM/g' ./main/build/tltest.ini
         sed -i 's/mode.1.*/mode.1 = FUZZ_STREAM/g' ./main/build/tltest.ini
 
     - name: Run TL-Test-New for CoupledL2
-      working-directory: ${{ github.workspace }}
       run: |
         make run
 
