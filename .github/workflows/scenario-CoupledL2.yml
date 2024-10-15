@@ -47,30 +47,47 @@ jobs:
         path: repo
         submodules: recursive
 
+    - name: Extract submodule SHA
+      id: get_sha_CoupledL2
+      working-directory: ${{ github.workspace }}
+      run: |
+        cd dut/CoupledL2
+        CURRENT_HASH=$(git rev-parse HEAD)
+        echo "${CURRENT_HASH}"
+        echo "CURRENT_HASH=${CURRENT_HASH}" >> $GITHUB_ENV
+
+    - name: Cache CoupledL2 Build
+      id: cache
+      uses: actions/cache@v4
+      env:
+        cache-name: coupledL2-cache-${{ env.CURRENT_HASH }}
+      with:
+        path: ${{ github.workspace }}/${{ env.COUPLEDL2_ARCHIVE }}
+        key: coupledL2-cache-${{ env.CURRENT_HASH }}
+
     - name: Setup Scala
+      if: steps.cache.outputs.cache-hit != 'true'
       uses: olafurpg/setup-scala@v10
 
     - name: Setup Mill
+      if: steps.cache.outputs.cache-hit != 'true'
       run: |
         sh -c "curl -L https://github.com/com-lihaoyi/mill/releases/download/0.11.1/0.11.1 > /usr/local/bin/mill && chmod +x /usr/local/bin/mill"
 
     - name: Compile
+      if: steps.cache.outputs.cache-hit != 'true'
       run: |
         make coupledL2-compile
 
     - name: Build verilog
+      if: steps.cache.outputs.cache-hit != 'true'
       run: |
         make coupledL2-verilog-test-top-${{ matrix.case.id }}
 
     - name: Tar up repository
+      if: steps.cache.outputs.cache-hit != 'true'
       working-directory: ${{ github.workspace }}
       run: tar -zcf ${{ env.COUPLEDL2_ARCHIVE }} repo/dut/CoupledL2/build
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        path: ${{ github.workspace }}/${{ env.COUPLEDL2_ARCHIVE }}
-        name: ${{ env.COUPLEDL2_ARCHIVE }}
 
   setup-verilator:
     strategy:
@@ -187,12 +204,25 @@ jobs:
         sudo make install
         verilator --version
 
-    - name: Download CoupledL2 artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: ${{ env.COUPLEDL2_ARCHIVE }}
-        path: ${{ github.workspace }}
+    - name: Extract submodule SHA
+      id: get_sha_CoupledL2
+      working-directory: ${{ github.workspace }}
+      run: |
+        cd dut/CoupledL2
+        CURRENT_HASH=$(git rev-parse HEAD)
+        echo "${CURRENT_HASH}"
+        echo "CURRENT_HASH=${CURRENT_HASH}" >> $GITHUB_ENV
 
+    - name: Fetch cached CoupledL2
+      id: cache
+      uses: actions/cache/restore@v4
+      env:
+        cache-name: coupledL2-cache-${{ env.CURRENT_HASH }}
+      with:
+        path: ${{ github.workspace }}/${{ env.COUPLEDL2_ARCHIVE }}
+        key: coupledL2-cache-${{ env.CURRENT_HASH }}
+        fail-on-cache-miss: true
+    
     - name: Unpack CoupledL2 artifact
       working-directory: ${{ github.workspace }}
       run: tar -zxf ${{ env.COUPLEDL2_ARCHIVE }}
