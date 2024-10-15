@@ -155,11 +155,11 @@ void CFuzzer::caseTest() {
 }
 
 void CFuzzer::tick() {
-    this->randomTest(true);
-//    this->caseTest();
 
     if (this->mode == TLSequenceMode::FUZZ_ARI)
     {
+        this->randomTest(true);
+
         if (this->cAgent->cycle() >= this->fuzzARIRangeIterationTime)
         {
             this->fuzzARIRangeIterationTime += this->fuzzARIRangeIterationInterval;
@@ -190,6 +190,8 @@ void CFuzzer::tick() {
     }
     else if (this->mode == TLSequenceMode::FUZZ_STREAM)
     {
+        this->randomTest(true);
+
         if (this->cAgent->cycle() >= this->fuzzStreamStepTime)
         {
             this->fuzzStreamStepTime += this->fuzzStreamInterval;
