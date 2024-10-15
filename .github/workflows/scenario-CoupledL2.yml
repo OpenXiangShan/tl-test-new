@@ -47,7 +47,7 @@ jobs:
         path: repo
 
     - name: Checkout CoupledL2
-      run: git submodule update dut/CoupledL2
+      run: git submodule update dut/CoupledL2 --init
 
     - name: Extract submodule SHA
       id: get_sha_CoupledL2
@@ -69,7 +69,7 @@ jobs:
 
     - name: Checkout submodules
       if: steps.cache.outputs.cache-hit != 'true'
-      run: git submodule update --init --recursive
+      run: git submodule update --recursive
 
     - name: Setup Scala
       if: steps.cache.outputs.cache-hit != 'true'
