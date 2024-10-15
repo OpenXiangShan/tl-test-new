@@ -200,6 +200,10 @@ jobs:
         name: ${{ env.TLTEST_ARCHIVE }}
         path: ${{ github.workspace }}
 
+    - name: Unpack artifact
+      working-directory: ${{ github.workspace }}
+      run: tar -zxf ${{ env.TLTEST_ARCHIVE }}
+
     - name: Setup mode configuration FUZZ_ARI
       working-directory: ${{ github.workspace }}
       if: matrix.case.mode == 'FUZZ_ARI'
@@ -214,11 +218,8 @@ jobs:
         rm configs/user.tltest.ini
         cp configs/user.tltest.FUZZ_STREAM.ini configs/user.tltest.ini
 
-    - name: Unpack artifact
-      working-directory: ${{ github.workspace }}
-      run: tar -zxf ${{ env.TLTEST_ARCHIVE }}
-
     - name: Run TL-Test-New for CoupledL2
+      working-directory: ${{ github.workspace }}
       run: |
         make run
 
