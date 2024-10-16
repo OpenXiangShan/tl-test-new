@@ -285,14 +285,6 @@ jobs:
       RUN_ARCHIVE: tl-test-new-run-${{ matrix.case.id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
     steps:
 
-    - name: Setup Clang 16
-      if: matrix.compiler.cc == 'clang-16'
-      working-directory: ${{ github.workspace }}
-      run: |
-        wget https://apt.llvm.org/llvm.sh
-        chmod u+x llvm.sh
-        sudo ./llvm.sh 16
-
     - name: Download artifact
       uses: actions/download-artifact@v4
       with:
