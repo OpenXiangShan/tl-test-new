@@ -1,4 +1,4 @@
-name: scenario-CoupledL2
+name: scenario-OpenLLC
 
 on:
   push:
@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
 
-  prebuild-ootb-coupledL2:
+  prebuild-ootb-openLLC:
     strategy:
       fail-fast: false
       matrix:
@@ -35,37 +35,37 @@ jobs:
           - { id: l2l3l2, name: L2-L3-L2 }
 
     runs-on: ${{ matrix.os }}
-    name: Pre-Build | ${{ matrix.case.name }} | OOTB CoupledL2
+    name: Pre-Build | ${{ matrix.case.name }} | OOTB OpenLLC
     env:
-      COUPLEDL2_ARCHIVE: coupledL2-${{ matrix.case.id }}-${{ github.sha }}.tar.gz
+      OPENLLC_ARCHIVE: openLLC-${{ matrix.case.id }}-${{ github.sha }}.tar.gz
 
     steps:
-
+    
     - name: Checkout
       uses: actions/checkout@v4
       with:
         path: repo
 
-    - name: Checkout CoupledL2
-      run: git submodule update --init dut/CoupledL2
+    - name: Checkout OpenLLC
+      run: git submodule update --init dut/OpenLLC
 
     - name: Extract submodule SHA
-      id: get_sha_CoupledL2
+      id: get_sha_OpenLLC
       run: |
-        cd dut/CoupledL2
+        cd dut/OpenLLC
         CURRENT_HASH=$(git rev-parse HEAD)
         echo "${CURRENT_HASH}"
         echo "CURRENT_HASH=${CURRENT_HASH}" >> $GITHUB_ENV
         cd ../..
 
-    - name: Cache CoupledL2 Build
+    - name: Cache OpenLLC Build
       id: cache
       uses: actions/cache@v4
       env:
-        cache-name: coupledL2-cache-${{ env.CURRENT_HASH }}
+        cache-name: openLLC-cache-${{ env.CURRENT_HASH }}
       with:
-        path: ${{ github.workspace }}/${{ env.COUPLEDL2_ARCHIVE }}
-        key: coupledL2-cache-${{ env.CURRENT_HASH }}
+        path: ${{ github.workspace }}/${{ env.OPENLLC_ARCHIVE }}
+        key: openLLC-cache-${{ env.CURRENT_HASH }}
 
     - name: Checkout submodules
       if: steps.cache.outputs.cache-hit != 'true'
@@ -83,17 +83,17 @@ jobs:
     - name: Compile
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
-        make coupledL2-compile
-
+        make openLLC-compile
+  
     - name: Build verilog
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
-        make coupledL2-verilog-test-top-${{ matrix.case.id }}
+        make openLLC-verilog-test-top-${{ matrix.case.id }}
 
     - name: Tar up repository
       if: steps.cache.outputs.cache-hit != 'true'
       working-directory: ${{ github.workspace }}
-      run: tar -zcf ${{ env.COUPLEDL2_ARCHIVE }} repo/dut/CoupledL2/build
+      run: tar -zcf ${{ env.OPENLLC_ARCHIVE }} repo/dut/OpenLLC/build
 
   setup-verilator:
     strategy:
@@ -154,7 +154,7 @@ jobs:
 
   build:
     needs: 
-      - prebuild-ootb-coupledL2 
+      - prebuild-ootb-openLLC
       - setup-verilator
     strategy:
       fail-fast: false
@@ -175,7 +175,7 @@ jobs:
       CI_RUNS_ON: ${{ matrix.os }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      COUPLEDL2_ARCHIVE: coupledL2-${{ matrix.case.id }}-${{ github.sha }}.tar.gz
+      OPENLLC_ARCHIVE: openLLC-${{ matrix.case.id }}-${{ github.sha }}.tar.gz
       TLTEST_ARCHIVE: tl-test-new-${{ matrix.case.id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
       VERILATOR_ARCHIVE: verilator-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
     steps:
@@ -185,8 +185,8 @@ jobs:
       with:
         path: repo
 
-    - name: Checkout CoupledL2
-      run: git submodule update --init dut/CoupledL2
+    - name: Checkout OpenLLC
+      run: git submodule update --init dut/OpenLLC
 
     - name: Setup Clang 16
       if: matrix.compiler.cc == 'clang-16'
@@ -214,39 +214,39 @@ jobs:
         verilator --version
 
     - name: Extract submodule SHA
-      id: get_sha_CoupledL2
+      id: get_sha_OpenLLC
       working-directory: ${{ github.workspace }}
       run: |
-        cd repo/dut/CoupledL2
+        cd repo/dut/OpenLLC
         CURRENT_HASH=$(git rev-parse HEAD)
         echo "${CURRENT_HASH}"
         echo "CURRENT_HASH=${CURRENT_HASH}" >> $GITHUB_ENV
 
-    - name: Fetch cached CoupledL2
+    - name: Fetch cached OpenLLC
       id: cache
       uses: actions/cache/restore@v4
       env:
-        cache-name: coupledL2-cache-${{ env.CURRENT_HASH }}
+        cache-name: openLLC-cache-${{ env.CURRENT_HASH }}
       with:
-        path: ${{ github.workspace }}/${{ env.COUPLEDL2_ARCHIVE }}
-        key: coupledL2-cache-${{ env.CURRENT_HASH }}
+        path: ${{ github.workspace }}/${{ env.OPENLLC_ARCHIVE }}
+        key: openLLC-cache-${{ env.CURRENT_HASH }}
         fail-on-cache-miss: true
-    
-    - name: Unpack CoupledL2 artifact
+
+    - name: Unpack OpenLLC artifact
       working-directory: ${{ github.workspace }}
-      run: tar -zxf ${{ env.COUPLEDL2_ARCHIVE }}
+      run: tar -zxf ${{ env.OPENLLC_ARCHIVE }}
 
-    - name: Verilate CoupledL2
+    - name: Verilate OpenLLC
       run: |
-        make THREADS_BUILD=4 coupledL2-verilate
+        make THREADS_BUILD=4 openLLC-verilate
 
-    - name: Configurate TL-Test-New for CoupledL2
+    - name: Configurate TL-Test-New for OpenLLC
       run: |
-        make THREADS_BUILD=4 tltest-config-coupledL2-test-${{ matrix.case.id }}
+        make THREADS_BUILD=4 tltest-config-openLLC-test-${{ matrix.case.id }}
 
-    - name: Build TL-Test-New for CoupledL2
+    - name: Build TL-Test-New for OpenLLC
       run: |
-        make THREADS_BUILD=4 tltest-build-all-coupledL2
+        make THREADS_BUILD=4 tltest-build-all-openLLC
 
     - name: Tar up repository
       working-directory: ${{ github.workspace }}
@@ -321,7 +321,7 @@ jobs:
         sed -i 's/mode.1.*/mode.1 = FUZZ_STREAM/g' ./configs/user.tltest.ini
         cat ./configs/user.tltest.ini
 
-    - name: Run TL-Test-New for CoupledL2
+    - name: Run TL-Test-New for OpenLLC
       run: |
         make run
 
