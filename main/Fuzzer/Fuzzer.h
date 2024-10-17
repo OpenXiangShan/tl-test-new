@@ -55,6 +55,23 @@ class Fuzzer {
 protected:
     uint64_t *cycles;
 public:
+    TLSequenceMode      mode;
+
+    size_t              fuzzARIRangeIndex;
+    size_t              fuzzARIRangeIterationTime;
+    size_t              fuzzARIRangeIterationInterval;
+    size_t              fuzzARIRangeIterationCount;
+    size_t              fuzzARIRangeIterationTarget;
+    std::vector<int>    fuzzARIRangeOrdinal;
+
+    size_t              fuzzStreamOffset;
+    size_t              fuzzStreamInterval;
+    size_t              fuzzStreamStepTime;
+    bool                fuzzStreamEnded;
+    size_t              fuzzStreamStep;
+    size_t              fuzzStreamStart;
+    size_t              fuzzStreamEnd;
+public:
     Fuzzer() noexcept = default;
     virtual ~Fuzzer() noexcept = default;
     virtual void tick() = 0;
@@ -97,22 +114,6 @@ class CFuzzer: public Fuzzer {
 private:
     tl_agent::CAgent*   cAgent;
 
-    TLSequenceMode      mode;
-
-    size_t              fuzzARIRangeIndex;
-    size_t              fuzzARIRangeIterationTime;
-    size_t              fuzzARIRangeIterationInterval;
-    size_t              fuzzARIRangeIterationCount;
-    size_t              fuzzARIRangeIterationTarget;
-    std::vector<int>    fuzzARIRangeOrdinal;
-
-    size_t              fuzzStreamOffset;
-    size_t              fuzzStreamInterval;
-    size_t              fuzzStreamStepTime;
-    bool                fuzzStreamEnded;
-    size_t              fuzzStreamStep;
-    size_t              fuzzStreamStart;
-    size_t              fuzzStreamEnd;
 public:
     CFuzzer(tl_agent::CAgent *cAgent) noexcept;
     virtual ~CFuzzer() noexcept = default;
