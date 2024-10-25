@@ -51,7 +51,7 @@ namespace tl_agent {
     };
 
 
-    class ULAgent : public BaseAgent {
+    class ULAgent : public BaseAgent<> {
     public:
         using LocalScoreBoard = ScoreBoard<int, UL_SBEntry, ScoreBoardUpdateCallbackULSBEntry<int>>;
 

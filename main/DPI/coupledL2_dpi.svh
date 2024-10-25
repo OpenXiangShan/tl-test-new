@@ -103,7 +103,7 @@ function void SvTileLinkPullChannelA (
     output  logic [2:0]     param,
     output  logic [2:0]     size,
     output  logic [63:0]    source,
-    output  logic [35:0]    address,
+    output  logic [47:0]    address,
     output  logic           user_needHint,
     output  logic [35:0]    user_vaddr,
     output  logic [1:0]     user_alias,
@@ -165,7 +165,7 @@ function void SvTileLinkPushChannelB (
     input   logic [1:0]     param,
     input   logic [2:0]     size,
     input   logic [63:0]    source,
-    input   logic [35:0]    address,
+    input   logic [47:0]    address,
     input   logic [31:0]    mask,
     input   logic [255:0]   data,
     input   logic           corrupt
@@ -283,7 +283,7 @@ function void SvTileLinkPullChannelC (
     output  logic [2:0]     param,
     output  logic [2:0]     size,
     output  logic [63:0]    source,
-    output  logic [35:0]    address,
+    output  logic [47:0]    address,
     output  logic           user_needHint,
     output  logic [35:0]    user_vaddr,
     output  logic [1:0]     user_alias,
@@ -474,3 +474,153 @@ function void SvTileLinkPullChannelE (
 
 endfunction
 //
+
+
+/*
+* TileLink MMIO Channel A
+*/
+import "DPI-C" function void TileLinkMMIOPushChannelA (
+    input   int             device_id,
+    input   byte            ready
+);
+
+function void SvTileLinkMMIOPushChannelA (
+    input   int             device_id,
+    input   logic           resetn,
+    input   logic           ready
+);
+
+    guard_ready:        assert (!resetn || !$isunknown(ready        )) else $fatal("TileLinkMMIOPushChannelA: 'ready' is unknown");
+
+    if (resetn) begin
+
+        TileLinkMMIOPushChannelA (
+            device_id,
+            ready
+        );
+    end
+
+endfunction
+
+import "DPI-C" function void TileLinkMMIOPullChannelA (
+    input   int             device_id,
+    output  byte            valid,
+    output  byte            opcode,
+    output  byte            param,
+    output  byte            size,
+    output  longint         source,
+    output  longint         address,
+    output  byte            mask,
+    output  longint         data,
+    output  byte            corrupt
+);
+
+function void SvTileLinkMMIOPullChannelA (
+    input   int             device_id,
+    input   logic           resetn,
+    output  logic           valid,
+    output  logic [2:0]     opcode,
+    output  logic [2:0]     param,
+    output  logic [2:0]     size,
+    output  logic [63:0]    source,
+    output  logic [47:0]    address,
+    output  logic [7:0]     mask,
+    output  logic [63:0]    data,
+    output  logic           corrupt
+);
+
+    if (1) begin
+
+        TileLinkMMIOPullChannelA (
+            device_id,
+            valid,
+            opcode,
+            param,
+            size,
+            source,
+            address,
+            mask,
+            data,
+            corrupt
+        );
+    end
+
+endfunction
+
+/*
+* TileLink MMIO Channel C
+*/
+import "DPI-C" function void TileLinkMMIOPushChannelD (
+    input   int             device_id,
+    input   byte            valid,
+    input   byte            opcode,
+    input   byte            param,
+    input   byte            size,
+    input   longint         source,
+    input   longint         sink,
+    input   byte            denied,
+    input   longint         data,
+    input   bit             corrupt
+);
+
+function void SvTileLinkMMIOPushChannelD (
+    input   int             device_id,
+    input   logic           resetn,
+    input   logic           valid,
+    input   logic [2:0]     opcode,
+    input   logic [1:0]     param,
+    input   logic [2:0]     size,
+    input   logic [63:0]    source,
+    input   logic [63:0]    sink,
+    input   logic           denied,
+    input   logic [63:0]    data,
+    input   logic           corrupt
+);
+
+    guard_valid:        assert (!resetn || !$isunknown(valid        )) else $fatal("TileLinkMMIOPushChannelD: 'valid' is unknown");
+
+    guard_opcode:       assert (!resetn || !valid || !$isunknown(opcode       )) else $fatal("TileLinkMMIOPushChannelD: 'opcode' is unknown");
+    guard_param:        assert (!resetn || !valid || !$isunknown(param        )) else $fatal("TileLinkMMIOPushChannelD: 'param' is unknown");
+    guard_size:         assert (!resetn || !valid || !$isunknown(size         )) else $fatal("TileLinkMMIOPushChannelD: 'size' is unknown");
+    guard_source:       assert (!resetn || !valid || !$isunknown(source       )) else $fatal("TileLinkMMIOPushChannelD: 'source' is unknown");
+    guard_sink:         assert (!resetn || !valid || !$isunknown(sink         )) else $fatal("TileLinkMMIOPushChannelD: 'sink' is unknown");
+    guard_denied:       assert (!resetn || !valid || !$isunknown(denied       )) else $fatal("TileLinkMMIOPushChannelD: 'denied' is unknown");
+
+    if (resetn) begin
+
+        TileLinkMMIOPushChannelD (
+            device_id,
+            valid,
+            opcode,
+            param,
+            size,
+            source,
+            sink,
+            denied,
+            data,
+            corrupt
+        );
+    end
+
+endfunction
+
+import "DPI-C" function void TileLinkMMIOPullChannelD (
+    input   int             device_id,
+    output  byte            ready
+);
+
+function void SvTileLinkMMIOPullChannelD (
+    input   int             device_id,
+    input   logic           resetn,
+    output  logic           ready
+);
+
+    if (1) begin
+
+        TileLinkMMIOPullChannelD (
+            device_id,
+            ready
+        );
+    end
+
+endfunction

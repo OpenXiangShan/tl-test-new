@@ -13,6 +13,7 @@
 #include "../Utils/Common.h"
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
+#include "../TLAgent/MMIOAgent.h"
 #include "../Fuzzer/Fuzzer.h"
 
 /*
@@ -29,7 +30,7 @@ public:
     };
 
 public:
-    using BaseAgent         = tl_agent::BaseAgent;
+    using BaseAgent         = tl_agent::BaseAgent<>;
     using ULAgent           = tl_agent::ULAgent;
     using CAgent            = tl_agent::CAgent;
 
@@ -51,18 +52,28 @@ public:
     using IOChannelE        = tl_agent::BundleChannelE;
     using IOPort            = tl_agent::Bundle<ReqField, RespField, EchoField, BEATSIZE>;
 
+    using MMIOAgent         = tl_agent::MMIOAgent;
+    using MMIOPort          = tl_agent::Bundle<ReqField, RespField, EchoField, DATASIZE_MMIO>;
+    using MMIOGlobalStatus  = tl_agent::MMIOGlobalStatus;
+
 private:
     State                   state;
 
     GlobalBoard<paddr_t>*   globalBoard;
     UncachedBoard<paddr_t>* uncachedBoard;
 
-    TLLocalConfig           config;
-
     BaseAgent**             agents;
     Fuzzer**                fuzzers;
 
+    MMIOGlobalStatus*       mmioGlobalStatus;
+
+    MMIOAgent**             mmioAgents;
+    MMIOFuzzer**            mmioFuzzers;
+
+    TLLocalConfig           config;
+
     IOPort**                io;
+    MMIOPort**              mmio;
 
     uint64_t                cycles;
 
@@ -88,6 +99,9 @@ public:
 
     IOPort*     IO() noexcept;
     IOPort&     IO(int deviceId) noexcept;
+
+    MMIOPort*   MMIO() noexcept;
+    MMIOPort&   MMIO(int deviceId) noexcept;
 };
 
 

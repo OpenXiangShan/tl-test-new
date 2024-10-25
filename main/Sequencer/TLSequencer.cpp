@@ -186,15 +186,24 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
         LogInfo("INIT", Append("TLSequencer::Initialize: TL-UL Agent per-core count: ", cfg.masterCountPerCoreTLUL).EndLine());
         LogInfo("INIT", Append("TLSequencer::Initialize: Total agent count: ", GetAgentCount()).EndLine());
 
+        size_t total_c_agents = GetCAgentCount();
         size_t total_n_agents = GetAgentCount();
 
         //
-        io      = new IOPort*       [total_n_agents];
-        agents  = new BaseAgent*    [total_n_agents];
-        fuzzers = new Fuzzer*       [total_n_agents];
+        io          = new IOPort*       [total_n_agents];
+        agents      = new BaseAgent*    [total_n_agents];
+        fuzzers     = new Fuzzer*       [total_n_agents];
+
+        //
+        mmio        = new MMIOPort*     [total_c_agents];
+        mmioAgents  = new MMIOAgent*    [total_c_agents];
+        mmioFuzzers = new MMIOFuzzer*   [total_c_agents];
 
         // UL Scoreboard
         uncachedBoard   = new UncachedBoard<paddr_t>(total_n_agents);
+
+        // MMIO Global Status
+        mmioGlobalStatus = new MMIOGlobalStatus(&this->config);
 
         /*
         * Device ID of TileLink ports organization:
@@ -269,6 +278,19 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 //
                 i++;
             }
+
+            //
+            mmio        [j] = new MMIOPort;
+            mmioAgents  [j] = new MMIOAgent(&this->config, mmioGlobalStatus, j, cfg.seed, &cycles);
+            mmioAgents  [j]->connect(mmio[j]);
+
+            //
+            mmioFuzzers [j] = new MMIOFuzzer(mmioAgents[j]);
+            mmioFuzzers [j]->set_cycles(&cycles);
+
+            //
+            LogInfo("INIT", Append("TLSequencer::Initialize: ")
+                .Append("Instantiated MMIO Agent #", j, " with deviceId=", j, " for Core #", j).EndLine());
         }
 
         // IO data field pre-allocation
@@ -277,6 +299,13 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             io[i]->a.data = make_shared_tldata<BEATSIZE>();
             io[i]->c.data = make_shared_tldata<BEATSIZE>();
             io[i]->d.data = make_shared_tldata<BEATSIZE>();
+        }
+
+        for (size_t i = 0; i < total_c_agents; i++)
+        {
+            mmio[i]->a.data = make_shared_tldata<DATASIZE_MMIO>();
+            mmio[i]->c.data = make_shared_tldata<DATASIZE_MMIO>();
+            mmio[i]->d.data = make_shared_tldata<DATASIZE_MMIO>();
         }
 
         // IO field reset value
@@ -296,6 +325,24 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
             io[i]->e.ready = 0;
             io[i]->e.valid = 0;
+        }
+
+        for (size_t i = 0; i < total_c_agents; i++)
+        {
+            mmio[i]->a.ready = 0;
+            mmio[i]->a.valid = 0;
+
+            mmio[i]->b.ready = 0;
+            mmio[i]->b.valid = 0;
+
+            mmio[i]->c.ready = 0;
+            mmio[i]->c.valid = 0;
+
+            mmio[i]->d.ready = 0;
+            mmio[i]->d.valid = 0;
+
+            mmio[i]->e.ready = 0;
+            mmio[i]->e.valid = 0;
         }
 
         //
@@ -339,10 +386,31 @@ void TLSequencer::Finalize() noexcept
                 agents[i] = nullptr;
             }
 
-            if (agents[i])
+            if (io[i])
             {
                 delete io[i];
                 io[i] = nullptr;
+            }
+        }
+
+        for (size_t i = 0; i < GetCAgentCount(); i++)
+        {
+            if (mmioFuzzers[i])
+            {
+                delete mmioFuzzers[i];
+                mmioFuzzers[i] = nullptr;
+            }
+
+            if (mmioAgents[i])
+            {
+                delete mmioAgents[i];
+                mmioAgents[i] = nullptr;
+            }
+
+            if (mmio[i])
+            {
+                delete mmio[i];
+                mmio[i] = nullptr;
             }
         }
 
@@ -406,7 +474,9 @@ void TLSequencer::Tock() noexcept
     try 
     {
         size_t total_n_agents = GetAgentCount();
+        size_t total_c_agents = GetCAgentCount();
 
+        //
         for (size_t i = 0; i < total_n_agents; i++)
             agents[i]->handle_channel();
 
@@ -415,6 +485,16 @@ void TLSequencer::Tock() noexcept
 
         for (size_t i = 0; i < total_n_agents; i++)
             agents[i]->update_signal();
+
+        //
+        for (size_t i = 0; i < total_c_agents; i++)
+            mmioAgents[i]->handle_channel();
+
+        for (size_t i = 0; i < total_c_agents; i++)
+            mmioFuzzers[i]->tick();
+
+        for (size_t i = 0; i < total_c_agents; i++)
+            mmioAgents[i]->update_signal();
     }
     catch (const TLAssertFailureException& e) 
     {
@@ -431,4 +511,14 @@ TLSequencer::IOPort* TLSequencer::IO() noexcept
 TLSequencer::IOPort& TLSequencer::IO(int deviceId) noexcept
 {
     return *(io[deviceId]);
+}
+
+TLSequencer::MMIOPort* TLSequencer::MMIO() noexcept
+{
+    return *mmio;
+}
+
+TLSequencer::MMIOPort& TLSequencer::MMIO(int deviceId) noexcept
+{
+    return *(mmio[deviceId]);
 }

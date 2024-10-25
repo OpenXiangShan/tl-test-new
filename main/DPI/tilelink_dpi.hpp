@@ -159,4 +159,50 @@ extern "C" void TileLinkPullChannelE(
 //
 
 
+/*
+* DPI function to connect TileLink MMIO Channel A
+*/
+extern "C" void TileLinkMMIOPushChannelA (
+    const int           deviceId,
+    const uint8_t       ready
+);
+
+extern "C" void TileLinkMMIOPullChannelA (
+    const int           deviceId,
+    uint8_t*            valid,
+    uint8_t*            opcode,
+    uint8_t*            param,
+    uint8_t*            size,
+    uint64_t*           source,
+    uint64_t*           address,
+    uint8_t*            mask,
+    uint64_t*           data,
+    uint8_t*            corrupt
+);
+//
+
+
+/*
+* DPI function to connect TileLink MMIO Channel D
+*/
+extern "C" void TileLinkMMIOPushChannelD (
+    const int           deviceId,
+    const uint8_t       valid,
+    const uint8_t       opcode,
+    const uint8_t       param,
+    const uint8_t       size,
+    const uint64_t      source,
+    const uint64_t      sink,
+    const uint8_t       denied,
+    const uint64_t      data,
+    const uint8_t       corrupt
+);
+
+extern "C" void TileLinkMMIOPullChannelD (
+    const int           deviceId,
+    uint8_t*            ready
+);
+//
+
+
 #endif // __TILELINK_DPI_HPP

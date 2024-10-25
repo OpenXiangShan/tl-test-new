@@ -27,7 +27,9 @@
 enum {
     DATASIZE = 64, // Cache line is 64B
     BEATSIZE = 32,
+    DATASIZE_MMIO = 8,
     NR_SOURCEID = 16,
+    NR_SOURCEID_MMIO = 16,
     TIMEOUT_INTERVAL = 50000
 };
 
@@ -80,6 +82,9 @@ inline std::string GetDeviceName(const TLLocalContext* ctx)
     /* Cache the result of GetDeviceName for 64 cores (with 1 TL-C and 2 TL-UL) */
     static constexpr int DEVICE_NAME_CACHE_SIZE = 192;
     static std::string cached[DEVICE_NAME_CACHE_SIZE];
+
+    if (!ctx->mainSys())
+        return Gravity::StringAppender("#", ctx->sysId()).ToString();
 
     if (ctx->sysId() < DEVICE_NAME_CACHE_SIZE)
         if (!cached[ctx->sysId()].empty())

@@ -32,6 +32,9 @@ static inline size_t fact(size_t n) noexcept
 CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
     this->cAgent = cAgent;
 
+    this->memoryStart                   = cAgent->config().memoryStart;
+    this->memoryEnd                     = cAgent->config().memoryEnd;
+
     this->fuzzARIRangeIndex             = 0;
     this->fuzzARIRangeIterationInterval = cAgent->config().fuzzARIInterval;
     this->fuzzARIRangeIterationTarget   = cAgent->config().fuzzARITarget;
@@ -97,8 +100,10 @@ void CFuzzer::randomTest(bool do_alias) {
             addr  = ((CAGENT_RAND64(cAgent, "CFuzzer") % FUZZ_ARI_RANGES[fuzzARIRangeOrdinal[fuzzARIRangeIndex]].maxTag) << 13) 
                   + ((CAGENT_RAND64(cAgent, "CFuzzer") % FUZZ_ARI_RANGES[fuzzARIRangeOrdinal[fuzzARIRangeIndex]].maxSet) << 6);
             alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % FUZZ_ARI_RANGES[fuzzARIRangeOrdinal[fuzzARIRangeIndex]].maxAlias) : 0;
+
+            addr = remap_memory_address(addr);
         }
-        else
+        else // FUZZ_STREAM
         {
             addr  = ((CAGENT_RAND64(cAgent, "CFUZZER") % FUZZ_STREAM_RANGE.maxTag) << 13)
                   + ((CAGENT_RAND64(cAgent, "CFUZZER") % FUZZ_STREAM_RANGE.maxSet) << 6)

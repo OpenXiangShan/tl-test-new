@@ -23,4 +23,21 @@
 #endif
 
 
+#ifndef TLTEST_DEFAULT_MEMORY_START
+#   define TLTEST_DEFAULT_MEMORY_START                  0x00000000
+#endif
+
+#ifndef TLTEST_DEFAULT_MEMORY_END
+#   define TLTEST_DEFAULT_MEMORY_END                    0x80000000
+#endif
+
+#ifndef TLTEST_DEFAULT_MMIO_START
+#   define TLTEST_DEFAULT_MMIO_START                    0x80000000
+#endif
+
+#ifndef TLTEST_DEFAULT_MMIO_END
+#   define TLTEST_DEFAULT_MMIO_END                      0x90000000
+#endif
+
+
 #endif // TLTEST_DEFAULT_H

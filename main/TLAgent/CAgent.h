@@ -200,7 +200,7 @@ namespace tl_agent {
 #   endif
 
 
-    class CAgent : public BaseAgent {
+    class CAgent : public BaseAgent<> {
     public:
         using LocalScoreBoard       = ScoreBoard<paddr_t, C_SBEntry, ScoreBoardUpdateCallbackCSBEntry<paddr_t>>;
         using IDMapScoreBoard       = ScoreBoard<paddr_t, C_IDEntry, ScoreBoardUpdateCallbackCIDEntry<paddr_t>>;

@@ -152,9 +152,10 @@ namespace tl_agent {
         }
     };
 
+    template<size_t BeatSize = BEATSIZE, size_t DataSize = DATASIZE> 
     class BaseAgent : public TLLocalContext {
     public:
-        using tlport_t = Bundle<ReqField, RespField, EchoField, BEATSIZE>;
+        using tlport_t = Bundle<ReqField, RespField, EchoField, BeatSize>;
 
     protected:
         TLLocalConfig*              cfg;
@@ -183,9 +184,9 @@ namespace tl_agent {
         inline TLLocalConfig&       config() noexcept override { return *cfg; }
         inline const TLLocalConfig& config() const noexcept override { return *cfg; }
 
-        virtual Resp send_a     (std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>>&    a) = 0;
+        virtual Resp send_a     (std::shared_ptr<BundleChannelA<ReqField, EchoField, DataSize>>&    a) = 0;
         virtual void handle_b   (std::shared_ptr<BundleChannelB>&                                   b) = 0;
-        virtual Resp send_c     (std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>>&    c) = 0;
+        virtual Resp send_c     (std::shared_ptr<BundleChannelC<ReqField, EchoField, DataSize>>&    c) = 0;
         virtual void fire_a() = 0;
         virtual void fire_b() = 0;
         virtual void fire_c() = 0;
@@ -193,6 +194,7 @@ namespace tl_agent {
         virtual void fire_e() = 0;
         virtual void handle_channel() = 0;
         virtual void update_signal() = 0;
+        BaseAgent(TLLocalConfig* cfg, int sysId, unsigned int seed, unsigned int limitSource): cfg(cfg), id(sysId), idpool(0, limitSource), seed(seed), rand(sysId + seed) {};
         BaseAgent(TLLocalConfig* cfg, int sysId, unsigned int seed): cfg(cfg), id(sysId), idpool(0, NR_SOURCEID), seed(seed), rand(sysId + seed) {};
         virtual ~BaseAgent() = default;
 

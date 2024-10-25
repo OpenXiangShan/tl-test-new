@@ -8,6 +8,7 @@
 #include "../Base/TLLocal.hpp"
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
+#include "../TLAgent/MMIOAgent.h"
 
 #include <vector>
 
@@ -57,6 +58,11 @@ protected:
 public:
     TLSequenceMode      mode;
 
+    size_t              memoryStart;
+    size_t              memoryEnd;
+    size_t              mmioStart;
+    size_t              mmioEnd;
+
     size_t              fuzzARIRangeIndex;
     size_t              fuzzARIRangeIterationTime;
     size_t              fuzzARIRangeIterationInterval;
@@ -78,6 +84,12 @@ public:
     inline void set_cycles(uint64_t *cycles) {
         this->cycles = cycles;
     }
+    inline paddr_t remap_memory_address(paddr_t addr) {
+        return ((addr % (memoryEnd - memoryStart)) + memoryStart);
+    }
+    inline paddr_t remap_mmio_address(paddr_t addr) {
+        return ((addr % (mmioEnd - mmioStart)) + mmioStart);
+    }
 };
 
 class ULFuzzer: public Fuzzer {
@@ -89,6 +101,16 @@ public:
     void randomTest(bool put);
     void caseTest();
     void caseTest2();
+    void tick();
+};
+
+class MMIOFuzzer : public Fuzzer {
+private:
+    tl_agent::MMIOAgent* mmioAgent;
+public:
+    MMIOFuzzer(tl_agent::MMIOAgent* ulAgent) noexcept;
+    virtual ~MMIOFuzzer() noexcept = default;
+    void randomTest(bool put);
     void tick();
 };
 

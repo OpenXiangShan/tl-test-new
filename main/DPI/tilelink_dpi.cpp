@@ -392,3 +392,91 @@ extern "C" void TileLinkPullChannelE(
     *sink  = port.e.sink;
 }
 //
+
+
+/*
+* DPI function to connect TileLink MMIO Channel A
+*/
+extern "C" void TileLinkMMIOPushChannelA(
+    const int           deviceId,
+    const uint8_t       ready)
+{
+    TLSequencer::MMIOPort& port = passive->MMIO(deviceId);
+    port.a.ready = ready;
+}
+
+extern "C" void TileLinkMMIOPullChannelA(
+    const int           deviceId,
+    uint8_t*            valid,
+    uint8_t*            opcode,
+    uint8_t*            param,
+    uint8_t*            size,
+    uint64_t*           source,
+    uint64_t*           address,
+    uint8_t*            mask,
+    uint64_t*           data,
+    uint8_t*            corrupt)
+{
+    TLSequencer::MMIOPort& port = passive->MMIO(deviceId);
+    *valid          = port.a.valid;
+    *opcode         = port.a.opcode;
+    *param          = port.a.param;
+    *size           = port.a.size;
+    *source         = port.a.source;
+    *address        = port.a.address;
+    *mask           = port.a.mask;
+    *data           = (uint64_t(port.a.data->data[0]))
+                    | (uint64_t(port.a.data->data[1])   <<  8)
+                    | (uint64_t(port.a.data->data[2])   << 16)
+                    | (uint64_t(port.a.data->data[3])   << 24)
+                    | (uint64_t(port.a.data->data[4])   << 32)
+                    | (uint64_t(port.a.data->data[5])   << 40)
+                    | (uint64_t(port.a.data->data[6])   << 48)
+                    | (uint64_t(port.a.data->data[7])   << 56);
+    *corrupt        = port.a.corrupt;
+}
+//
+
+
+/*
+* DPI function to connect TileLink MMIO Channel D
+*/
+extern "C" void TileLinkMMIOPushChannelD(
+    const int           deviceId,
+    const uint8_t       valid,
+    const uint8_t       opcode,
+    const uint8_t       param,
+    const uint8_t       size,
+    const uint64_t      source,
+    const uint64_t      sink,
+    const uint8_t       denied,
+    const uint64_t      data,
+    const uint8_t       corrupt)
+{
+    TLSequencer::MMIOPort& port = passive->MMIO(deviceId);
+    port.d.valid            = valid;
+    port.d.opcode           = opcode;
+    port.d.param            = param;
+    port.d.size             = size;
+    port.d.source           = source;
+    port.d.sink             = sink;
+    port.d.denied           = denied;
+    port.d.data->data[0]    =  data        & 0xFF;
+    port.d.data->data[1]    = (data >>  8) & 0xFF;
+    port.d.data->data[2]    = (data >> 16) & 0xFF;
+    port.d.data->data[3]    = (data >> 24) & 0xFF;
+    port.d.data->data[4]    = (data >> 32) & 0xFF;
+    port.d.data->data[5]    = (data >> 40) & 0xFF;
+    port.d.data->data[6]    = (data >> 48) & 0xFF;
+    port.d.data->data[7]    = (data >> 56) & 0xFF;
+    port.d.corrupt          = corrupt;
+}
+
+extern "C" void TileLinkMMIOPullChannelD(
+    const int           deviceId,
+    uint8_t*            ready)
+{
+    TLSequencer::MMIOPort& port = passive->MMIO(deviceId);
+    *ready          = port.d.ready;
+}
+//
