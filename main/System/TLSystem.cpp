@@ -49,6 +49,10 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.coreCount                     = TLTEST_DEFAULT_CORE_COUNT;
     tlcfg.masterCountPerCoreTLC         = TLTEST_DEFAULT_MASTER_COUNT_PER_CORE_TLC;
     tlcfg.masterCountPerCoreTLUL        = TLTEST_DEFAULT_MASTER_COUNT_PER_CORE_TLUL;
+    tlcfg.memoryStart                   = TLTEST_DEFAULT_MEMORY_START;
+    tlcfg.memoryEnd                     = TLTEST_DEFAULT_MEMORY_END;
+    tlcfg.mmioStart                     = TLTEST_DEFAULT_MMIO_START;
+    tlcfg.mmioEnd                       = TLTEST_DEFAULT_MMIO_END;
 
     tlcfg.fuzzARIInterval               = CFUZZER_RANGE_ITERATE_INTERVAL;
     tlcfg.fuzzARITarget                 = CFUZZER_RANGE_ITERATE_TARGET;
@@ -91,6 +95,10 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.config", "core",                       tlcfg.coreCount);
     INI_OVERRIDE_INT("tltest.config", "core.tl_c",                  tlcfg.masterCountPerCoreTLC);
     INI_OVERRIDE_INT("tltest.config", "core.tl_ul",                 tlcfg.masterCountPerCoreTLUL);
+    INI_OVERRIDE_INT("tltest.config", "memory.start",               tlcfg.memoryStart);
+    INI_OVERRIDE_INT("tltest.config", "memory.end",                 tlcfg.memoryEnd);
+    INI_OVERRIDE_INT("tltest.config", "mmio.start",                 tlcfg.mmioStart);
+    INI_OVERRIDE_INT("tltest.config", "mmio.end",                   tlcfg.mmioEnd);
 
     INI_OVERRIDE_INT("tltest.fuzzer", "seed",                       tlcfg.seed);
     INI_OVERRIDE_INT("tltest.fuzzer", "ari.interval",               tlcfg.fuzzARIInterval);

@@ -169,7 +169,7 @@ namespace tl_agent {
                         // TODO: better data verbosity for PutPartialData
 
                         Log(this, Hex().ShowBase()
-                            .Append("[fire A] [PutPartialData] ")
+                            .Append("[data complete A] [PutPartialData] ")
                             .Append("addr: ",       uint64_t(chnA.address))
                             .Append(", size: ",     uint64_t(chnA.size))
                             .Append(", mask: ",     uint64_t(chnA.mask))

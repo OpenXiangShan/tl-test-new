@@ -28,6 +28,12 @@ public:
 
     std::unordered_map<int, TLSequenceMode> sequenceModes;  // Agent sequence modes
 
+    uint64_t            memoryStart;                            // Memory (cacheable) region start address
+    uint64_t            memoryEnd;                              // Memory (cacheable) region end address
+
+    uint64_t            mmioStart;                              // MMIO region start address
+    uint64_t            mmioEnd;                                // MMIO region end address
+
     uint64_t            fuzzARIInterval;                        // Fuzz Auto Range Iteration interval
     uint64_t            fuzzARITarget;                          // Fuzz Auto Range Iteration target
 
@@ -52,6 +58,8 @@ public:
     virtual const TLLocalConfig&    config() const noexcept = 0;
     virtual TLLocalConfig&          config() noexcept = 0;
 
+    virtual bool                    mainSys() const noexcept;
+
     size_t                          GetAgentCount() const noexcept;
     size_t                          GetCAgentCount() const noexcept;
     size_t                          GetULAgentCount() const noexcept;
@@ -70,6 +78,11 @@ inline size_t TLLocalConfig::GetULAgentCount() const noexcept
 inline size_t TLLocalConfig::GetAgentCount() const noexcept
 {
     return GetCAgentCount() + GetULAgentCount();
+}
+
+inline bool TLLocalContext::mainSys() const noexcept
+{
+    return true;
 }
 
 inline size_t TLLocalContext::GetCAgentCount() const noexcept

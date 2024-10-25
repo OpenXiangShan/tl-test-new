@@ -27,6 +27,9 @@ static inline size_t fact(size_t n) noexcept
 ULFuzzer::ULFuzzer(tl_agent::ULAgent *ulAgent) noexcept {
     this->ulAgent = ulAgent;
 
+    this->memoryStart                   = ulAgent->config().memoryStart;
+    this->memoryEnd                     = ulAgent->config().memoryEnd;
+
     this->fuzzARIRangeIndex             = 0;
     this->fuzzARIRangeIterationInterval = ulAgent->config().fuzzARIInterval;
     this->fuzzARIRangeIterationTarget   = ulAgent->config().fuzzARITarget;
@@ -95,8 +98,10 @@ void ULFuzzer::randomTest(bool put) {
             // Tag + Set + Offset
             addr  = ((CAGENT_RAND64(ulAgent, "ULFuzzer") % FUZZ_ARI_RANGES[fuzzARIRangeOrdinal[fuzzARIRangeIndex]].maxTag) << 13) 
                   + ((CAGENT_RAND64(ulAgent, "ULFuzzer") % FUZZ_ARI_RANGES[fuzzARIRangeOrdinal[fuzzARIRangeIndex]].maxSet) << 6);
+            
+            addr  = remap_memory_address(addr);
         }
-        else
+        else // FUZZ_STREAM
         {
             addr  = ((CAGENT_RAND64(ulAgent, "ULFuzzer") % FUZZ_STREAM_RANGE.maxTag) << 13)
                   + ((CAGENT_RAND64(ulAgent, "ULFuzzer") % FUZZ_STREAM_RANGE.maxSet) << 6)
@@ -197,7 +202,4 @@ void ULFuzzer::tick() {
             // TLSystemFinishEvent().Fire();
         }
     }
-
-    this->randomTest(false);
-//    this->caseTest();
 }
