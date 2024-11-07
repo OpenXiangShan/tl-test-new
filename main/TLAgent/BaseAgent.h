@@ -159,6 +159,7 @@ namespace tl_agent {
 
     protected:
         TLLocalConfig*              cfg;
+        const int                   core;
         const int                   id;
         tlport_t*                   port;
         GlobalBoard<paddr_t>*       globalBoard;
@@ -178,6 +179,7 @@ namespace tl_agent {
 #   endif
 
     public:
+        inline int                  sys() const noexcept override { return core; }
         inline int                  sysId() const noexcept override { return id; }
         inline unsigned int         sysSeed() const noexcept override { return seed; }
 
@@ -194,8 +196,8 @@ namespace tl_agent {
         virtual void fire_e() = 0;
         virtual void handle_channel() = 0;
         virtual void update_signal() = 0;
-        BaseAgent(TLLocalConfig* cfg, int sysId, unsigned int seed, unsigned int limitSource): cfg(cfg), id(sysId), idpool(0, limitSource), seed(seed), rand(sysId + seed) {};
-        BaseAgent(TLLocalConfig* cfg, int sysId, unsigned int seed): cfg(cfg), id(sysId), idpool(0, NR_SOURCEID), seed(seed), rand(sysId + seed) {};
+        BaseAgent(TLLocalConfig* cfg, int sys, int sysId, unsigned int seed, unsigned int limitSource): cfg(cfg), core(sys), id(sysId), idpool(0, limitSource), seed(seed), rand(sysId + seed) {};
+        BaseAgent(TLLocalConfig* cfg, int sys, int sysId, unsigned int seed): cfg(cfg), core(sys), id(sysId), idpool(0, NR_SOURCEID), seed(seed), rand(sysId + seed) {};
         virtual ~BaseAgent() = default;
 
         inline void  connect(tlport_t* p){ this->port = p; }

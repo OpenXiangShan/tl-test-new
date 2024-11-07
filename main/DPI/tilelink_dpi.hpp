@@ -205,4 +205,37 @@ extern "C" void TileLinkMMIOPullChannelD (
 //
 
 
+/*
+* DPI function to connect CMO Request
+*/
+extern "C" void CMOPushReq (
+    const int           deviceId,
+    const uint8_t       ready
+);
+
+extern "C" void CMOPullReq (
+    const int           deviceId,
+    uint8_t*            valid,
+    uint8_t*            opcode,
+    uint64_t*           address
+);
+//
+
+
+/*
+* DPI function to connect CMO Response
+*/
+extern "C" void CMOPushResp (
+    const int           deviceId,
+    const uint8_t       valid,
+    const uint64_t      address
+);
+
+extern "C" void CMOPullResp (
+    const int           deviceId,
+    uint8_t*            ready
+);
+//
+
+
 #endif // __TILELINK_DPI_HPP

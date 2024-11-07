@@ -24,6 +24,7 @@ namespace tl_agent {
         }
     };
 
+    //
     template<class Usr, class Echo, std::size_t N>
     class BundleChannelA : public DecoupledBundle {
     public:
@@ -103,6 +104,24 @@ namespace tl_agent {
         BundleChannelC<ReqField, EchoField, N>  c;
         BundleChannelD<RespField, EchoField, N> d;
         BundleChannelE                          e;
+    };
+
+    //
+    class BundleCMOReq : public DecoupledBundle {
+    public:
+        uint8_t             opcode;
+        paddr_t             address;
+    };
+
+    class BundleCMOResp : public DecoupledBundle {
+    public:
+        paddr_t             address;
+    };
+
+    class BundleCMO {
+    public:
+        BundleCMOReq        req;
+        BundleCMOResp       resp;
     };
 }
 

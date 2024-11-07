@@ -624,3 +624,106 @@ function void SvTileLinkMMIOPullChannelD (
     end
 
 endfunction
+
+
+/*
+* CMO Channel
+*/
+import "DPI-C" function void CMOPushReq (
+    input   int             device_id,
+    input   byte            ready
+);
+
+function void SvCMOPushReq (
+    input   int             device_id,
+    input   logic           resetn,
+    input   logic           ready
+);
+
+    guard_ready:        assert (!resetn || !$isunknown(ready        )) else $fatal("CMOPushReq: 'ready' is unknown");
+
+    if (resetn) begin
+
+        CMOPushReq (
+            device_id,
+            ready
+        );
+    end
+
+endfunction
+
+import "DPI-C" function void CMOPullReq (
+    input   int             device_id,
+    output  byte            valid,
+    output  byte            opcode,
+    output  longint         address
+);
+
+function void SvCMOPullReq (
+    input   int             device_id,
+    input   logic           resetn,
+    output  logic           valid,
+    output  logic [2:0]     opcode,
+    output  logic [63:0]    address
+);
+
+    if (1) begin
+
+        CMOPullReq (
+            device_id,
+            valid,
+            opcode,
+            address
+        );
+    end
+
+endfunction
+
+import "DPI-C" function void CMOPushResp (
+    input   int             device_id,
+    input   byte            valid,
+    input   longint         address
+);
+
+function void SvCMOPushResp (
+    input   int             device_id,
+    input   logic           resetn,
+    input   logic           valid,
+    input   logic [63:0]    address
+);
+
+    guard_valid:        assert (!resetn || !$isunknown(valid        )) else $fatal("CMOPushResp: 'valid' is unknown");
+
+    guard_address:      assert (!resetn || !valid || !$isunknown(address      )) else $fatal("CMOPushResp: 'address' is unknown");
+
+    if (resetn) begin
+
+        CMOPushResp (
+            device_id,
+            valid,
+            address
+        );
+    end
+
+endfunction
+
+import "DPI-C" function void CMOPullResp (
+    input   int             device_id,
+    output  byte            ready
+);
+
+function void SvCMOPullResp (
+    input   int             device_id,
+    input   logic           resetn,
+    output  logic           ready
+);
+
+    if (1) begin
+
+        CMOPullResp (
+            device_id,
+            ready
+        );
+    end
+
+endfunction

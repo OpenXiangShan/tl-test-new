@@ -17,8 +17,8 @@
 
 namespace tl_agent {
 
-    ULAgent::ULAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t> *gb, UncachedBoard<paddr_t>* ubs, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
-            BaseAgent(cfg, sysId, seed), pendingA(), pendingD()
+    ULAgent::ULAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t> *gb, UncachedBoard<paddr_t>* ubs, int sys, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
+            BaseAgent(cfg, sys, sysId, seed), pendingA(), pendingD()
     {
         this->globalBoard = gb;
         this->uncachedBoards = ubs;

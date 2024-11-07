@@ -222,7 +222,7 @@ namespace tl_agent {
 namespace tl_agent {
 
     MMIOAgent::MMIOAgent(TLLocalConfig* cfg, MMIOGlobalStatus* globalStatus, int sysId, unsigned int seed, uint64_t* cycles) noexcept
-        : BaseAgent (cfg, sysId, seed, NR_SOURCEID_MMIO)
+        : BaseAgent (cfg, sysId, sysId, seed, NR_SOURCEID_MMIO)
         , pendingA  ()
         , pendingD  ()
     {
