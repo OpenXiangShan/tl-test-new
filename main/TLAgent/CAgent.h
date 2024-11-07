@@ -12,6 +12,7 @@
 #include "../Utils/ScoreBoard.h"
 
 #include "Bundle.h"
+#include "CMOAgent.h"
 
 
 namespace tl_agent {
@@ -230,7 +231,7 @@ namespace tl_agent {
         void timeout_check() override;
 
     public:
-        CAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ub, int id, unsigned int seed, uint64_t* cycles) noexcept;
+        CAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ub, int sys, int id, unsigned int seed, uint64_t* cycles) noexcept;
         virtual ~CAgent() noexcept;
 
         uint64_t    cycle() const noexcept override;
@@ -251,6 +252,12 @@ namespace tl_agent {
         bool do_acquirePerm(paddr_t address, TLParamAcquire param, int alias);
         bool do_releaseData(paddr_t address, TLParamRelease param, shared_tldata_t<DATASIZE> data, int alias);
         bool do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced);
+
+        LocalScoreBoard*        local() noexcept;
+        const LocalScoreBoard*  local() const noexcept;
+
+    public:
+        void onCMOResponse(CMOResponseEvent& event);
     };
 
 }

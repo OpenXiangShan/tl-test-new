@@ -52,6 +52,7 @@ public:
 class TLLocalContext {
 public:
     virtual uint64_t                cycle() const noexcept = 0;
+    virtual int                     sys() const noexcept = 0;
     virtual int                     sysId() const noexcept = 0;
     virtual unsigned int            sysSeed() const noexcept = 0;
 

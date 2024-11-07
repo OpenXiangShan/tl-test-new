@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "BaseAgent.h"
+#include "CMOAgent.h"
 #include "Bundle.h"
 #include "CAgent.h"
 
@@ -104,8 +105,8 @@ namespace tl_agent {
         }
     }
 
-    CAgent::CAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ubs, int sysId, unsigned int seed, uint64_t *cycles) noexcept :
-        BaseAgent(cfg, sysId, seed), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(), probeIDpool(NR_SOURCEID, NR_SOURCEID+1)
+    CAgent::CAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ubs, int sys, int sysId, unsigned int seed, uint64_t *cycles) noexcept :
+        BaseAgent(cfg, sys, sysId, seed), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(), probeIDpool(NR_SOURCEID, NR_SOURCEID+1)
     {
         this->globalBoard = gb;
         this->uncachedBoards = ubs;
@@ -113,6 +114,15 @@ namespace tl_agent {
         this->localBoard = new LocalScoreBoard();
         this->idMap = new IDMapScoreBoard();
         this->acquirePermBoard = new AcquirePermScoreBoard();
+
+        Gravity::RegisterListener(
+            Gravity::MakeListener(
+                Gravity::StringAppender("cagent.", id, ".cmo.response").ToString(),
+                0,
+                &CAgent::onCMOResponse,
+                this
+            )  
+        );
     }
 
     CAgent::~CAgent() noexcept
@@ -1375,6 +1385,96 @@ namespace tl_agent {
                     tlc_assert(false, this, "Transaction time out");
                 }
               }
+            }
+        }
+    }
+
+    CAgent::LocalScoreBoard* CAgent::local() noexcept
+    {
+        return localBoard;
+    }
+
+    const CAgent::LocalScoreBoard* CAgent::local() const noexcept
+    {
+        return localBoard;
+    }
+
+    void CAgent::onCMOResponse(CMOResponseEvent& event)
+    {
+        if (sys() == event.id)
+        {
+            if (!localBoard->haskey(event.address))
+                return;
+
+            auto entry = localBoard->query(this, event.address);
+        
+            for (int i = 0; i < 4; i++)
+            {
+                TLPermission perm = entry->privilege[i];
+
+                switch (event.opcode)
+                {
+                    case CBO_CLEAN:
+                        if (TLEnumEquals(perm, TLPermission::BRANCH)
+                        ||  TLEnumEquals(perm, TLPermission::INVALID))
+                        {
+                            if (glbl.cfg.verbose)
+                            {
+                                Log(this, Append("[onCMOResponse] [cbo.clean] checked CMO final state on CAgent #", sysId(), ": ")
+                                    .Append(PrivilegeToString(perm)).EndLine());
+                            }
+                        }
+                        else
+                        {
+                            tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                                .Append("[onCMOResponse] 'cbo.clean' ended up with ")
+                                .Append(PrivilegeToString(perm))
+                                .ToString());
+                        }
+                        break;
+
+                    case CBO_FLUSH:
+                        if (TLEnumEquals(perm, TLPermission::INVALID))
+                        {
+                            if (glbl.cfg.verbose)
+                            {
+                                Log(this, Append("[onCMOResponse] [cbo.flush] checked CMO final state on CAgent #", sysId(), ": ")
+                                    .Append(PrivilegeToString(perm)).EndLine());
+                            }
+                        }
+                        else
+                        {
+                            tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                                .Append("[onCMOReponse] 'cbo.flush' ended up with ")
+                                .Append(PrivilegeToString(perm))
+                                .ToString());
+                        }
+                        break;
+
+                    case CBO_INVAL:
+                        if (TLEnumEquals(perm, TLPermission::INVALID))
+                        {
+                            if (glbl.cfg.verbose)
+                            {
+                                Log(this, Append("[onCMOResponse] [cbo.inval] checked CMO final state on CAgent #", sysId(), ": ")
+                                    .Append(PrivilegeToString(perm)).EndLine());
+                            }
+                        }
+                        else
+                        {
+                            tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                                .Append("[onCMOReponse] 'cbo.inval' ended up with ")
+                                .Append(PrivilegeToString(perm))
+                                .ToString());
+                        }
+                        break;
+
+                    default:
+                        tlc_assert(false, this,
+                            Gravity::StringAppender().Hex().ShowBase()
+                                .Append("Unknown opcode for CMO response event call: ", uint64_t(event.opcode))
+                            .ToString());
+                }
             }
         }
     }

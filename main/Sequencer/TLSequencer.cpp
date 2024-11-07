@@ -23,6 +23,8 @@ TLSequencer::TLSequencer() noexcept
     , agents        (nullptr)
     , fuzzers       (nullptr)
     , io            (nullptr)
+    , mmio          (nullptr)
+    , cmo           (nullptr)
     , cycles        (0)
 { }
 
@@ -31,6 +33,8 @@ TLSequencer::~TLSequencer() noexcept
     delete[] fuzzers;
     delete[] agents;
     delete[] io;
+    delete[] mmio;
+    delete[] cmo;
 }
 
 const TLLocalConfig& TLSequencer::GetLocalConfig() const noexcept
@@ -199,6 +203,11 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
         mmioAgents  = new MMIOAgent*    [total_c_agents];
         mmioFuzzers = new MMIOFuzzer*   [total_c_agents];
 
+        //
+        cmo         = new CMOPort*      [total_c_agents];
+        cmoAgents   = new CMOAgent*     [total_c_agents];
+        cmoFuzzers  = new CMOFuzzer*    [total_c_agents];
+
         // UL Scoreboard
         uncachedBoard   = new UncachedBoard<paddr_t>(total_n_agents);
 
@@ -245,14 +254,12 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             {
                 //
                 io      [i] = new IOPort;
-                agents  [i] = new CAgent(&this->config, globalBoard, uncachedBoard, i, cfg.seed, &cycles);
+                agents  [i] = new CAgent(&this->config, globalBoard, uncachedBoard, j, i, cfg.seed, &cycles);
                 agents  [i]->connect(io[i]);
 
-                //
                 fuzzers [i] = new CFuzzer(static_cast<CAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
 
-                //
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-C Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
 
@@ -264,14 +271,12 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             {
                 //
                 io      [i] = new IOPort;
-                agents  [i] = new ULAgent(&this->config, globalBoard, uncachedBoard, i, cfg.seed, &cycles);
+                agents  [i] = new ULAgent(&this->config, globalBoard, uncachedBoard, j, i, cfg.seed, &cycles);
                 agents  [i]->connect(io[i]);
 
-                //
                 fuzzers [i] = new ULFuzzer(static_cast<ULAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
 
-                //
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-UL Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
 
@@ -284,13 +289,22 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             mmioAgents  [j] = new MMIOAgent(&this->config, mmioGlobalStatus, j, cfg.seed, &cycles);
             mmioAgents  [j]->connect(mmio[j]);
 
-            //
             mmioFuzzers [j] = new MMIOFuzzer(mmioAgents[j]);
             mmioFuzzers [j]->set_cycles(&cycles);
 
-            //
             LogInfo("INIT", Append("TLSequencer::Initialize: ")
                 .Append("Instantiated MMIO Agent #", j, " with deviceId=", j, " for Core #", j).EndLine());
+
+            //
+            cmo         [j] = new CMOPort;
+            cmoAgents   [j] = new CMOAgent(&this->config, j, cfg.seed, &cycles);
+            cmoAgents   [j]->connect(cmo[j]);
+
+            cmoFuzzers  [j] = new CMOFuzzer(cmoAgents[j]);
+            cmoFuzzers  [j]->set_cycles(&cycles);
+
+            LogInfo("INIT", Append("TLSequencer::Initialize: ")
+                .Append("Instantiated CMO Agent #", j, " with deviceId=", j, " for Core #", j).EndLine());
         }
 
         // IO data field pre-allocation
@@ -343,6 +357,15 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
             mmio[i]->e.ready = 0;
             mmio[i]->e.valid = 0;
+        }
+
+        for (size_t i = 0; i < total_c_agents; i++)
+        {
+            cmo[i]->req.ready   = 0;
+            cmo[i]->req.valid   = 0;
+
+            cmo[i]->resp.ready  = 0;
+            cmo[i]->resp.valid  = 0;
         }
 
         //
@@ -411,6 +434,27 @@ void TLSequencer::Finalize() noexcept
             {
                 delete mmio[i];
                 mmio[i] = nullptr;
+            }
+        }
+
+        for (size_t i = 0; i < GetCAgentCount(); i++)
+        {
+            if (cmoFuzzers[i])
+            {
+                delete cmoFuzzers[i];
+                cmoFuzzers[i] = nullptr;
+            }
+
+            if (cmoAgents[i])
+            {
+                delete cmoAgents[i];
+                cmoAgents[i] = nullptr;
+            }
+
+            if (cmo[i])
+            {
+                delete cmo[i];
+                cmo[i] = nullptr;
             }
         }
 
@@ -495,6 +539,16 @@ void TLSequencer::Tock() noexcept
 
         for (size_t i = 0; i < total_c_agents; i++)
             mmioAgents[i]->update_signal();
+
+        //
+        for (size_t i = 0; i < total_c_agents; i++)
+            cmoAgents[i]->handle_channel();
+
+        for (size_t i = 0; i < total_c_agents; i++)
+            cmoFuzzers[i]->tick();
+
+        for (size_t i = 0; i < total_c_agents; i++)
+            cmoAgents[i]->update_signal();
     }
     catch (const TLAssertFailureException& e) 
     {
@@ -521,4 +575,14 @@ TLSequencer::MMIOPort* TLSequencer::MMIO() noexcept
 TLSequencer::MMIOPort& TLSequencer::MMIO(int deviceId) noexcept
 {
     return *(mmio[deviceId]);
+}
+
+TLSequencer::CMOPort* TLSequencer::CMO() noexcept
+{
+    return *cmo;
+}
+
+TLSequencer::CMOPort& TLSequencer::CMO(int deviceId) noexcept
+{
+    return *(cmo[deviceId]);
 }
