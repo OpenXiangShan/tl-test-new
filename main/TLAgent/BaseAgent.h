@@ -22,31 +22,42 @@ namespace tl_agent {
     enum {
         S_INVALID = 0,
         S_VALID,
-        S_SENDING_A,        // ready to send A request actively
-        S_REACTING_B,       // ready to react B request actively
-        S_SENDING_C,        // ready to send C request actively
-        S_C_WAITING_D,      // C wait for D response
-        S_A_WAITING_D,      // A wait for D response
-        S_C_WAITING_D_INTR, // C wait for D response while probe interrupted
-        S_A_WAITING_D_INTR, // A wait for D response while probe interrupted
-        S_SENDING_E,        // ready to send E request actively
+        S_SENDING_A,                            // ready to send A request actively
+        S_SENDING_C,                            // ready to send C request actively
+        S_SENDING_A_NESTED_SENDING_C,           // nested ProbeAck/ProbeAckData on sending AcquirePerm/AcquireBlock
+        S_A_WAITING_D_NESTED_SENDING_C,         // nested ProbeAck/ProbeAckData on waiting for Grant
+    //  S_SENDING_E_NESTED_SENDING_C,           // ** prohibited ** Grant not allowed on pending ProbeAck/ProbeAckData
+        S_C_WAITING_D,                          // C wait for D response
+        S_A_WAITING_D,                          // A wait for D response
+        S_A_WAITING_D_INTR,                     // A wait for D response while probe interrupted
+        S_SENDING_E,                            // ready to send E request actively
+        S_CBO_SENDING_A,
+        S_CBO_A_WAITING_D,
+        S_CBO_SENDING_A_NESTED_SENDING_C,
+        S_CBO_SENDING_A_NESTED_C_WAITING_D,
+        S_CBO_A_WAITING_D_NESTED_SENDING_C,
+        S_CBO_A_WAITING_D_NESTED_C_WAITING_D
     };
 
     inline std::string StatusToString(int status) noexcept
     {
         switch (status)
         {
-            case S_INVALID:             return "S_INVALID";
-            case S_VALID:               return "S_VALID";
-            case S_SENDING_A:           return "S_SENDING_A";
-            case S_REACTING_B:          return "S_REACTING_B";
-            case S_SENDING_C:           return "S_SENDING_C";
-            case S_C_WAITING_D:         return "S_C_WAITING_D";
-            case S_A_WAITING_D:         return "S_A_WAITING_D";
-            case S_C_WAITING_D_INTR:    return "S_C_WAITING_D_INTR";
-            case S_A_WAITING_D_INTR:    return "S_A_WAITING_D_INTR";
-            case S_SENDING_E:           return "S_SENDING_E";
-            default:                    return Gravity::StringAppender("<unknown_status:", status, ">").ToString();
+            case S_INVALID:                             return "S_INVALID";
+            case S_VALID:                               return "S_VALID";
+            case S_SENDING_A:                           return "S_SENDING_A";
+            case S_SENDING_C:                           return "S_SENDING_C";
+            case S_C_WAITING_D:                         return "S_C_WAITING_D";
+            case S_A_WAITING_D:                         return "S_A_WAITING_D";
+            case S_A_WAITING_D_INTR:                    return "S_A_WAITING_D_INTR";
+            case S_SENDING_E:                           return "S_SENDING_E";
+            case S_CBO_SENDING_A:                       return "S_CBO_SENDING_A";
+            case S_CBO_A_WAITING_D:                     return "S_CBO_A_WAITING_D";
+            case S_CBO_SENDING_A_NESTED_SENDING_C:      return "S_CBO_SENDING_A_NESTED_SENDING_C";
+            case S_CBO_SENDING_A_NESTED_C_WAITING_D:    return "S_CBO_SENDING_A_NESTED_C_WAITING_D";
+            case S_CBO_A_WAITING_D_NESTED_SENDING_C:    return "S_CBO_A_WAITING_D_NESTED_SENDING_C";
+            case S_CBO_A_WAITING_D_NESTED_C_WAITING_D:  return "S_CBO_A_WAITING_D_NESTED_C_WAITING_D";
+            default:                                    return Gravity::StringAppender("<unknown_status:", status, ">").ToString();
         }
     }
 
@@ -54,17 +65,21 @@ namespace tl_agent {
     {
         switch(status)
         {
-            case S_INVALID:             return "";
-            case S_VALID:               return "";
-            case S_SENDING_A:           return "ready to send A request actively";
-            case S_REACTING_B:          return "ready to react B request actively";
-            case S_SENDING_C:           return "ready to send C request actively";
-            case S_C_WAITING_D:         return "C wait for D response";
-            case S_A_WAITING_D:         return "A wait for D response";
-            case S_C_WAITING_D_INTR:    return "C wait for D response while probe interrupted";
-            case S_A_WAITING_D_INTR:    return "A wait for D response while probe interrupted";
-            case S_SENDING_E:           return "ready to send E request actively";
-            default:                    return "";
+            case S_INVALID:                             return "invalid";
+            case S_VALID:                               return "valid";
+            case S_SENDING_A:                           return "ready to send A request actively";
+            case S_SENDING_C:                           return "ready to send C request actively";
+            case S_C_WAITING_D:                         return "C wait for D response";
+            case S_A_WAITING_D:                         return "A wait for D response";
+            case S_A_WAITING_D_INTR:                    return "A wait for D response while probe interrupted";
+            case S_SENDING_E:                           return "ready to send E request actively";
+            case S_CBO_SENDING_A:                       return "ready to send A CBO request actively";
+            case S_CBO_A_WAITING_D:                     return "A CBO waiting for D CBO response";
+            case S_CBO_SENDING_A_NESTED_SENDING_C:      return "ready to send A CBO nested ready to send C request actively";
+            case S_CBO_SENDING_A_NESTED_C_WAITING_D:    return "ready to send A CBO nested C wait for D response";
+            case S_CBO_A_WAITING_D_NESTED_SENDING_C:    return "A CBO waiting for D nested ready to send C request actively";
+            case S_CBO_A_WAITING_D_NESTED_C_WAITING_D:  return "A CBO waiting for D nested C wait for D response";
+            default:                                    return "";
         }
     }
 

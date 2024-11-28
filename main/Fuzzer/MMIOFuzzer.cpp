@@ -11,6 +11,9 @@ MMIOFuzzer::MMIOFuzzer(tl_agent::MMIOAgent* mmioAgent) noexcept
 
 void MMIOFuzzer::randomTest(bool put)
 {
+    if (!mmioAgent->config().mmioEnable)
+        return;
+
     paddr_t addr = (CAGENT_RAND64(mmioAgent, "MMIOFuzzer"));
 
     addr = remap_mmio_address(addr);

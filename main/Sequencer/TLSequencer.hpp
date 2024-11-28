@@ -14,7 +14,6 @@
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
 #include "../TLAgent/MMIOAgent.h"
-#include "../TLAgent/CMOAgent.h"
 #include "../Fuzzer/Fuzzer.h"
 
 /*
@@ -57,9 +56,6 @@ public:
     using MMIOPort          = tl_agent::Bundle<ReqField, RespField, EchoField, DATASIZE_MMIO>;
     using MMIOGlobalStatus  = tl_agent::MMIOGlobalStatus;
 
-    using CMOAgent          = tl_agent::CMOAgent;
-    using CMOPort           = tl_agent::BundleCMO;
-
 private:
     State                   state;
 
@@ -74,14 +70,10 @@ private:
     MMIOAgent**             mmioAgents;
     MMIOFuzzer**            mmioFuzzers;
 
-    CMOAgent**              cmoAgents;
-    CMOFuzzer**             cmoFuzzers;
-
     TLLocalConfig           config;
 
     IOPort**                io;
     MMIOPort**              mmio;
-    CMOPort**               cmo;
 
     uint64_t                cycles;
 
@@ -110,9 +102,6 @@ public:
 
     MMIOPort*   MMIO() noexcept;
     MMIOPort&   MMIO(int deviceId) noexcept;
-
-    CMOPort*    CMO() noexcept;
-    CMOPort&    CMO(int deviceId) noexcept;
 };
 
 

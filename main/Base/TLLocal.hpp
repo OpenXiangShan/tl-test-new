@@ -28,11 +28,20 @@ public:
 
     std::unordered_map<int, TLSequenceMode> sequenceModes;  // Agent sequence modes
 
+    uint64_t            memoryEnable;                           // Memory (cacheable) region enable
     uint64_t            memoryStart;                            // Memory (cacheable) region start address
     uint64_t            memoryEnd;                              // Memory (cacheable) region end address
 
+    uint64_t            mmioEnable;                             // MMIO region enable
     uint64_t            mmioStart;                              // MMIO region start address
     uint64_t            mmioEnd;                                // MMIO region end address
+
+    uint64_t            cmoEnable;                              // CMO region enable
+    uint64_t            cmoEnableCBOClean;                      // CMO enable 'cbo.clean'
+    uint64_t            cmoEnableCBOFlush;                      // CMO enable 'cbo.flush'
+    uint64_t            cmoEnableCBOInval;                      // CMO enable 'cbo.inval'
+    uint64_t            cmoStart;                               // CMO region start address
+    uint64_t            cmoEnd;                                 // CMO region end address
 
     uint64_t            fuzzARIInterval;                        // Fuzz Auto Range Iteration interval
     uint64_t            fuzzARITarget;                          // Fuzz Auto Range Iteration target

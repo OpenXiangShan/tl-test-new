@@ -9,7 +9,6 @@
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
 #include "../TLAgent/MMIOAgent.h"
-#include "../TLAgent/CMOAgent.h"
 
 #include <vector>
 
@@ -63,6 +62,8 @@ public:
     size_t              memoryEnd;
     size_t              mmioStart;
     size_t              mmioEnd;
+    size_t              cmoStart;
+    size_t              cmoEnd;
 
     size_t              fuzzARIRangeIndex;
     size_t              fuzzARIRangeIterationTime;
@@ -90,6 +91,9 @@ public:
     }
     inline paddr_t remap_mmio_address(paddr_t addr) {
         return ((addr % (mmioEnd - mmioStart)) + mmioStart);
+    }
+    inline paddr_t remap_cmo_address(paddr_t addr) {
+        return ((addr % (cmoEnd - cmoStart)) + cmoStart);
     }
 };
 
@@ -145,16 +149,5 @@ public:
     void tick();
 };
 
-
-class CMOFuzzer : public Fuzzer {
-private:
-    tl_agent::CMOAgent* cmoAgent;
-
-public:
-    CMOFuzzer(tl_agent::CMOAgent* cmoAgent) noexcept;
-    virtual ~CMOFuzzer() noexcept = default;
-    void randomTest(bool clean = true, bool flush = true, bool inval = true);
-    void tick();
-};
 
 #endif //TLC_TEST_FUZZER_H

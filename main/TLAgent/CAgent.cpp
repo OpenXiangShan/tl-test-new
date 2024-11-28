@@ -6,7 +6,6 @@
 #include <memory>
 
 #include "BaseAgent.h"
-#include "CMOAgent.h"
 #include "Bundle.h"
 #include "CAgent.h"
 
@@ -114,14 +113,17 @@ namespace tl_agent {
         this->localBoard = new LocalScoreBoard();
         this->idMap = new IDMapScoreBoard();
         this->acquirePermBoard = new AcquirePermScoreBoard();
+        this->localCMOStatus = new CMOLocalStatus();
+        this->lastProbeAfterRelease = false;
+        this->lastProbeAfterReleaseAddress = 0;
 
         Gravity::RegisterListener(
             Gravity::MakeListener(
-                Gravity::StringAppender("cagent.", id, ".cmo.response").ToString(),
+                Gravity::StringAppender("CAgent.onGrant[", sysId, "]").ToString(),
                 0,
-                &CAgent::onCMOResponse,
+                &CAgent::onGrant,
                 this
-            )  
+            )
         );
     }
 
@@ -130,6 +132,9 @@ namespace tl_agent {
         delete this->localBoard;
         delete this->idMap;
         delete this->acquirePermBoard;
+        delete this->localCMOStatus;
+
+        Gravity::UnregisterListener<GrantEvent>(Gravity::StringAppender("CAgent.onGrant[", sysId(), "]").ToString());
     }
 
     uint64_t CAgent::cycle() const noexcept
@@ -145,12 +150,30 @@ namespace tl_agent {
         */
 
         switch (TLOpcodeA(a->opcode)) {
-            case TLOpcodeA::AcquireBlock: {
+
+            case TLOpcodeA::AcquireBlock:
+            {
                 auto idmap_entry = std::make_shared<C_IDEntry>(a->address, a->alias);
                 idMap->update(this, a->source, idmap_entry);
 
                 if (localBoard->haskey(a->address)) {
-                    localBoard->query(this, a->address)->update_status(this, S_SENDING_A, a->alias);
+                    auto entry = localBoard->query(this, a->address);
+                    auto status = entry->status[a->alias];
+                    if (status == S_SENDING_C)
+                        entry->update_status(this, S_SENDING_A_NESTED_SENDING_C, a->alias);
+                    else if (status == S_VALID || status == S_INVALID)
+                        entry->update_status(this, S_SENDING_A, a->alias);
+                    else if (status == S_SENDING_A)
+                        entry->update_status(this, S_SENDING_A, a->alias);
+                    else if (status == S_SENDING_A_NESTED_SENDING_C)
+                        entry->update_status(this, S_SENDING_A_NESTED_SENDING_C, a->alias);
+                    else
+                    {
+                        tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                            .Append("unexpected AcquireBlock on ", StatusToString(status))
+                            .Append(" at ", a->address)
+                            .ToString());
+                    }
                 } else {
                     int             statuses[4]   = {S_INVALID};
                     TLPermission    privileges[4] = {TLPermission::INVALID};
@@ -169,11 +192,29 @@ namespace tl_agent {
 
                 break;
             }
-            case TLOpcodeA::AcquirePerm: {
+
+            case TLOpcodeA::AcquirePerm:
+            {
                 auto idmap_entry = std::make_shared<C_IDEntry>(a->address, a->alias);
                 idMap->update(this, a->source, idmap_entry);
                 if (localBoard->haskey(a->address)) {
-                    localBoard->query(this, a->address)->update_status(this, S_SENDING_A, a->alias);
+                    auto entry = localBoard->query(this, a->address);
+                    auto status = entry->status[a->alias];
+                    if (status == S_SENDING_C)
+                        entry->update_status(this, S_SENDING_A_NESTED_SENDING_C, a->alias);
+                    else if (status == S_VALID || status == S_INVALID)
+                        entry->update_status(this, S_SENDING_A, a->alias);
+                    else if (status == S_SENDING_A)
+                        entry->update_status(this, S_SENDING_A, a->alias);
+                    else if (status == S_SENDING_A_NESTED_SENDING_C)
+                        entry->update_status(this, S_SENDING_A_NESTED_SENDING_C, a->alias);
+                    else
+                    {
+                        tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                            .Append("unexpected AcquirePerm on ", StatusToString(status))
+                            .Append(" at ", a->address)
+                            .ToString());
+                    }
                 } else {
                     int             statuses[4]   = {S_INVALID};
                     TLPermission    privileges[4] = {TLPermission::INVALID};
@@ -197,6 +238,50 @@ namespace tl_agent {
 
                 break;
             }
+
+            case TLOpcodeA::CBOClean:
+            case TLOpcodeA::CBOFlush:
+            case TLOpcodeA::CBOInval:
+            {
+                if (localCMOStatus->hasInflight())
+                    return FAIL;
+
+                localCMOStatus->setInflight(this, a->address, TLOpcodeA(a->opcode));
+
+                auto idmap_entry = std::make_shared<C_IDEntry>(a->address, a->alias);
+                idMap->update(this, a->source, idmap_entry);
+
+                if (localBoard->haskey(a->address))
+                {
+                    auto entry = localBoard->query(this, a->address);
+                    for (int i = 0; i < 4; i++)
+                        if (entry->status[i] == S_VALID || entry->status[i] == S_INVALID) {
+                            entry->update_status(this, S_CBO_SENDING_A, i);
+                        } else if (entry->status[i] == S_SENDING_C) {
+                            entry->update_status(this, S_CBO_SENDING_A_NESTED_SENDING_C, i);
+                        } else if (entry->status[i] == S_C_WAITING_D) {
+                            entry->update_status(this, S_CBO_SENDING_A_NESTED_C_WAITING_D, i);
+                        } else {
+                            tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                                .Append("not allowed to send CBO on ", StatusToString(entry->status[i]))
+                                .Append(" at ", a->address)
+                                .ToString());
+                        }
+                }
+                else
+                {
+                    int          statuses   [4] = { S_INVALID };
+                    TLPermission perms      [4] = { TLPermission::INVALID };
+                    for (int i = 0; i < 4; i++)
+                        statuses[i] = S_CBO_SENDING_A;
+                    
+                    auto entry = std::make_shared<C_SBEntry>(this, statuses, perms);
+                    localBoard->update(this, a->address, entry);
+                }
+
+                break;
+            }
+
             default:
                 tlc_assert(false, this, "Unknown opcode for channel A!");
         }
@@ -228,11 +313,19 @@ namespace tl_agent {
         auto info = localBoard->query(this, b->address);
         auto exact_status = info->status;
         auto exact_privilege = info->privilege[b->alias];
-        tlc_assert(exact_status[b->alias] != S_SENDING_C, this, "handle_b should be mutual exclusive with pendingC!");
+        tlc_assert(exact_status[b->alias] != S_SENDING_C
+                && exact_status[b->alias] != S_CBO_SENDING_A_NESTED_SENDING_C
+                && exact_status[b->alias] != S_CBO_A_WAITING_D_NESTED_SENDING_C,
+            this, 
+            "handle_b should be mutual exclusive with pendingC!");
         for (int i = 0; i < 4; i++)
         {
-            if (exact_status[i] == S_C_WAITING_D) {
+            if (exact_status[i] == S_C_WAITING_D
+             || exact_status[i] == S_CBO_SENDING_A_NESTED_C_WAITING_D
+             || exact_status[i] == S_CBO_A_WAITING_D_NESTED_C_WAITING_D) {
                 // Probe waits for releaseAck
+                lastProbeAfterRelease = true;
+                lastProbeAfterReleaseAddress = b->address;
                 return;
             }
         }
@@ -250,16 +343,67 @@ namespace tl_agent {
 #endif
         // Log("== id == handleB %d\n", *req_c->source);
         Log(this, ShowBase().Hex().Append("Accepting over Probe to ProbeAck: ", uint64_t(b->source), " -> ", uint64_t(req_c->source)).EndLine());
-        if (exact_status[b->alias] == S_SENDING_A || exact_status[b->alias] == S_INVALID || exact_status[b->alias] == S_A_WAITING_D) {
-            req_c->opcode   = uint8_t(TLOpcodeC::ProbeAck);
-            req_c->param    = uint8_t(TLParamProbeAck::NtoN);
-            pendingC.init(req_c, 1);
+        if (exact_status[b->alias] == S_SENDING_A || exact_status[b->alias] == S_A_WAITING_D)
+        {
+            // Probe under AcquirePerm/AcquireBlock
+            req_c->opcode = uint8_t(TLOpcodeC::ProbeAck);
 
-            if (glbl.cfg.verbose_agent_debug)
-            {
-                Debug(this, Append("[CAgent] handle_b(): probed an non-exist block, status: ", StatusToString(exact_status[b->alias])).EndLine());
+            // *NOTICE: This is the inevitable non-filtered snoop, causing by nested self-Probe
+            //          with simultaneous Probe from other cores.
+            /*
+            tlc_assert(TLEnumEquals(b->param, TLParamProbe::toN), this,
+                Gravity::StringAppender().Hex().ShowBase()
+                .Append("unexpected non-filtered Probe ", ProbeParamToString(TLParamProbe(b->param)))
+                .Append(" on ", PrivilegeToString(exact_privilege))
+                .Append(" at ", b->address)
+                .Append(", check inclusive directory")
+                .ToString());
+            */
+
+            switch (exact_privilege) {
+                case TLPermission::INVALID: req_c->param = uint8_t(TLParamProbeAck::NtoN); break;
+                case TLPermission::BRANCH:  req_c->param = uint8_t(TLParamProbeAck::BtoN); break;
+                default:
+                    tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                        .Append("Acquire happened on T block, touched by Probe").ToString());
             }
-        } else {
+
+            pendingC.init(req_c, 1);
+        }
+        else if (exact_status[b->alias] == S_INVALID)
+        {
+            // Probe after Release/ReleaseData
+            req_c->opcode = uint8_t(TLOpcodeC::ProbeAck);
+
+            // *NOTICE: This is the inevitable non-filtered snoop, causing by nested self-Probe
+            //          with simultaneous Probe from other cores.
+            /*
+            tlc_assert(lastProbeAfterRelease && lastProbeAfterReleaseAddress == b->address, this,
+                Gravity::StringAppender().Hex().ShowBase()
+                .Append("unexpected non-filtered Probe ", ProbeParamToString(TLParamProbe(b->param)))
+                .Append(" on ", PrivilegeToString(exact_privilege))
+                .Append(" at ", b->address)
+                .Append(", check inclusive directory")
+                .ToString());
+            */
+
+            req_c->param = uint8_t(TLParamProbeAck::NtoN);
+
+            if (TLEnumEquals(b->param, TLParamProbe::toB))
+            {
+                if (glbl.cfg.verbose)
+                    Log(this, Append("down-graded Probe toB to NtoN, due to previous Release").EndLine());
+            }
+            else if (TLEnumEquals(b->param, TLParamProbe::toT))
+            {
+                if (glbl.cfg.verbose)
+                    Log(this, Append("down-graded Probe toT to NtoN, due to previous Release").EndLine());
+            }
+
+            pendingC.init(req_c, 1);
+        }
+        else 
+        {
             int dirty = (exact_privilege == TLPermission::TIP) && (info->dirty[b->alias] || CAGENT_RAND64(this, "CAgent") % 3);
             // When should we probeAck with data? request need_data or dirty itself
             req_c->opcode = uint8_t((dirty || b->needdata) ? TLOpcodeC::ProbeAckData : TLOpcodeC::ProbeAck);
@@ -267,13 +411,17 @@ namespace tl_agent {
                 switch (exact_privilege) {
                     case TLPermission::TIP:    req_c->param = uint8_t(TLParamProbeAck::TtoB); break;
                     case TLPermission::BRANCH: req_c->param = uint8_t(TLParamProbeAck::BtoB); break;
-                    default: tlc_assert(false, this, "Try to probe toB an invalid block!");
+                    case TLPermission::INVALID:req_c->param = uint8_t(TLParamProbeAck::NtoN); break;
+                    default: tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                        .Append("[Internal] Try to probe toB an unknown permission block: ", b->address).ToString());
                 }
             } else if (TLEnumEquals(b->param, TLParamProbe::toN)) {
                 switch (exact_privilege) {
                     case TLPermission::TIP:    req_c->param = uint8_t(TLParamProbeAck::TtoN); break;
                     case TLPermission::BRANCH: req_c->param = uint8_t(TLParamProbeAck::BtoN); break;
-                    default: tlc_assert(false, this, "Try to probe toB an invalid block!");
+                    case TLPermission::INVALID:req_c->param = uint8_t(TLParamProbeAck::NtoN); break;
+                    default: tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                        .Append("[Internal] Try to probe toN an unknown permission block: ", b->address).ToString());
                 }
             }
             if (!globalBoard->haskey(b->address)) {
@@ -332,6 +480,7 @@ namespace tl_agent {
                     ProbeAckParamToString(TLParamProbeAck(req_c->param))).ToString());
         }
         pendingB.update(this);
+        lastProbeAfterRelease = false;
     }
 
     Resp CAgent::send_c(std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>> &c) 
@@ -344,7 +493,18 @@ namespace tl_agent {
                 idMap->update(this, c->source, idmap_entry);
 
                 if (localBoard->haskey(c->address)) {
-                    localBoard->query(this, c->address)->update_status(this, S_SENDING_C, c->alias);
+                    auto entry = localBoard->query(this, c->address);
+                    if (entry->status[c->alias] == S_CBO_SENDING_A) {
+                        entry->update_status(this, S_CBO_SENDING_A_NESTED_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_CBO_A_WAITING_D) {
+                        entry->update_status(this, S_CBO_A_WAITING_D_NESTED_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_CBO_SENDING_A_NESTED_SENDING_C) {
+                        entry->update_status(this, S_CBO_SENDING_A_NESTED_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_CBO_A_WAITING_D_NESTED_SENDING_C) {
+                        entry->update_status(this, S_CBO_A_WAITING_D_NESTED_SENDING_C, c->alias);
+                    } else {
+                        entry->update_status(this, S_SENDING_C, c->alias);
+                    }
                 } else {
                     tlc_assert(false, this, "Localboard key not found!");
                 }
@@ -373,10 +533,22 @@ namespace tl_agent {
                 std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(c->address, c->alias));
                 idMap->update(this, c->source, idmap_entry);
 
-                if (localBoard->haskey(c->address))
-                    localBoard->query(this, c->address)->update_status(this, S_SENDING_C, c->alias);
-                else 
+                if (localBoard->haskey(c->address)) {
+                    auto entry = localBoard->query(this, c->address);
+                    if (entry->status[c->alias] == S_CBO_SENDING_A) {
+                        entry->update_status(this, S_CBO_SENDING_A_NESTED_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_CBO_A_WAITING_D) {
+                        entry->update_status(this, S_CBO_A_WAITING_D_NESTED_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_CBO_SENDING_A_NESTED_SENDING_C) {
+                        entry->update_status(this, S_CBO_SENDING_A_NESTED_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_CBO_A_WAITING_D_NESTED_SENDING_C) {
+                        entry->update_status(this, S_CBO_A_WAITING_D_NESTED_SENDING_C, c->alias);
+                    } else {
+                        entry->update_status(this, S_SENDING_C, c->alias);
+                    }
+                } else { 
                     tlc_assert(false, this, "Localboard key not found!");
+                }
 
                 break;
             }
@@ -387,8 +559,31 @@ namespace tl_agent {
                 idMap->update(this, c->source, idmap_entry);
 
                 if (localBoard->haskey(c->address)) {
-                    // TODO: What if this is an interrupted probe?
-                    localBoard->query(this, c->address)->update_status(this, S_SENDING_C, c->alias);
+                    auto entry = localBoard->query(this, c->address);
+                    if (entry->status[c->alias] == S_CBO_SENDING_A) {
+                        entry->update_status(this, S_CBO_SENDING_A_NESTED_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_CBO_A_WAITING_D) {
+                        entry->update_status(this, S_CBO_A_WAITING_D_NESTED_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_CBO_SENDING_A_NESTED_SENDING_C) {
+                        entry->update_status(this, S_CBO_SENDING_A_NESTED_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_CBO_A_WAITING_D_NESTED_SENDING_C) {
+                        entry->update_status(this, S_CBO_A_WAITING_D_NESTED_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_SENDING_A) {
+                        entry->update_status(this, S_SENDING_A_NESTED_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_A_WAITING_D) {
+                        entry->update_status(this, S_A_WAITING_D_NESTED_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_VALID || entry->status[c->alias] == S_INVALID) {
+                        entry->update_status(this, S_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_SENDING_C) {
+                        entry->update_status(this, S_SENDING_C, c->alias);
+                    } else if (entry->status[c->alias] == S_SENDING_A_NESTED_SENDING_C) {
+                        entry->update_status(this, S_SENDING_A_NESTED_SENDING_C, c->alias);
+                    } else {
+                        tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                            .Append("unexpected ProbeAckData on ", StatusToString(entry->status[c->alias]))
+                            .Append(" at ", c->address)
+                            .ToString());
+                    }
                 } else {
                     tlc_assert(false, this, "Localboard key not found!");
                 }
@@ -420,11 +615,34 @@ namespace tl_agent {
                 if (localBoard->haskey(c->address)) {
                     auto item = localBoard->query(this, c->address);
                     if (item->status[c->alias] == S_C_WAITING_D) {
-                        item->update_status(this, S_C_WAITING_D_INTR, c->alias);
+                        tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                            .Append("ProbeAck ran over ReleaseAck: ", c->address)
+                            .ToString());
                     } else if (item->status[c->alias] == S_A_WAITING_D) {
                         item->update_status(this, S_A_WAITING_D_INTR, c->alias);
-                    } else {
+                    } else if (item->status[c->alias] == S_CBO_SENDING_A) {
+                        item->update_status(this, S_CBO_SENDING_A_NESTED_SENDING_C, c->alias);
+                    } else if (item->status[c->alias] == S_CBO_A_WAITING_D) {
+                        item->update_status(this, S_CBO_A_WAITING_D_NESTED_SENDING_C, c->alias);
+                    } else if (item->status[c->alias] == S_CBO_SENDING_A_NESTED_SENDING_C) {
+                        item->update_status(this, S_CBO_SENDING_A_NESTED_SENDING_C, c->alias);
+                    } else if (item->status[c->alias] == S_CBO_A_WAITING_D_NESTED_SENDING_C) {
+                        item->update_status(this, S_CBO_A_WAITING_D_NESTED_SENDING_C, c->alias);
+                    } else if (item->status[c->alias] == S_SENDING_A) {
+                        item->update_status(this, S_SENDING_A_NESTED_SENDING_C, c->alias);
+                    } else if (item->status[c->alias] == S_A_WAITING_D) {
+                        item->update_status(this, S_A_WAITING_D_NESTED_SENDING_C, c->alias);
+                    } else if (item->status[c->alias] == S_VALID || item->status[c->alias] == S_INVALID) {
                         item->update_status(this, S_SENDING_C, c->alias);
+                    } else if (item->status[c->alias] == S_SENDING_C) {
+                        item->update_status(this, S_SENDING_C, c->alias);
+                    } else if (item->status[c->alias] == S_SENDING_A_NESTED_SENDING_C) {
+                        item->update_status(this, S_SENDING_A_NESTED_SENDING_C, c->alias);
+                    } else {
+                        tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                            .Append("unexpected ProbeAck on ", StatusToString(item->status[c->alias]))
+                            .Append(" at ", c->address)
+                            .ToString());
                     }
                 } else {
                     tlc_assert(false, this, "Localboard key not found!");
@@ -454,7 +672,7 @@ namespace tl_agent {
     void CAgent::fire_a() {
         if (this->port->a.fire()) {
             auto& chnA = this->port->a;
-
+            bool cbo = false;
             switch (TLOpcodeA(chnA.opcode))
             {
                 case TLOpcodeA::AcquireBlock:
@@ -483,6 +701,27 @@ namespace tl_agent {
                     }
                     break;
 
+                case TLOpcodeA::CBOClean:
+                    cbo = true;
+                    if (glbl.cfg.verbose_xact_fired)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[CMO] [fire req] [cbo.clean] ")
+                            .Append("source: ",     uint64_t(chnA.source))
+                            .Append(", addr: ",     uint64_t(chnA.address))
+                            .EndLine());
+                    }
+                    localCMOStatus->setFired(this, chnA.address);
+                    break;
+
+                case TLOpcodeA::CBOFlush:
+
+                    break;
+
+                case TLOpcodeA::CBOInval:
+
+                    break;
+
                 default:
                     tlc_assert(false, this, Gravity::StringAppender()
                         .Hex().ShowBase()
@@ -494,7 +733,57 @@ namespace tl_agent {
             tlc_assert(pendingA.is_pending(), this, "No pending A but A fired!");
             pendingA.update(this);
             if (!pendingA.is_pending()) { // req A finished
-                this->localBoard->query(this, pendingA.info->address)->update_status(this, S_A_WAITING_D, pendingA.info->alias);
+                auto entry = this->localBoard->query(this, pendingA.info->address);
+                if (cbo)
+                {
+                    for (int i = 0; i < 4; i++)
+                    {
+                        int status = entry->status[i];
+                        switch (status)
+                        {
+                            case S_CBO_SENDING_A:
+                                entry->update_status(this, S_CBO_A_WAITING_D, i);
+                                break;
+
+                            case S_CBO_SENDING_A_NESTED_SENDING_C:
+                                entry->update_status(this, S_CBO_A_WAITING_D_NESTED_SENDING_C, i);
+                                break;
+
+                            case S_CBO_SENDING_A_NESTED_C_WAITING_D:
+                                entry->update_status(this, S_CBO_A_WAITING_D_NESTED_C_WAITING_D, i);
+                                break;
+
+                            default:
+                                tlc_assert(false, this,
+                                    Gravity::StringAppender().Hex().ShowBase()
+                                    .Append("Not S_CBO_SENDING_A or nested on ", TLOpcodeAToString(TLOpcodeA(chnA.opcode)))
+                                    .Append(" fired with ", StatusToString(status))
+                                    .Append(" at ", pendingA.info->address)
+                                    .ToString());
+                        }
+                    }
+                }
+                else
+                {
+                    int status = entry->status[pendingA.info->alias];
+                    tlc_assert(status == S_SENDING_A || status == S_SENDING_A_NESTED_SENDING_C, this,
+                        Gravity::StringAppender("Not S_SENDING_A or nested on ", TLOpcodeAToString(TLOpcodeA(chnA.opcode)))
+                        .Append(" fired with ", StatusToString(status))
+                        .Append(" at ", pendingA.info->address)
+                        .ToString());
+
+                    if (status == S_SENDING_A)
+                        entry->update_status(this, S_A_WAITING_D, pendingA.info->alias);
+                    else if (status == S_SENDING_A_NESTED_SENDING_C)
+                        entry->update_status(this, S_A_WAITING_D_NESTED_SENDING_C, pendingA.info->alias);
+                    else {
+                        tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                            .Append("Not S_SENDING_A or nested on ", TLOpcodeAToString(TLOpcodeA(chnA.opcode)))
+                            .Append(" fired with ", StatusToString(status))
+                            .Append(" at ", pendingA.info->address)
+                            .ToString());
+                    }
+                }
             }
         }
     }
@@ -670,18 +959,42 @@ namespace tl_agent {
                 auto info = this->localBoard->query(this, pendingC.info->address);
                 auto exact_status = info->status[pendingC.info->alias];
                 if (needAck) {
-                    info->update_status(this, S_C_WAITING_D, pendingC.info->alias);
-                } else {
-                    if (exact_status == S_C_WAITING_D_INTR) {
+                    if (exact_status == S_SENDING_C) {
                         info->update_status(this, S_C_WAITING_D, pendingC.info->alias);
-                    } else if (exact_status == S_A_WAITING_D_INTR || exact_status == S_A_WAITING_D) {
-                        info->update_status(this, S_A_WAITING_D, pendingC.info->alias);
+                    } else if (exact_status == S_CBO_SENDING_A_NESTED_SENDING_C) {
+                        info->update_status(this, S_CBO_SENDING_A_NESTED_C_WAITING_D, pendingC.info->alias);
+                    } else if (exact_status == S_CBO_A_WAITING_D_NESTED_SENDING_C) {
+                        info->update_status(this, S_CBO_A_WAITING_D_NESTED_C_WAITING_D, pendingC.info->alias);
                     } else {
+                        tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                            .Append("unexpected fire_c() with state ", exact_status)
+                            .Append(" at ", pendingC.info->address)
+                            .ToString());
+                    }
+                } else {
+                    if (exact_status == S_A_WAITING_D_INTR || exact_status == S_A_WAITING_D) {
+                        info->update_status(this, S_A_WAITING_D, pendingC.info->alias);
+                    } else if (exact_status == S_CBO_A_WAITING_D) {
+                        info->update_status(this, S_CBO_A_WAITING_D, pendingC.info->alias);
+                    } else if (exact_status == S_CBO_SENDING_A_NESTED_SENDING_C) {
+                        info->update_status(this, S_CBO_SENDING_A, pendingC.info->alias);
+                    } else if (exact_status == S_CBO_A_WAITING_D_NESTED_SENDING_C) {
+                        info->update_status(this, S_CBO_A_WAITING_D, pendingC.info->alias);
+                    } else if (exact_status == S_SENDING_A_NESTED_SENDING_C) {
+                        info->update_status(this, S_SENDING_A, pendingC.info->alias);
+                    } else if (exact_status == S_A_WAITING_D_NESTED_SENDING_C) {
+                        info->update_status(this, S_A_WAITING_D, pendingC.info->alias);
+                    } else if (exact_status == S_SENDING_C) {
                         if (probeAckDataToB || probeAckToB) {
                             info->update_status(this, S_VALID, pendingC.info->alias);
                         } else {
                             info->update_status(this, S_INVALID, pendingC.info->alias);
                         }
+                    } else {
+                        tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                            .Append("unexpected fire_c() with state ", exact_status)
+                            .Append(" at ", pendingC.info->address)
+                            .ToString());
                     }
                 }
                 if (releaseHasData) {
@@ -772,6 +1085,17 @@ namespace tl_agent {
                         .EndLine());
                 }
             }
+            else if (TLEnumEquals(chnD.opcode, TLOpcodeD::CBOAck))
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire D] [CBOAck] ")
+                        .Append("source: ",     uint64_t(chnD.source))
+                        .Append(", addr: ",     uint64_t(addr))
+                        .EndLine());
+                }
+            }
             else
             {
                 tlc_assert(false, this, Gravity::StringAppender()
@@ -780,123 +1104,290 @@ namespace tl_agent {
                     .EndLine().ToString());
             }
 
-            bool hasData = TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData);
-            bool grant = TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData, TLOpcodeD::Grant);
+            if (TLEnumEquals(chnD.opcode, TLOpcodeD::CBOAck))
+            {
+                if (localCMOStatus->inflightCount() != 1)
+                    tlc_assert(false, this, "zero or multiple in-flight CMO");
 
-            auto info = localBoard->query(this, addr);
-            auto exact_status = info->status[alias];
-            if (!(exact_status == S_C_WAITING_D || exact_status == S_A_WAITING_D || exact_status == S_C_WAITING_D_INTR || exact_status == S_A_WAITING_D_INTR || exact_status == S_INVALID)) {
-              Log(this, Append("fire_d: status of localboard is ", exact_status).EndLine());
-              Log(this, Hex().ShowBase().Append("addr: ", addr).EndLine());
-              tlc_assert(false, this, Gravity::StringAppender("Status error! Not expected to received from channel D.").EndLine()
-                    .Append("current status: ", StatusToString(exact_status)).EndLine()
-                    .Append("description: ", StatusToDescription(exact_status)).EndLine()
-                .ToString());
-            }
-            if (pendingD.is_pending()) { // following beats
-                tlc_assert(chnD.opcode == pendingD.info->opcode, this, "Opcode mismatch among beats!");
-                tlc_assert(chnD.param  == pendingD.info->param,  this, "Param mismatch among beats!");
-                tlc_assert(chnD.source == pendingD.info->source, this, "Source mismatch among beats!");
-                pendingD.update(this);
-            } else { // new D resp
-                auto resp_d = std::make_shared<BundleChannelD<RespField, EchoField, DATASIZE>>();
-                resp_d->opcode  = chnD.opcode;
-                resp_d->param   = chnD.param;
-                resp_d->source  = chnD.source;
-                resp_d->data    = grant ? make_shared_tldata<DATASIZE>() : nullptr;
-                int nr_beat = TLEnumEquals(chnD.opcode, TLOpcodeD::Grant, TLOpcodeD::ReleaseAck) ? 0 : 1; // TODO: parameterize it
-                pendingD.init(resp_d, nr_beat);
-            }
-            if (hasData) {
-                int beat_num = pendingD.nr_beat - pendingD.beat_cnt;
-                /*
-                for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
-                    pendingD.info->data[i] = chnD.data[i - BEATSIZE * beat_num];
-                }
-                */
-                std::memcpy((uint8_t*)(pendingD.info->data->data) + BEATSIZE * beat_num, chnD.data->data, BEATSIZE);
+                auto status = localCMOStatus->firstInflight();
+                auto entry = localBoard->query(this, status.address);
 
-                if (glbl.cfg.verbose_agent_debug)
+                for (int i = 0; i < 4; i++)
                 {
-                    Debug(this, Append("[CAgent] channel D receiving data: "));
-                    DebugEx(data_dump_embedded<BEATSIZE>(chnD.data->data));
-                    DebugEx(std::cout << std::endl);
+                    if (entry->status[i] != S_CBO_A_WAITING_D
+                     && entry->status[i] != S_CBO_A_WAITING_D_NESTED_SENDING_C
+                     && entry->status[i] != S_CBO_A_WAITING_D_NESTED_C_WAITING_D)
+                    {
+                        Log(this, Append("fire_d: status of localboard is ", StatusToString(entry->status[i]), " at ", i).EndLine());
+                        Log(this, Hex().ShowBase().Append("addr: ", addr).EndLine());
+                        tlc_assert(false, this,
+                            Gravity::StringAppender().Hex().ShowBase()
+                                .Append("unexpected to receive CBOAck from channel D")
+                                .Append(" at ", addr).EndLine()
+                                .Append("current status: ", StatusToString(entry->status[i])).EndLine()
+                                .Append("description: ", StatusToDescription(entry->status[i])).EndLine()
+                            .ToString());
+                    }
                 }
-            }
-            if (!pendingD.is_pending()) {
-                switch (TLOpcodeD(chnD.opcode)) {
-                    case TLOpcodeD::GrantData: {
 
-                        if (glbl.cfg.verbose_xact_data_complete)
+                switch (status.opcode)
+                {
+                    case TLOpcodeA::CBOClean:
+                        for (int i = 0; i < 4; i++)
                         {
-                            Log(this, Append("[data complete D] [GrantData ", 
-                                    GrantDataParamToString(TLParamGrantData(chnD.param)), "] ")
-                                .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias, ", data: "));
-                            LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
-                            LogEx(std::cout << std::endl);
+                            int          status = entry->status[i];
+                            TLPermission perm   = entry->privilege[i];
+                            if (TLEnumEquals(perm, TLPermission::BRANCH)
+                            ||  TLEnumEquals(perm, TLPermission::INVALID))
+                            {
+                                if (glbl.cfg.verbose)
+                                {
+                                    Log(this, Append("[CMOAck] [cbo.clean] checked CMO final state on system #", sysId(), ": ")
+                                        .Append(PrivilegeToString(perm)).EndLine());
+                                }
+
+                                if (status == S_CBO_A_WAITING_D_NESTED_SENDING_C)
+                                    entry->update_status(this, S_SENDING_C, i);
+                                else if (status == S_CBO_A_WAITING_D_NESTED_C_WAITING_D)
+                                    entry->update_status(this, S_C_WAITING_D, i);
+                                else
+                                {
+                                    if (TLEnumEquals(perm, TLPermission::BRANCH))
+                                        entry->update_status(this, S_VALID, i);
+                                    else
+                                        entry->update_status(this, S_INVALID, i);
+                                }
+                            }
+                            else
+                            {
+                                tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                                    .Append("[CBOAck] [cbo.clean] ended up with ")
+                                    .Append(PrivilegeToString(perm))
+                                    .ToString());
+                            }
                         }
-                        
-                        this->globalBoard->verify(this, addr, pendingD.info->data);
-                        // info->update_dirty(*chnD.dirty, alias);
                         break;
-                    }
-                    case TLOpcodeD::Grant: {
-                        // Always set dirty in AcquirePerm toT txns
-                        info->update_dirty(this, true, alias);
-                        break;
-                    }
-                    case TLOpcodeD::ReleaseAck: {
-                        if (exact_status == S_C_WAITING_D) {
-                            info->update_status(this, S_INVALID, alias);
-                            info->update_dirty(this, 0, alias);
-                        } else {
-                            tlc_assert(exact_status == S_C_WAITING_D_INTR, this, 
-                                Gravity::StringAppender("Status error! ReleaseAck not expected.").EndLine()
-                                    .Append("current status: ", StatusToString(exact_status)).EndLine()
-                                    .Append("description: ", StatusToDescription(exact_status)).EndLine()
-                                .ToString());
-                            info->update_status(this, S_SENDING_C, alias);
+
+                    case TLOpcodeA::CBOFlush:
+                        for (int i = 0; i < 4; i++)
+                        {
+                            int          status = entry->status[i];
+                            TLPermission perm   = entry->privilege[i];
+                            if (TLEnumEquals(perm, TLPermission::INVALID))
+                            {
+                                if (glbl.cfg.verbose)
+                                {
+                                    Log(this, Append("[CMOAck] [cbo.flush] checked CMO final state on system #", sysId(), ": ")
+                                        .Append(PrivilegeToString(perm)).EndLine());
+                                }
+
+                                if (status == S_CBO_A_WAITING_D_NESTED_SENDING_C)
+                                    entry->update_status(this, S_SENDING_C, i);
+                                else if (status == S_CBO_A_WAITING_D_NESTED_C_WAITING_D)
+                                    entry->update_status(this, S_C_WAITING_D, i);
+                                else
+                                    entry->update_status(this, S_INVALID, i);
+                            }
+                            else
+                            {
+                                tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                                    .Append("[CBOAck] [cbo.flush] ended up with ")
+                                    .Append(PrivilegeToString(perm))
+                                    .ToString());
+                            }
                         }
-                        info->unpending_priviledge(this, alias);
-                        if (this->globalBoard->haskey(addr))
-                            this->globalBoard->unpending(this, addr); // ReleaseData
                         break;
-                    }
+
+                    case TLOpcodeA::CBOInval:
+                        for (int i = 0; i < 4; i++)
+                        {
+                            int          status = entry->status[i];
+                            TLPermission perm   = entry->privilege[i];
+                            if (TLEnumEquals(perm, TLPermission::INVALID))
+                            {
+                                if (glbl.cfg.verbose)
+                                {
+                                    Log(this, Append("[CMOAck] [cbo.inval] checked CMO final state on system #", sysId(), ": ")
+                                        .Append(PrivilegeToString(perm)).EndLine());
+                                }
+
+                                if (status == S_CBO_A_WAITING_D_NESTED_SENDING_C)
+                                    entry->update_status(this, S_SENDING_C, i);
+                                else if (status == S_CBO_A_WAITING_D_NESTED_C_WAITING_D)
+                                    entry->update_status(this, S_C_WAITING_D, i);
+                                else
+                                    entry->update_status(this, S_INVALID, i);
+                            }
+                            else
+                            {
+                                tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                                    .Append("[CBOAck] [cbo.inval] ended up with ")
+                                    .Append(PrivilegeToString(perm))
+                                    .ToString());
+                            }
+                        }
+                        break;
+
                     default:
-                        tlc_assert(false, this, "Unknown opcode in channel D!");
+                        tlc_assert(false, this,
+                            Gravity::StringAppender().Hex().ShowBase()
+                                .Append("Unknown opcode for firing CMOAck: ", uint64_t(status.opcode))
+                            .ToString());
                 }
 
-                // Send E
-                if (grant) {
-                    tlc_assert(exact_status != S_A_WAITING_D_INTR, this, "TODO: check this Ridiculous probe!");
-                    auto req_e = std::make_shared<BundleChannelE>();
-                    req_e->sink     = chnD.sink;
-                    req_e->addr     = addr;
-                    req_e->alias    = alias;
-                    if (pendingE.is_pending()) {
-                        tlc_assert(false, this, "E is pending!");
-                    }
-                    pendingE.init(req_e, 1);
-                    info->update_status(this, S_SENDING_E, alias);
+                localCMOStatus->freeInflight(this, status.address);
 
-                    if (TLEnumEquals(chnD.opcode, TLOpcodeD::Grant))
-                    {
-                        info->update_priviledge(
-                            this,
-                            capGenPrivByGrant(this, TLParamGrant(chnD.param)),
-                            alias);
-                    }
-                    else if (TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData))
-                    {
-                        info->update_priviledge(
-                            this,
-                            capGenPrivByGrantData(this, TLParamGrantData(chnD.param)),
-                            alias);
-                    }
-                }
                 idMap->erase(this, chnD.source);
-                // Log("== free == fireD %d\n", *chnD.source);
                 this->idpool.freeid(chnD.source);
+            }
+            else
+            {
+                bool hasData = TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData);
+                bool grant = TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData, TLOpcodeD::Grant);
+
+                auto info = localBoard->query(this, addr);
+                auto exact_status = info->status[alias];
+                if (exact_status == S_A_WAITING_D_NESTED_SENDING_C) {
+                    tlc_assert(false, this, Gravity::StringAppender()
+                            .Append("received Grant on S_A_WAITING_D_NESTED_SENDING_C (Grant not allowed on pending ProbeAck/ProbeAckData)")
+                        .ToString());
+                }
+                if (!(exact_status == S_C_WAITING_D 
+                   || exact_status == S_A_WAITING_D
+                   || exact_status == S_A_WAITING_D_INTR
+                   || exact_status == S_CBO_SENDING_A_NESTED_C_WAITING_D
+                   || exact_status == S_CBO_A_WAITING_D_NESTED_C_WAITING_D
+                   || exact_status == S_INVALID)) {
+                    Log(this, Append("fire_d: status of localboard is ", exact_status).EndLine());
+                    Log(this, Hex().ShowBase().Append("addr: ", addr).EndLine());
+                    tlc_assert(false, this, Gravity::StringAppender("Status error! Not expected to received from channel D.").EndLine()
+                            .Append("current status: ", StatusToString(exact_status)).EndLine()
+                            .Append("description: ", StatusToDescription(exact_status)).EndLine()
+                        .ToString());
+                }
+                if (pendingD.is_pending()) { // following beats
+                    tlc_assert(chnD.opcode == pendingD.info->opcode, this, "Opcode mismatch among beats!");
+                    tlc_assert(chnD.param  == pendingD.info->param,  this, "Param mismatch among beats!");
+                    tlc_assert(chnD.source == pendingD.info->source, this, "Source mismatch among beats!");
+                    pendingD.update(this);
+                } else { // new D resp
+                    auto resp_d = std::make_shared<BundleChannelD<RespField, EchoField, DATASIZE>>();
+                    resp_d->opcode  = chnD.opcode;
+                    resp_d->param   = chnD.param;
+                    resp_d->source  = chnD.source;
+                    resp_d->data    = grant ? make_shared_tldata<DATASIZE>() : nullptr;
+                    int nr_beat = TLEnumEquals(chnD.opcode, TLOpcodeD::Grant, TLOpcodeD::ReleaseAck) ? 0 : 1; // TODO: parameterize it
+                    pendingD.init(resp_d, nr_beat);
+                }
+                if (hasData) {
+                    int beat_num = pendingD.nr_beat - pendingD.beat_cnt;
+                    /*
+                    for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
+                        pendingD.info->data[i] = chnD.data[i - BEATSIZE * beat_num];
+                    }
+                    */
+                    std::memcpy((uint8_t*)(pendingD.info->data->data) + BEATSIZE * beat_num, chnD.data->data, BEATSIZE);
+
+                    if (glbl.cfg.verbose_agent_debug)
+                    {
+                        Debug(this, Append("[CAgent] channel D receiving data: "));
+                        DebugEx(data_dump_embedded<BEATSIZE>(chnD.data->data));
+                        DebugEx(std::cout << std::endl);
+                    }
+                }
+                if (!pendingD.is_pending()) {
+                    switch (TLOpcodeD(chnD.opcode)) {
+                        case TLOpcodeD::GrantData: {
+                            if (exact_status != S_A_WAITING_D && exact_status != S_A_WAITING_D_INTR)
+                                tlc_assert(false, this, Gravity::StringAppender()
+                                    .Append("GrantData not expected on ", StatusToString(exact_status))
+                                    .Append(" at ", addr)
+                                    .ToString());
+                            
+                            if (glbl.cfg.verbose_xact_data_complete)
+                            {
+                                Log(this, Append("[data complete D] [GrantData ", 
+                                        GrantDataParamToString(TLParamGrantData(chnD.param)), "] ")
+                                    .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias, ", data: "));
+                                LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
+                                LogEx(std::cout << std::endl);
+                            }
+                            
+                            this->globalBoard->verify(this, addr, pendingD.info->data);
+                            // info->update_dirty(*chnD.dirty, alias);
+                            break;
+                        }
+                        case TLOpcodeD::Grant: {
+                            if (exact_status != S_A_WAITING_D && exact_status != S_A_WAITING_D_INTR)
+                                tlc_assert(false, this, Gravity::StringAppender()
+                                    .Append("Grant not expected on ", StatusToString(exact_status))
+                                    .Append(" at ", addr)
+                                    .ToString());
+                            // Always set dirty in AcquirePerm toT txns
+                            info->update_dirty(this, true, alias);
+                            break;
+                        }
+                        case TLOpcodeD::ReleaseAck: {
+                            // Release toN possible only
+                            if (exact_status == S_C_WAITING_D) {
+                                info->update_status(this, S_INVALID, alias);
+                            } else if (exact_status == S_CBO_SENDING_A_NESTED_C_WAITING_D) {
+                                info->update_status(this, S_CBO_SENDING_A, alias);
+                            } else if (exact_status == S_CBO_A_WAITING_D_NESTED_C_WAITING_D) {
+                                info->update_status(this, S_CBO_A_WAITING_D, alias);
+                            } else {
+                                tlc_assert(false, this, 
+                                    Gravity::StringAppender("Status error! ReleaseAck not expected.").EndLine()
+                                        .Append("current status: ", StatusToString(exact_status)).EndLine()
+                                        .Append("description: ", StatusToDescription(exact_status)).EndLine()
+                                    .ToString());
+                            }
+                            info->update_dirty(this, 0, alias);
+                            info->unpending_priviledge(this, alias);
+                            if (this->globalBoard->haskey(addr))
+                                this->globalBoard->unpending(this, addr); // ReleaseData
+                            break;
+                        }
+                        default:
+                            tlc_assert(false, this, "Unknown opcode in channel D!");
+                    }
+
+                    // Send E
+                    if (grant) {
+                        tlc_assert(exact_status != S_A_WAITING_D_INTR, this, "TODO: check this Ridiculous probe!");
+                        auto req_e = std::make_shared<BundleChannelE>();
+                        req_e->sink     = chnD.sink;
+                        req_e->addr     = addr;
+                        req_e->alias    = alias;
+                        if (pendingE.is_pending()) {
+                            tlc_assert(false, this, "E is pending!");
+                        }
+                        pendingE.init(req_e, 1);
+                        info->update_status(this, S_SENDING_E, alias);
+
+                        if (TLEnumEquals(chnD.opcode, TLOpcodeD::Grant))
+                        {
+                            info->update_priviledge(
+                                this,
+                                capGenPrivByGrant(this, TLParamGrant(chnD.param)),
+                                alias);
+
+                            GrantEvent(sysId(), addr, info->privilege[alias]).Fire();
+                        }
+                        else if (TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData))
+                        {
+                            info->update_priviledge(
+                                this,
+                                capGenPrivByGrantData(this, TLParamGrantData(chnD.param)),
+                                alias);
+
+                            GrantEvent(sysId(), addr, info->privilege[alias]).Fire();
+                        }
+                    }
+
+                    idMap->erase(this, chnD.source);
+                    this->idpool.freeid(chnD.source);
+                }
             }
         }
     }
@@ -952,6 +1443,30 @@ namespace tl_agent {
         }
         idpool.update(this);
         probeIDpool.update(this);
+    }
+
+    void CAgent::onGrant(GrantEvent& event)
+    {
+        if (event.sysId != sysId())
+        {
+            if (event.finalPerm != TLPermission::TIP)
+                return;
+
+            if (!localBoard->haskey(event.address))
+                return;
+
+            auto entry = localBoard->query(this, event.address);
+
+            for (int i = 0; i < 4; i++)
+                if (entry->privilege[i] != TLPermission::INVALID)
+                {
+                    tlc_assert(false, this, Gravity::StringAppender()
+                        .Append("one CAgent #", event.sysId, " got T ")
+                        .Hex().ShowBase()
+                        .Append("on non-S_INVALID in other agents at ", event.address)
+                        .ToString());
+                }
+        }
     }
 
     bool CAgent::do_acquireBlock(paddr_t address, TLParamAcquire param, int alias) {
@@ -1364,6 +1879,87 @@ namespace tl_agent {
         return true;
     }
 
+    bool CAgent::do_cbo(TLOpcodeA opcode, paddr_t address, bool alwaysHit)
+    {
+        if (localCMOStatus->hasInflight())
+            return false;
+
+        if (pendingA.is_pending() || idpool.full())
+            return false;
+
+        if (alwaysHit)
+        {
+            std::unordered_map<paddr_t, std::shared_ptr<C_SBEntry>> hitTable;
+
+            if (hitTable.empty())
+                return false;
+
+            for (auto& iter : localBoard->get())
+                for (int i = 0; i < 4; i++)
+                    if (iter.second->status[i] == S_VALID)
+                        hitTable[iter.first] = iter.second;
+
+            size_t index = CAGENT_RAND64(this, "CAgent") % hitTable.size();
+
+            auto iter = hitTable.begin();
+            for (size_t i = 0; i < index; i++)
+                iter++;
+
+            address = iter->first;
+        }
+
+        if (localBoard->haskey(address))
+        {
+            // check whether this transaction is legal
+            auto entry = localBoard->query(this, address);
+
+            for (int i = 0; i < 4; i++)
+                if (entry->status[i] != S_VALID 
+                 && entry->status[i] != S_INVALID
+                 && entry->status[i] != S_SENDING_C
+                 && entry->status[i] != S_C_WAITING_D)
+                    return false;
+        }
+
+        auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
+        req_a->opcode   = uint8_t(opcode);
+        req_a->address  = address;
+        req_a->param    = 0;
+        req_a->size     = 0;
+        req_a->mask     = 0;
+        req_a->source   = this->idpool.getid();
+        req_a->alias    = 0;
+        req_a->vaddr    = 0;
+        req_a->needHint = 0;
+
+        pendingA.init(req_a, 1);
+
+        if (glbl.cfg.verbose_xact_sequenced)
+        {
+            Log(this, Hex().ShowBase()
+                .Append("[sequenced A] [CBOClean] ")
+                .Append("source: ", uint64_t(req_a->source))
+                .Append(", addr: ", uint64_t(address)).EndLine());
+        }
+
+        return true;
+    }
+
+    bool CAgent::do_cbo_clean(paddr_t address, bool alwaysHit)
+    {
+        return do_cbo(TLOpcodeA::CBOClean, address, alwaysHit);
+    }
+
+    bool CAgent::do_cbo_flush(paddr_t address, bool alwaysHit)
+    {
+        return do_cbo(TLOpcodeA::CBOFlush, address, alwaysHit);
+    }
+
+    bool CAgent::do_cbo_inval(paddr_t address, bool alwaysHit)
+    {
+        return do_cbo(TLOpcodeA::CBOInval, address, alwaysHit);
+    }
+
     void CAgent::timeout_check() {
         if (localBoard->get().empty()) {
             return;
@@ -1398,84 +1994,138 @@ namespace tl_agent {
     {
         return localBoard;
     }
+}
 
-    void CAgent::onCMOResponse(CMOResponseEvent& event)
+
+// Implementation of: class InflightCMO
+namespace tl_agent {
+    /*
+    uint64_t        timeStamp;
+    paddr_t         address;
+    TLOpcodeA       opcode;
+    bool            fired;
+    */
+
+    InflightCMO::InflightCMO(uint64_t timeStamp, paddr_t address, TLOpcodeA opcode) noexcept
+        : timeStamp (timeStamp)
+        , address   (address)
+        , opcode    (opcode)
+        , fired     (false)
+    { }
+}
+
+
+// Implementation of: class CMOLocalStatus
+namespace tl_agent {
+    /*
+    std::unordered_map<paddr_t, InflightCMO>    inflight;
+    */
+
+    void CMOLocalStatus::setInflight(const TLLocalContext* ctx, paddr_t address, TLOpcodeA opcode)
     {
-        if (sys() == event.id)
+        if (!inflight.empty())
         {
-            if (!localBoard->haskey(event.address))
-                return;
-
-            auto entry = localBoard->query(this, event.address);
-        
-            for (int i = 0; i < 4; i++)
+            if (inflight.count(address))
             {
-                TLPermission perm = entry->privilege[i];
-
-                switch (event.opcode)
-                {
-                    case CBO_CLEAN:
-                        if (TLEnumEquals(perm, TLPermission::BRANCH)
-                        ||  TLEnumEquals(perm, TLPermission::INVALID))
-                        {
-                            if (glbl.cfg.verbose)
-                            {
-                                Log(this, Append("[onCMOResponse] [cbo.clean] checked CMO final state on CAgent #", sysId(), ": ")
-                                    .Append(PrivilegeToString(perm)).EndLine());
-                            }
-                        }
-                        else
-                        {
-                            tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
-                                .Append("[onCMOResponse] 'cbo.clean' ended up with ")
-                                .Append(PrivilegeToString(perm))
-                                .ToString());
-                        }
-                        break;
-
-                    case CBO_FLUSH:
-                        if (TLEnumEquals(perm, TLPermission::INVALID))
-                        {
-                            if (glbl.cfg.verbose)
-                            {
-                                Log(this, Append("[onCMOResponse] [cbo.flush] checked CMO final state on CAgent #", sysId(), ": ")
-                                    .Append(PrivilegeToString(perm)).EndLine());
-                            }
-                        }
-                        else
-                        {
-                            tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
-                                .Append("[onCMOReponse] 'cbo.flush' ended up with ")
-                                .Append(PrivilegeToString(perm))
-                                .ToString());
-                        }
-                        break;
-
-                    case CBO_INVAL:
-                        if (TLEnumEquals(perm, TLPermission::INVALID))
-                        {
-                            if (glbl.cfg.verbose)
-                            {
-                                Log(this, Append("[onCMOResponse] [cbo.inval] checked CMO final state on CAgent #", sysId(), ": ")
-                                    .Append(PrivilegeToString(perm)).EndLine());
-                            }
-                        }
-                        else
-                        {
-                            tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
-                                .Append("[onCMOReponse] 'cbo.inval' ended up with ")
-                                .Append(PrivilegeToString(perm))
-                                .ToString());
-                        }
-                        break;
-
-                    default:
-                        tlc_assert(false, this,
-                            Gravity::StringAppender().Hex().ShowBase()
-                                .Append("Unknown opcode for CMO response event call: ", uint64_t(event.opcode))
-                            .ToString());
-                }
+                tlc_assert(false, ctx, Gravity::StringAppender().Hex().ShowBase()
+                    .Append("CMO already in flight: address: ", uint64_t(address))
+                    .ToString());
+            }
+            else
+            {
+                tlc_assert(false, ctx, Gravity::StringAppender().Hex().ShowBase()
+                    .Append("Multiple CMO in-flight on set")
+                    .ToString());
             }
         }
+
+        inflight[address] = InflightCMO(ctx->cycle(), address, opcode);
+    }
+
+    void CMOLocalStatus::freeInflight(const TLLocalContext* ctx, paddr_t address)
+    {
+        auto iter = inflight.find(address);
+
+        if (iter == inflight.end())
+        {
+            tlc_assert(false, ctx, Gravity::StringAppender().Hex().ShowBase()
+                .Append("CMO not in flight: address: ", uint64_t(address))
+                .ToString());
+        }
+
+        inflight.erase(iter);
+    }
+
+    bool CMOLocalStatus::isInflight(const TLLocalContext* ctx, paddr_t address) const noexcept
+    {
+        return inflight.count(address) != 0;
+    }
+
+    bool CMOLocalStatus::hasInflight() const noexcept
+    {
+        return !inflight.empty();
+    }
+
+    InflightCMO CMOLocalStatus::firstInflight() const noexcept
+    {
+        return inflight.begin()->second;
+    }
+    
+    size_t CMOLocalStatus::inflightCount() const noexcept
+    {
+        return inflight.size();
+    }
+
+    void CMOLocalStatus::setFired(const TLLocalContext* ctx, paddr_t address)
+    {
+        auto iter = inflight.find(address);
+
+        if (iter == inflight.end())
+        {
+            tlc_assert(false, ctx, Gravity::StringAppender().Hex().ShowBase()
+                .Append("CMO not in flight to set fired: address: ", uint64_t(address))
+                .ToString());
+        }
+
+        if (iter->second.fired)
+        {
+            tlc_assert(false, ctx, Gravity::StringAppender().Hex().ShowBase()
+                .Append("In-flight CMO already fired: address: ", uint64_t(address))
+                .ToString());
+        }
+
+        iter->second.fired = true;
+    }
+
+    InflightCMO CMOLocalStatus::query(const TLLocalContext* ctx, paddr_t address) const
+    {
+        auto iter = inflight.find(address);
+
+        if (iter == inflight.end())
+        {
+            tlc_assert(false, ctx, Gravity::StringAppender().Hex().ShowBase()
+                .Append("In-flight CMO not found: address: ", uint64_t(address))
+                .ToString());
+        }
+
+        return iter->second;
+    }
+
+    void CMOLocalStatus::update(const TLLocalContext* ctx, paddr_t address, InflightCMO entry)
+    {
+        inflight[address] = entry;
+
+        if (inflight.size() != 1)
+        {
+            tlc_assert(false, ctx, Gravity::StringAppender().Hex().ShowBase()
+                .Append("Multiple CMO in-flight after update")
+                .ToString());
+        }
+    }
+
+    void CMOLocalStatus::checkTimeout(const TLLocalContext* ctx)
+    {
+        // don't do timeout check currently
     }
 }
+

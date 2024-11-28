@@ -10,12 +10,26 @@
 #include "../Base/TLEnum.hpp"
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
+#include "../Utils/gravity_eventbus.hpp"
 
 #include "Bundle.h"
-#include "CMOAgent.h"
 
 
 namespace tl_agent {
+
+    class GrantEvent : public Gravity::Event<GrantEvent> {
+    public:
+        uint64_t        sysId;
+        paddr_t         address;
+        TLPermission    finalPerm;
+
+    public:
+        inline GrantEvent(uint64_t sysId, paddr_t address, TLPermission finalPerm) noexcept
+            : sysId     (sysId)
+            , address   (address)
+            , finalPerm (finalPerm)
+        { }
+    };
 
     class C_SBEntry {
     public:
@@ -36,16 +50,16 @@ namespace tl_agent {
 
         inline void update_status(const TLLocalContext* ctx, int status, int alias)
         {
-            this->status[alias] = status;
-            this->time_stamp = ctx->cycle();
-
 #           if SB_DEBUG == 1
                 Debug(ctx, Append("TL-C local scoreboard update (status): ")
                     .ShowBase()
                     .Dec().Append("[alias = ", alias, "]")
-                    .Hex().Append(" status = ", StatusToString(status))
+                    .Hex().Append(" status = ", StatusToString(this->status[alias]), " -> ", StatusToString(status))
                     .EndLine());
 #           endif
+
+            this->status[alias] = status;
+            this->time_stamp = ctx->cycle();
         }
 
         inline void update_priviledge(const TLLocalContext* ctx, TLPermission priv, int alias)
@@ -201,6 +215,40 @@ namespace tl_agent {
 #   endif
 
 
+    class InflightCMO {
+    public:
+        uint64_t        timeStamp;
+        paddr_t         address;
+        TLOpcodeA       opcode;
+        bool            fired;
+
+    public:
+        InflightCMO() noexcept = default;
+        InflightCMO(uint64_t timeStamp, paddr_t address, TLOpcodeA opcode) noexcept;
+    };
+
+    class CMOLocalStatus {
+    private:
+        std::unordered_map<paddr_t, InflightCMO>    inflight;
+
+    public:
+        void            setInflight(const TLLocalContext* ctx, paddr_t address, TLOpcodeA opcode);
+        void            freeInflight(const TLLocalContext* ctx, paddr_t address);
+        bool            isInflight(const TLLocalContext* ctx, paddr_t address) const noexcept;
+        bool            hasInflight() const noexcept;
+        InflightCMO     firstInflight() const noexcept;
+
+        size_t          inflightCount() const noexcept;
+
+        void            setFired(const TLLocalContext* ctx, paddr_t address);
+
+        InflightCMO     query(const TLLocalContext* ctx, paddr_t address) const;
+        void            update(const TLLocalContext* ctx, paddr_t address, InflightCMO entry);
+
+        void            checkTimeout(const TLLocalContext* ctx);
+    };
+
+
     class CAgent : public BaseAgent<> {
     public:
         using LocalScoreBoard       = ScoreBoard<paddr_t, C_SBEntry, ScoreBoardUpdateCallbackCSBEntry<paddr_t>>;
@@ -219,6 +267,7 @@ namespace tl_agent {
          */
         LocalScoreBoard*        localBoard;
         IDMapScoreBoard*        idMap;
+        CMOLocalStatus*         localCMOStatus;
         /*
         * *NOTICE:
         *   L1D infers that all following Release must obtain dirty data (must be ReleaseData)
@@ -226,6 +275,8 @@ namespace tl_agent {
         *   Besides, this is not straight-forward for inclusive system simulation, so the
         *   AcquirePermScoreBoard must be maintained.
         */
+        bool                    lastProbeAfterRelease;
+        paddr_t                 lastProbeAfterReleaseAddress;
         AcquirePermScoreBoard*  acquirePermBoard;
         IDPool probeIDpool;
         void timeout_check() override;
@@ -248,18 +299,21 @@ namespace tl_agent {
         void handle_channel() override;
         void update_signal() override;
 
+        void onGrant(GrantEvent& event);
+
         bool do_acquireBlock(paddr_t address, TLParamAcquire param, int alias);
         bool do_acquirePerm(paddr_t address, TLParamAcquire param, int alias);
         bool do_releaseData(paddr_t address, TLParamRelease param, shared_tldata_t<DATASIZE> data, int alias);
         bool do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced);
 
+        bool do_cbo(TLOpcodeA opcode, paddr_t address, bool alwaysHit);
+        bool do_cbo_clean(paddr_t address, bool alwaysHit);
+        bool do_cbo_flush(paddr_t address, bool alwaysHit);
+        bool do_cbo_inval(paddr_t address, bool alwaysHit);
+
         LocalScoreBoard*        local() noexcept;
         const LocalScoreBoard*  local() const noexcept;
-
-    public:
-        void onCMOResponse(CMOResponseEvent& event);
     };
-
 }
 
 
