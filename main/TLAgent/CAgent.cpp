@@ -308,7 +308,9 @@ namespace tl_agent {
             return;
         }
 
-        tlc_assert(localBoard->haskey(b->address), this, "Probe an non-exist block!");
+        tlc_assert(localBoard->haskey(b->address), this, Gravity::StringAppender().Hex().ShowBase()
+            .Append("Probe an non-exist block: ", b->address)
+            .ToString());
 
         auto info = localBoard->query(this, b->address);
         auto exact_status = info->status;
