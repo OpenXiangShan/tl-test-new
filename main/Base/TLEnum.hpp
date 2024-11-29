@@ -20,9 +20,13 @@ enum class TLOpcodeA {
     Intent          = 5,
     AcquireBlock    = 6,
     AcquirePerm     = 7,
-    CBOClean        = 8,
-    CBOFlush        = 9,
-    CBOInval        = 10
+    //              = 8,
+    //              = 9,
+    //              = 10,
+    //              = 11,
+    CBOClean        = 12,
+    CBOFlush        = 13,
+    CBOInval        = 14
 };
 
 enum class TLOpcodeB {
