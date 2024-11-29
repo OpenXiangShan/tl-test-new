@@ -717,11 +717,29 @@ namespace tl_agent {
                     break;
 
                 case TLOpcodeA::CBOFlush:
-
+                    cbo = true;
+                    if (glbl.cfg.verbose_xact_fired)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[CMO] [fire req] [cbo.flush] ")
+                            .Append("source: ",     uint64_t(chnA.source))
+                            .Append(", addr: ",     uint64_t(chnA.address))
+                            .EndLine());
+                    }
+                    localCMOStatus->setFired(this, chnA.address);
                     break;
 
                 case TLOpcodeA::CBOInval:
-
+                    cbo = true;
+                    if (glbl.cfg.verbose_xact_fired)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[CMO] [fire req] [cbo.inval] ")
+                            .Append("source: ",     uint64_t(chnA.source))
+                            .Append(", addr: ",     uint64_t(chnA.address))
+                            .EndLine());
+                    }
+                    localCMOStatus->setFired(this, chnA.address);
                     break;
 
                 default:
@@ -769,7 +787,8 @@ namespace tl_agent {
                 {
                     int status = entry->status[pendingA.info->alias];
                     tlc_assert(status == S_SENDING_A || status == S_SENDING_A_NESTED_SENDING_C, this,
-                        Gravity::StringAppender("Not S_SENDING_A or nested on ", TLOpcodeAToString(TLOpcodeA(chnA.opcode)))
+                        Gravity::StringAppender().Hex().ShowBase()
+                        .Append("Not S_SENDING_A or nested on ", TLOpcodeAToString(TLOpcodeA(chnA.opcode)))
                         .Append(" fired with ", StatusToString(status))
                         .Append(" at ", pendingA.info->address)
                         .ToString());
