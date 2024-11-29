@@ -104,7 +104,8 @@ namespace tl_agent {
                 {
                     Log(this, Hex().ShowBase()
                         .Append("[fire A] [Get] ")
-                        .Append("addr: ",       uint64_t(chnA.address))
+                        .Append("source: ",     uint64_t(chnA.source))
+                        .Append(", addr: ",     uint64_t(chnA.address))
                         .Append(", size: ",     uint64_t(chnA.size))
                         .EndLine());
                 }
@@ -231,7 +232,8 @@ namespace tl_agent {
                 {
                     Log(this, Hex().ShowBase()
                         .Append("[fire D] [AccessAck] ")
-                        .Append("addr: ", info->address)
+                        .Append("source: ", uint64_t(chnD.source))
+                        .Append(", addr: ", info->address)
                         .EndLine());
                 }
             }
@@ -241,7 +243,8 @@ namespace tl_agent {
                 {
                     Log(this, Hex().ShowBase()
                         .Append("[fire D] [AccessAckData] ")
-                        .Append("addr: ", info->address, ", data: "));
+                        .Append("source: ", uint64_t(chnD.source))
+                        .Append(", addr: ", info->address, ", data: "));
                     LogEx(data_dump_embedded<BEATSIZE>(chnD.data->data));
                     LogEx(std::cout << std::endl);
                 }

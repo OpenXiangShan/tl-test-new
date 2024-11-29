@@ -49,10 +49,21 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.coreCount                     = TLTEST_DEFAULT_CORE_COUNT;
     tlcfg.masterCountPerCoreTLC         = TLTEST_DEFAULT_MASTER_COUNT_PER_CORE_TLC;
     tlcfg.masterCountPerCoreTLUL        = TLTEST_DEFAULT_MASTER_COUNT_PER_CORE_TLUL;
+
+    tlcfg.memoryEnable                  = TLTEST_DEFAULT_MEMORY_ENABLE;
     tlcfg.memoryStart                   = TLTEST_DEFAULT_MEMORY_START;
     tlcfg.memoryEnd                     = TLTEST_DEFAULT_MEMORY_END;
+
+    tlcfg.mmioEnable                    = TLTEST_DEFAULT_MMIO_ENABLE;
     tlcfg.mmioStart                     = TLTEST_DEFAULT_MMIO_START;
     tlcfg.mmioEnd                       = TLTEST_DEFAULT_MMIO_END;
+
+    tlcfg.cmoEnable                     = TLTEST_DEFAULT_CMO_ENABLE;
+    tlcfg.cmoEnableCBOClean             = TLTEST_DEFAULT_CMO_ENABLE_CBO_CLEAN;
+    tlcfg.cmoEnableCBOFlush             = TLTEST_DEFAULT_CMO_ENABLE_CBO_FLUSH;
+    tlcfg.cmoEnableCBOInval             = TLTEST_DEFAULT_CMO_ENABLE_CBO_INVAL;
+    tlcfg.cmoStart                      = TLTEST_DEFAULT_CMO_START;
+    tlcfg.cmoEnd                        = TLTEST_DEFAULT_CMO_END;
 
     tlcfg.fuzzARIInterval               = CFUZZER_RANGE_ITERATE_INTERVAL;
     tlcfg.fuzzARITarget                 = CFUZZER_RANGE_ITERATE_TARGET;
@@ -95,10 +106,21 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.config", "core",                       tlcfg.coreCount);
     INI_OVERRIDE_INT("tltest.config", "core.tl_c",                  tlcfg.masterCountPerCoreTLC);
     INI_OVERRIDE_INT("tltest.config", "core.tl_ul",                 tlcfg.masterCountPerCoreTLUL);
+
+    INI_OVERRIDE_INT("tltest.config", "memory.enable",              tlcfg.memoryEnable);
     INI_OVERRIDE_INT("tltest.config", "memory.start",               tlcfg.memoryStart);
     INI_OVERRIDE_INT("tltest.config", "memory.end",                 tlcfg.memoryEnd);
+
+    INI_OVERRIDE_INT("tltest.config", "mmio.enable",                tlcfg.mmioEnable);
     INI_OVERRIDE_INT("tltest.config", "mmio.start",                 tlcfg.mmioStart);
     INI_OVERRIDE_INT("tltest.config", "mmio.end",                   tlcfg.mmioEnd);
+
+    INI_OVERRIDE_INT("tltest.config", "cmo.enable",                 tlcfg.cmoEnable);
+    INI_OVERRIDE_INT("tltest.config", "cmo.enable.cbo.clean",       tlcfg.cmoEnableCBOClean);
+    INI_OVERRIDE_INT("tltest.config", "cmo.enable.cbo.flush",       tlcfg.cmoEnableCBOFlush);
+    INI_OVERRIDE_INT("tltest.config", "cmo.enable.cbo.inval",       tlcfg.cmoEnableCBOInval);
+    INI_OVERRIDE_INT("tltest.config", "cmo.start",                  tlcfg.cmoStart);
+    INI_OVERRIDE_INT("tltest.config", "cmo.end",                    tlcfg.cmoEnd);
 
     INI_OVERRIDE_INT("tltest.fuzzer", "seed",                       tlcfg.seed);
     INI_OVERRIDE_INT("tltest.fuzzer", "ari.interval",               tlcfg.fuzzARIInterval);

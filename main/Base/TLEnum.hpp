@@ -19,7 +19,14 @@ enum class TLOpcodeA {
     Get             = 4,
     Intent          = 5,
     AcquireBlock    = 6,
-    AcquirePerm     = 7
+    AcquirePerm     = 7,
+    //              = 8,
+    //              = 9,
+    //              = 10,
+    //              = 11,
+    CBOClean        = 12,
+    CBOFlush        = 13,
+    CBOInval        = 14
 };
 
 enum class TLOpcodeB {
@@ -52,7 +59,8 @@ enum class TLOpcodeD {
     Grant           = 4,
     GrantData       = 5,
     ReleaseAck      = 6,
-//                  = 7
+//                  = 7,
+    CBOAck          = 8
 };
 
 enum class TLOpcodeE {
@@ -115,6 +123,75 @@ inline constexpr bool TLEnumEquals(Ta a, Tb b, Tbs... bs) noexcept
 
 
 //
+inline std::string TLOpcodeAToString(TLOpcodeA opcode) noexcept
+{
+    switch (opcode)
+    {
+        case TLOpcodeA::PutFullData:    return "PutFullData";
+        case TLOpcodeA::PutPartialData: return "PutPartialData";
+        case TLOpcodeA::ArithmeticData: return "ArithmeticData";
+        case TLOpcodeA::LogicalData:    return "LogicalData";
+        case TLOpcodeA::Get:            return "Get";
+        case TLOpcodeA::Intent:         return "Intent";
+        case TLOpcodeA::AcquireBlock:   return "AcquireBlock";
+        case TLOpcodeA::AcquirePerm:    return "AcquirePerm";
+        case TLOpcodeA::CBOClean:       return "CBOClean";
+        case TLOpcodeA::CBOFlush:       return "CBOFlush";
+        case TLOpcodeA::CBOInval:       return "CBOInval";
+        default:
+            return Gravity::StringAppender("<unknown_opcode_A:", uint64_t(opcode), ">").ToString();
+    }
+}
+
+inline std::string TLOpcodeBToString(TLOpcodeB opcode) noexcept
+{
+    switch (opcode)
+    {
+        case TLOpcodeB::PutFullData:    return "PutFullData";
+        case TLOpcodeB::PutPartialData: return "PutPartialData";
+        case TLOpcodeB::ArithmeticData: return "ArithmeticData";
+        case TLOpcodeB::LogicalData:    return "LogicalData";
+        case TLOpcodeB::Get:            return "Get";
+        case TLOpcodeB::Intent:         return "Intent";
+        case TLOpcodeB::ProbeBlock:     return "ProbeBlock";
+        case TLOpcodeB::ProbePerm:      return "ProbePerm";
+        default:
+            return Gravity::StringAppender("<unknown_opcode_B:", uint64_t(opcode), ">").ToString();
+    }
+}
+
+inline std::string TLOpcodeCToString(TLOpcodeC opcode) noexcept
+{
+    switch (opcode)
+    {
+        case TLOpcodeC::AccessAck:      return "AccessAck";
+        case TLOpcodeC::AccessAckData:  return "AccessAckData";
+        case TLOpcodeC::HintAck:        return "HintAck";
+        case TLOpcodeC::ProbeAck:       return "ProbeAck";
+        case TLOpcodeC::ProbeAckData:   return "ProbeAckData";
+        case TLOpcodeC::Release:        return "Release";
+        case TLOpcodeC::ReleaseData:    return "ReleaseData";
+        default:
+            return Gravity::StringAppender("<unknown_opcode_C:", uint64_t(opcode), ">").ToString();
+    }
+}
+
+inline std::string TLOpcodeDToString(TLOpcodeD opcode) noexcept
+{
+    switch (opcode)
+    {
+        case TLOpcodeD::AccessAck:      return "AccessAck";
+        case TLOpcodeD::AccessAckData:  return "AccessAckData";
+        case TLOpcodeD::HintAck:        return "HintAck";
+        case TLOpcodeD::Grant:          return "Grant";
+        case TLOpcodeD::GrantData:      return "GrantData";
+        case TLOpcodeD::ReleaseAck:     return "ReleaseAck";
+        case TLOpcodeD::CBOAck:         return "CBOAck";
+        default:
+            return Gravity::StringAppender("<unknown_opcode_D:", uint64_t(opcode), ">").ToString();
+    }
+}
+
 inline std::string ProbeParamToString(TLParamProbe param) noexcept
 {
     switch (param)

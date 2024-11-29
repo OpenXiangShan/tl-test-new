@@ -3,7 +3,6 @@
 //
 
 #include "../Base/TLEnum.hpp"
-#include "Fuzzer.h"
 
 #include "../Events/TLSystemEvent.hpp"
 
@@ -34,6 +33,9 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
 
     this->memoryStart                   = cAgent->config().memoryStart;
     this->memoryEnd                     = cAgent->config().memoryEnd;
+
+    this->cmoStart                      = cAgent->config().cmoStart;
+    this->cmoEnd                        = cAgent->config().cmoEnd;
 
     this->fuzzARIRangeIndex             = 0;
     this->fuzzARIRangeIterationInterval = cAgent->config().fuzzARIInterval;
@@ -100,8 +102,6 @@ void CFuzzer::randomTest(bool do_alias) {
             addr  = ((CAGENT_RAND64(cAgent, "CFuzzer") % FUZZ_ARI_RANGES[fuzzARIRangeOrdinal[fuzzARIRangeIndex]].maxTag) << 13) 
                   + ((CAGENT_RAND64(cAgent, "CFuzzer") % FUZZ_ARI_RANGES[fuzzARIRangeOrdinal[fuzzARIRangeIndex]].maxSet) << 6);
             alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % FUZZ_ARI_RANGES[fuzzARIRangeOrdinal[fuzzARIRangeIndex]].maxAlias) : 0;
-
-            addr = remap_memory_address(addr);
         }
         else // FUZZ_STREAM
         {
@@ -118,27 +118,62 @@ void CFuzzer::randomTest(bool do_alias) {
             }
         }
 
-        if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
-            if (CAGENT_RAND64(cAgent, "CFuzzer") % 3) {
-                if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
-                    cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias); // AcquireBlock NtoT
+        if (CAGENT_RAND64(cAgent, "CFuzzer") % 4)
+        {
+            if (!cAgent->config().memoryEnable)
+                return;
+
+            addr = remap_memory_address(addr);
+
+            if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
+                if (CAGENT_RAND64(cAgent, "CFuzzer") % 3) {
+                    if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
+                        cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias); // AcquireBlock NtoT
+                    } else {
+                        cAgent->do_acquireBlock(addr, TLParamAcquire::NtoB, alias); // AcquireBlock NtoB
+                    }
                 } else {
-                    cAgent->do_acquireBlock(addr, TLParamAcquire::NtoB, alias); // AcquireBlock NtoB
+                    cAgent->do_acquirePerm(addr, TLParamAcquire::NtoT, alias); // AcquirePerm
                 }
             } else {
-                cAgent->do_acquirePerm(addr, TLParamAcquire::NtoT, alias); // AcquirePerm
+                /*
+                uint8_t* putdata = new uint8_t[DATASIZE];
+                for (int i = 0; i < DATASIZE; i++) {
+                    putdata[i] = (uint8_t)CAGENT_RAND64(cAgent, "CFuzzer");
+                }
+                cAgent->do_releaseData(addr, tl_agent::TtoN, putdata); // ReleaseData
+                */
+                cAgent->do_releaseDataAuto(addr, alias, 
+                    CAGENT_RAND64(cAgent, "CFuzzer") & 0x1,
+                    CAGENT_RAND64(cAgent, "CFuzzer") & 0x1); // feel free to releaseData according to its priv
             }
-        } else {
-            /*
-            uint8_t* putdata = new uint8_t[DATASIZE];
-            for (int i = 0; i < DATASIZE; i++) {
-                putdata[i] = (uint8_t)CAGENT_RAND64(cAgent, "CFuzzer");
+        }
+        else if (cAgent->config().cmoEnable)
+        {
+            addr = remap_cmo_address(addr);
+
+            bool alwaysHit = (CAGENT_RAND64(cAgent, "CFuzzer") % 8) == 0;
+
+            switch (CAGENT_RAND64(cAgent, "CFuzzer") % 3)
+            {
+                case 0: // cbo.clean
+                    if (cAgent->config().cmoEnableCBOClean)
+                        cAgent->do_cbo_clean(addr, alwaysHit);
+                    break;
+
+                case 1: // cbo.flush
+                    if (cAgent->config().cmoEnableCBOFlush)
+                        cAgent->do_cbo_flush(addr, alwaysHit);
+                    break;
+
+                case 2: // cbo.inval
+                    if (cAgent->config().cmoEnableCBOInval)
+                        cAgent->do_cbo_inval(addr, alwaysHit);
+                    break;
+
+                default:
+                    break;
             }
-            cAgent->do_releaseData(addr, tl_agent::TtoN, putdata); // ReleaseData
-            */
-            cAgent->do_releaseDataAuto(addr, alias, 
-                CAGENT_RAND64(cAgent, "CFuzzer") & 0x1,
-                CAGENT_RAND64(cAgent, "CFuzzer") & 0x1); // feel free to releaseData according to its priv
         }
     }
 }
