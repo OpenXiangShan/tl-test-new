@@ -184,6 +184,9 @@ openLLC-verilate:
 	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/OpenLLC/build/*.v -Wno-fatal \
 		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
 
+openLLC-verilate-clean:
+	rm -rf verilated
+
 
 coupledL2-test-l2l3: coupledL2-compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
 					 tltest-config-coupledL2-test-l2l3 tltest-build-all-coupledL2
@@ -277,4 +280,4 @@ run-with-portgen: FORCE tltest-config-postbuild tltest-portgen
 	@bash ./scripts/run_v3lt.sh
 
 
-clean: coupledL2-verilate-clean coupledL2-verilog-clean tltest-clean
+clean: coupledL2-verilate-clean coupledL2-verilog-clean openLLC-verilate-clean openLLC-verilog-clean tltest-clean
