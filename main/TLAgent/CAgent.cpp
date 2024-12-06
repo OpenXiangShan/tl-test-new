@@ -1040,7 +1040,8 @@ namespace tl_agent {
                     uncachedBoards->appendAll(this, pendingC.info->address, global_SBEntry->data);
                 }
                 if (TLEnumEquals(chnC.opcode, TLOpcodeC::ReleaseData, TLOpcodeC::Release)) {
-                    info->update_pending_priviledge(
+                    info->update_dirty(this, 0, pendingC.info->alias);
+                    info->update_priviledge(
                         this, 
                         shrinkGenPrivByRelease(this, TLParamRelease(pendingC.info->param)), 
                         pendingC.info->alias);
@@ -1363,8 +1364,6 @@ namespace tl_agent {
                                         .Append("description: ", StatusToDescription(exact_status)).EndLine()
                                     .ToString());
                             }
-                            info->update_dirty(this, 0, alias);
-                            info->unpending_priviledge(this, alias);
                             if (this->globalBoard->haskey(addr))
                                 this->globalBoard->unpending(this, addr); // ReleaseData
                             break;
@@ -1484,7 +1483,7 @@ namespace tl_agent {
                     tlc_assert(false, this, Gravity::StringAppender()
                         .Append("one CAgent #", event.sysId, " got T ")
                         .Hex().ShowBase()
-                        .Append("on non-S_INVALID in other agents at ", event.address)
+                        .Append("on non-INVALID in other agents at ", event.address)
                         .ToString());
                 }
         }
