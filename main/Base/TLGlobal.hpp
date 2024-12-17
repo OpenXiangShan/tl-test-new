@@ -14,6 +14,9 @@ struct TLGlobalConfiguration {
     bool                    verbose_xact_fired;
     bool                    verbose_xact_sequenced;
     bool                    verbose_xact_data_complete;
+    bool                    verbose_memory_axi_write;
+    bool                    verbose_memory_axi_read;
+    bool                    verbose_memory_data_full;
     bool                    verbose_data_full;
     bool                    verbose_agent_debug;
 };

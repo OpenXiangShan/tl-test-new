@@ -1,4 +1,5 @@
 #include "tilelink_dpi.hpp"
+#include "memory_dpi.hpp"
 
 #include "tilelink_dpi_configs.hpp"
 
@@ -478,5 +479,206 @@ extern "C" void TileLinkMMIOPullChannelD(
 {
     TLSequencer::MMIOPort& port = passive->MMIO(deviceId);
     *ready          = port.d.ready;
+}
+//
+
+
+/*
+* DPI functions to connect Memory Backend AXI Channel AW
+*/
+extern "C" void MemoryAXIPullChannelAW(
+    uint8_t*            ready)
+{
+    TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
+    *ready = port.aw.ready;
+}
+
+extern "C" void MemoryAXIPushChannelAW(
+    const uint8_t       valid,
+    const uint32_t      id,
+    const uint64_t      addr,
+    const uint8_t       burst,
+    const uint8_t       size,
+    const uint8_t       len)
+{
+    TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
+    port.aw.valid   = valid;
+    port.aw.id      = id;
+    port.aw.addr    = addr;
+    port.aw.burst   = burst;
+    port.aw.size    = size;
+    port.aw.len     = len;
+}
+//
+
+
+/*
+* DPI functions to connect Memory Backend AXI Channel W
+*/
+extern "C" void MemoryAXIPullChannelW(
+    uint8_t*            ready)
+{
+    TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
+    *ready = port.w.ready;
+}
+
+extern "C" void MemoryAXIPushChannelW(
+    const uint8_t       valid,
+    const uint64_t      strb,
+    const uint8_t       last,
+    const uint64_t      data0,
+    const uint64_t      data1,
+    const uint64_t      data2,
+    const uint64_t      data3)
+{
+    TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
+    port.w.valid            = valid;
+    port.w.strb             = strb;
+    port.w.last             = last;
+    port.w.data->data[0]    =  data0        & 0xFF;
+    port.w.data->data[1]    = (data0 >>  8) & 0xFF;
+    port.w.data->data[2]    = (data0 >> 16) & 0xFF;
+    port.w.data->data[3]    = (data0 >> 24) & 0xFF;
+    port.w.data->data[4]    = (data0 >> 32) & 0xFF;
+    port.w.data->data[5]    = (data0 >> 40) & 0xFF;
+    port.w.data->data[6]    = (data0 >> 48) & 0xFF;
+    port.w.data->data[7]    = (data0 >> 56) & 0xFF;
+    port.w.data->data[8]    =  data1        & 0xFF;
+    port.w.data->data[9]    = (data1 >>  8) & 0xFF;
+    port.w.data->data[10]   = (data1 >> 16) & 0xFF;
+    port.w.data->data[11]   = (data1 >> 24) & 0xFF;
+    port.w.data->data[12]   = (data1 >> 32) & 0xFF;
+    port.w.data->data[13]   = (data1 >> 40) & 0xFF;
+    port.w.data->data[14]   = (data1 >> 48) & 0xFF;
+    port.w.data->data[15]   = (data1 >> 56) & 0xFF;
+    port.w.data->data[16]   =  data2        & 0xFF;
+    port.w.data->data[17]   = (data2 >>  8) & 0xFF;
+    port.w.data->data[18]   = (data2 >> 16) & 0xFF;
+    port.w.data->data[19]   = (data2 >> 24) & 0xFF;
+    port.w.data->data[20]   = (data2 >> 32) & 0xFF;
+    port.w.data->data[21]   = (data2 >> 40) & 0xFF;
+    port.w.data->data[22]   = (data2 >> 48) & 0xFF;
+    port.w.data->data[23]   = (data2 >> 56) & 0xFF;
+    port.w.data->data[24]   =  data3        & 0xFF;
+    port.w.data->data[25]   = (data3 >>  8) & 0xFF;
+    port.w.data->data[26]   = (data3 >> 16) & 0xFF;
+    port.w.data->data[27]   = (data3 >> 24) & 0xFF;
+    port.w.data->data[28]   = (data3 >> 32) & 0xFF;
+    port.w.data->data[29]   = (data3 >> 40) & 0xFF;
+    port.w.data->data[30]   = (data3 >> 48) & 0xFF;
+    port.w.data->data[31]   = (data3 >> 56) & 0xFF;
+}
+//
+
+
+/*
+* DPI functions to connect Memory Backend AXI Channel B
+*/
+extern "C" void MemoryAXIPullChannelB(
+    uint8_t*            valid,
+    uint32_t*           id,
+    uint8_t*            resp)
+{
+    TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
+    *valid  = port.b.valid;
+    *id     = port.b.id;
+    *resp   = port.b.resp;
+}
+
+extern "C" void MemoryAXIPushChannelB(
+    const uint8_t       ready)
+{
+    TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
+    port.b.ready = ready;
+}
+//
+
+
+/*
+* DPI functions to connect Memory Backend AXI Channel AR
+*/
+extern "C" void MemoryAXIPullChannelAR(
+    uint8_t*            ready)
+{
+    TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
+    *ready = port.ar.ready;
+}
+
+extern "C" void MemoryAXIPushChannelAR(
+    const uint8_t       valid,
+    const uint32_t      id,
+    const uint64_t      addr,
+    const uint8_t       burst,
+    const uint8_t       size,
+    const uint8_t       len)
+{
+    TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
+    port.ar.valid   = valid;
+    port.ar.id      = id;
+    port.ar.addr    = addr;
+    port.ar.burst   = burst;
+    port.ar.size    = size;
+    port.ar.len     = len;
+}
+//
+
+
+/*
+* DPI functions to connect Memory Backend AXI Channel R
+*/
+extern "C" void MemoryAXIPullChannelR(
+    uint8_t*            valid,
+    uint32_t*           id,
+    uint8_t*            resp,
+    uint8_t*            last,
+    uint64_t*           data0,
+    uint64_t*           data1,
+    uint64_t*           data2,
+    uint64_t*           data3)
+{
+    TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
+    *valid      = port.r.valid;
+    *id         = port.r.id;
+    *resp       = port.r.resp;
+    *last       = port.r.last;
+    *data0      = (uint64_t(port.r.data->data[0]))
+                | (uint64_t(port.r.data->data[1])   <<  8)
+                | (uint64_t(port.r.data->data[2])   << 16)
+                | (uint64_t(port.r.data->data[3])   << 24)
+                | (uint64_t(port.r.data->data[4])   << 32)
+                | (uint64_t(port.r.data->data[5])   << 40)
+                | (uint64_t(port.r.data->data[6])   << 48)
+                | (uint64_t(port.r.data->data[7])   << 56);
+    *data1      = (uint64_t(port.r.data->data[8]))
+                | (uint64_t(port.r.data->data[9])   <<  8)
+                | (uint64_t(port.r.data->data[10])  << 16)
+                | (uint64_t(port.r.data->data[11])  << 24)
+                | (uint64_t(port.r.data->data[12])  << 32)
+                | (uint64_t(port.r.data->data[13])  << 40)
+                | (uint64_t(port.r.data->data[14])  << 48)
+                | (uint64_t(port.r.data->data[15])  << 56);
+    *data2      = (uint64_t(port.r.data->data[16]))
+                | (uint64_t(port.r.data->data[17])  <<  8)
+                | (uint64_t(port.r.data->data[18])  << 16)
+                | (uint64_t(port.r.data->data[19])  << 24)
+                | (uint64_t(port.r.data->data[20])  << 32)
+                | (uint64_t(port.r.data->data[21])  << 40)
+                | (uint64_t(port.r.data->data[22])  << 48)
+                | (uint64_t(port.r.data->data[23])  << 56);
+    *data3      = (uint64_t(port.r.data->data[24]))
+                | (uint64_t(port.r.data->data[25])  <<  8)
+                | (uint64_t(port.r.data->data[26])  << 16)
+                | (uint64_t(port.r.data->data[27])  << 24)
+                | (uint64_t(port.r.data->data[28])  << 32)
+                | (uint64_t(port.r.data->data[29])  << 40)
+                | (uint64_t(port.r.data->data[30])  << 48)
+                | (uint64_t(port.r.data->data[31])  << 56);
+}
+
+extern "C" void MemoryAXIPushChannelR(
+    const uint8_t       ready)
+{
+    TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
+    port.r.ready = ready;
 }
 //

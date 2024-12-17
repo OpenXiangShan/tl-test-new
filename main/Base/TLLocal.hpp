@@ -32,6 +32,8 @@ public:
     uint64_t            memoryStart;                            // Memory (cacheable) region start address
     uint64_t            memoryEnd;                              // Memory (cacheable) region end address
 
+    uint64_t            memoryOOOR;                             // Memory (cacheable) backend out-of-order read
+
     uint64_t            mmioEnable;                             // MMIO region enable
     uint64_t            mmioStart;                              // MMIO region start address
     uint64_t            mmioEnd;                                // MMIO region end address

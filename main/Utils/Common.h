@@ -27,10 +27,11 @@
 enum {
     DATASIZE = 64, // Cache line is 64B
     BEATSIZE = 32,
+    BEATSIZE_MEMORY = 32,
     DATASIZE_MMIO = 8,
     NR_SOURCEID = 16,
     NR_SOURCEID_MMIO = 16,
-    TIMEOUT_INTERVAL = 50000
+    TIMEOUT_INTERVAL = 50000,
 };
 
 //
@@ -68,7 +69,7 @@ template<std::size_t N>
 inline shared_tldata_t<N> make_shared_tldata_zero() noexcept
 {
     auto data = make_shared_tldata<N>();
-    std::memset(data->data, 0, DATASIZE);
+    std::memset(data->data, 0, N);
     return data;
 }
 

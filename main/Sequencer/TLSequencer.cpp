@@ -16,23 +16,32 @@
 
 
 TLSequencer::TLSequencer() noexcept
-    : state         (State::NOT_INITIALIZED)
-    , globalBoard   (nullptr)
-    , uncachedBoard (nullptr)
-    , config        ()
-    , agents        (nullptr)
-    , fuzzers       (nullptr)
-    , io            (nullptr)
-    , mmio          (nullptr)
-    , cycles        (0)
+    : state             (State::NOT_INITIALIZED)
+    , globalBoard       (nullptr)
+    , uncachedBoard     (nullptr)
+    , config            ()
+    , agents            (nullptr)
+    , fuzzers           (nullptr)
+    , mmioGlobalStatus  (nullptr)
+    , mmioAgents        (nullptr)
+    , mmioFuzzers       (nullptr)
+    , memories          (nullptr)
+    , io                (nullptr)
+    , mmio              (nullptr)
+    , memoryAXI         (nullptr)
+    , cycles            (0)
 { }
 
 TLSequencer::~TLSequencer() noexcept
 {
     delete[] fuzzers;
     delete[] agents;
+    delete[] mmioFuzzers;
+    delete[] mmioAgents;
+    delete[] memories;
     delete[] io;
     delete[] mmio;
+    delete[] memoryAXI;
 }
 
 const TLLocalConfig& TLSequencer::GetLocalConfig() const noexcept
@@ -201,6 +210,10 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
         mmioAgents  = new MMIOAgent*    [total_c_agents];
         mmioFuzzers = new MMIOFuzzer*   [total_c_agents];
 
+        //
+        memoryAXI   = new MemoryAXIPort*[1];
+        memories    = new MemoryAgent*  [1];
+
         // UL Scoreboard
         uncachedBoard   = new UncachedBoard<paddr_t>(total_n_agents);
 
@@ -289,6 +302,17 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 .Append("Instantiated MMIO Agent #", j, " with deviceId=", j, " for Core #", j).EndLine());
         }
 
+        //
+        for (unsigned int i = 0; i < 1; i++)
+        {
+            memoryAXI   [i] = new MemoryAXIPort;
+            memories    [i] = new MemoryAgent(&this->config, cfg.seed, &cycles);
+            memories    [i]->connect(memoryAXI[i]);
+
+            LogInfo("INIT", Append("TLSequencer::Initialize: ")
+                .Append("Instantiated Memory Agent #", i).EndLine());
+        }
+
         // IO data field pre-allocation
         for (size_t i = 0; i < total_n_agents; i++)
         {
@@ -302,6 +326,12 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             mmio[i]->a.data = make_shared_tldata<DATASIZE_MMIO>();
             mmio[i]->c.data = make_shared_tldata<DATASIZE_MMIO>();
             mmio[i]->d.data = make_shared_tldata<DATASIZE_MMIO>();
+        }
+
+        for (size_t i = 0; i < 1; i++)
+        {
+            memoryAXI[i]->w.data = make_shared_tldata<BEATSIZE_MEMORY>();
+            memoryAXI[i]->r.data = make_shared_tldata<BEATSIZE_MEMORY>();
         }
 
         // IO field reset value
@@ -341,6 +371,24 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             mmio[i]->e.valid = 0;
         }
 
+        for (size_t i = 0; i < 1; i++)
+        {
+            memoryAXI[i]->aw.ready  = 0;
+            memoryAXI[i]->aw.valid  = 0;
+
+            memoryAXI[i]->w.ready   = 0;
+            memoryAXI[i]->w.valid   = 0;
+
+            memoryAXI[i]->b.ready   = 0;
+            memoryAXI[i]->b.valid   = 0;
+
+            memoryAXI[i]->ar.ready  = 0;
+            memoryAXI[i]->ar.valid  = 0;
+
+            memoryAXI[i]->r.ready   = 0;
+            memoryAXI[i]->r.valid   = 0;
+        }
+
         //
         this->state = State::ALIVE;
 
@@ -361,7 +409,7 @@ void TLSequencer::Finalize() noexcept
 
     LogFinal(cycles, Append(__PRETTY_FUNCTION__, ": called at ", cycles).EndLine());
 
-    try 
+    try
     {
         TLSystemFinalizationPreEvent(this).Fire();
 
@@ -410,6 +458,21 @@ void TLSequencer::Finalize() noexcept
             }
         }
 
+        for (size_t i = 0; i < 1; i++)
+        {
+            if (memories[i])
+            {
+                delete memories[i];
+                memories[i] = nullptr;
+            }
+
+            if (memoryAXI[i])
+            {
+                delete memoryAXI[i];
+                memoryAXI[i] = nullptr;
+            }
+        }
+
         delete globalBoard;
         globalBoard = nullptr;
 
@@ -418,27 +481,13 @@ void TLSequencer::Finalize() noexcept
 
         if (state == State::FINISHED)
         {
-            LogFinal(cycles, Append("\"\033[1;32m                                                           \033[0m\"").EndLine()); 
-            LogFinal(cycles, Append("\"\033[1;32m ███████ ██ ███   ██ ██ ███████ ██   ██ ███████ ██████  ██ \033[0m\"").EndLine()); 
-            LogFinal(cycles, Append("\"\033[1;32m ██      ██ ████  ██ ██ ██      ██   ██ ██      ██   ██ ██ \033[0m\"").EndLine()); 
-            LogFinal(cycles, Append("\"\033[1;32m █████   ██ ██ ██ ██ ██ ███████ ███████ █████   ██   ██ ██ \033[0m\"").EndLine()); 
-            LogFinal(cycles, Append("\"\033[1;32m ██      ██ ██  ████ ██      ██ ██   ██ ██      ██   ██    \033[0m\"").EndLine()); 
-            LogFinal(cycles, Append("\"\033[1;32m ██      ██ ██   ███ ██ ███████ ██   ██ ███████ ██████  ██ \033[0m\"").EndLine()); 
-            LogFinal(cycles, Append("\"\033[1;32m                                                           \033[0m\"").EndLine());  
-
-            /*
-            LogInfo(cycles, Append("\033[32m      ___                     ___                       ___           ___      \033[0m").EndLine());
-            LogInfo(cycles, Append("\033[32m     /  /\\      ___          /__/\\        ___          /  /\\         /__/\\     \033[0m").EndLine());
-            LogInfo(cycles, Append("\033[32m    /  /:/_    /  /\\         \\  \\:\\      /  /\\        /  /:/_        \\  \\:\\    \033[0m").EndLine());
-            LogInfo(cycles, Append("\033[32m   /  /:/ /\\  /  /:/          \\  \\:\\    /  /:/       /  /:/ /\\        \\__\\:\\   \033[0m").EndLine());
-            LogInfo(cycles, Append("\033[32m  /  /:/ /:/ /__/::\\      _____\\__\\:\\  /__/::\\      /  /:/ /::\\   ___ /  /::\\  \033[0m").EndLine());
-            LogInfo(cycles, Append("\033[32m /__/:/ /:/  \\__\\/\\:\\__  /__/::::::::\\ \\__\\/\\:\\__  /__/:/ /:/\\:\\ /__/\\  /:/\\:\\ \033[0m").EndLine());
-            LogInfo(cycles, Append("\033[32m \\  \\:\\/:/      \\  \\:\\/\\ \\  \\:\\~~\\~~\\/    \\  \\:\\/\\ \\  \\:\\/:/~/:/ \\  \\:\\/:/__\\/ \033[0m").EndLine());
-            LogInfo(cycles, Append("\033[32m  \\  \\::/        \\__\\::/  \\  \\:\\  ~~~      \\__\\::/  \\  \\::/ /:/   \\  \\::/      \033[0m").EndLine());
-            LogInfo(cycles, Append("\033[32m   \\  \\:\\        /__/:/    \\  \\:\\          /__/:/    \\__\\/ /:/     \\  \\:\\      \033[0m").EndLine());
-            LogInfo(cycles, Append("\033[32m    \\  \\:\\       \\__\\/      \\  \\:\\         \\__\\/       /__/:/       \\  \\:\\     \033[0m").EndLine());
-            LogInfo(cycles, Append("\033[32m     \\__\\/                   \\__\\/                     \\__\\/         \\__\\/     \033[0m").EndLine());
-            */
+            LogFinal(cycles, Append("\"\033[1;32m                                                           \033[0m\"").EndLine());
+            LogFinal(cycles, Append("\"\033[1;32m ███████ ██ ███   ██ ██ ███████ ██   ██ ███████ ██████  ██ \033[0m\"").EndLine());
+            LogFinal(cycles, Append("\"\033[1;32m ██      ██ ████  ██ ██ ██      ██   ██ ██      ██   ██ ██ \033[0m\"").EndLine());
+            LogFinal(cycles, Append("\"\033[1;32m █████   ██ ██ ██ ██ ██ ███████ ███████ █████   ██   ██ ██ \033[0m\"").EndLine());
+            LogFinal(cycles, Append("\"\033[1;32m ██      ██ ██  ████ ██      ██ ██   ██ ██      ██   ██    \033[0m\"").EndLine());
+            LogFinal(cycles, Append("\"\033[1;32m ██      ██ ██   ███ ██ ███████ ██   ██ ███████ ██████  ██ \033[0m\"").EndLine());
+            LogFinal(cycles, Append("\"\033[1;32m                                                           \033[0m\"").EndLine());
         }
 
         this->state = State::NOT_INITIALIZED;
@@ -491,6 +540,13 @@ void TLSequencer::Tock() noexcept
 
         for (size_t i = 0; i < total_c_agents; i++)
             mmioAgents[i]->update_signal();
+
+        //
+        for (size_t i = 0; i < 1; i++)
+            memories[i]->handle_channel();
+
+        for (size_t i = 0; i < 1; i++)
+            memories[i]->update_signal();
     }
     catch (const TLAssertFailureException& e) 
     {
@@ -517,4 +573,14 @@ TLSequencer::MMIOPort* TLSequencer::MMIO() noexcept
 TLSequencer::MMIOPort& TLSequencer::MMIO(int deviceId) noexcept
 {
     return *(mmio[deviceId]);
+}
+
+TLSequencer::MemoryAXIPort* TLSequencer::MemoryAXI() noexcept
+{
+    return *memoryAXI;
+}
+
+TLSequencer::MemoryAXIPort& TLSequencer::MemoryAXI(int deviceId) noexcept
+{
+    return *(memoryAXI[deviceId]);
 }
