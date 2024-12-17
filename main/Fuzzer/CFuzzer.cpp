@@ -179,59 +179,92 @@ void CFuzzer::randomTest(bool do_alias) {
 }
 
 void CFuzzer::caseTest() {
-    //复用fuzzStream Code
-    paddr_t addr;
-    int     alias;
-    bool do_alias = false;
+  //复用fuzzStream Code
+  paddr_t addr;
+  int     alias;
+  bool do_alias = false;
 
+  if (state == bwTestState::aquire) {
     addr = this->fuzzStreamOffset + this->fuzzStreamStart;
     alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % FUZZ_STREAM_RANGE.maxAlias) : 0;
 
     if (addr >= this->fuzzStreamEnd)
     {
-        this->fuzzStreamEnded = true;
-        return;
+      this->fuzzStreamEnded = true;
+      return;
     }
 
     if (!cAgent->config().memoryEnable)
-        return;
+      return;
 
     addr = remap_memory_address(addr);
+    filledAddrs.push(addr);
     cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias); // AcquireBlock NtoT
+                                                                                // Chan A
+    if (blkProcessed == blkCountLimit) {
+      state = bwTestState::wait_aquire;
+      blkProcessed = 0;
+    }
+  }
 
+  if (state == bwTestState::wait_aquire) {
+    // wait channel A to fire
+    if (cAgent->is_d_fired()) {
+      // How many cycle will D channel hold the data?
+      blkProcessed++;
+    }
+    if (blkProcessed == blkCountLimit) {
+      state = bwTestState::releasing;
+      blkProcessed = 0;
+    }
+  }
+
+  if (state == bwTestState::releasing) {
     auto putdata = make_shared_tldata<DATASIZE>();
     for (int i = 0; i < DATASIZE; i++) {
-        putdata->data[i] = (uint8_t)CAGENT_RAND64(cAgent, "CFuzzer");
+      putdata->data[i] = (uint8_t)CAGENT_RAND64(cAgent, "CFuzzer");
     }
-    cAgent->do_releaseData(addr, TLParamRelease::TtoN, putdata,0); // ReleaseData                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
-    
-    if (cAgent->config().cmoEnable)
-    {
-        addr = remap_cmo_address(addr);
-
-        bool alwaysHit = (CAGENT_RAND64(cAgent, "CFuzzer") % 8) == 0;
-
-        switch (CAGENT_RAND64(cAgent, "CFuzzer") % 3)
-        {
-            case 0: // cbo.clean
-                if (cAgent->config().cmoEnableCBOClean)
-                    cAgent->do_cbo_clean(addr, alwaysHit);
-                break;
-
-            case 1: // cbo.flush
-                if (cAgent->config().cmoEnableCBOFlush)
-                    cAgent->do_cbo_flush(addr, alwaysHit);
-                break;
-
-            case 2: // cbo.inval
-                if (cAgent->config().cmoEnableCBOInval)
-                    cAgent->do_cbo_inval(addr, alwaysHit);
-                break;
-
-            default:
-                break;
-        }
+    cAgent->do_releaseData(addr, TLParamRelease::TtoN, putdata,0); // ReleaseData
+    blkProcessed++;
+    if (blkProcessed == blkCountLimit) {
+      state = bwTestState::wait_release;
+      blkProcessed = 0;
     }
+  }
+
+  if (state == bwTestState::wait_release) {
+    // wait channel D to fire
+    if (cAgent->is_d_fired()) {
+      // How many cycle will A channel hold the data?
+      blkProcessed++;
+    }
+    if (blkProcessed == blkCountLimit) {
+      state = bwTestState::aquire2;
+      blkProcessed = 0;
+    }
+  }
+
+  if (state == bwTestState::aquire2) {
+    addr = filledAddrs.front();
+    cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias);
+    if (blkProcessed == blkCountLimit) {
+      state = bwTestState::wait_aquire2;
+      blkProcessed = 0;
+    }
+  }
+
+  if (state == bwTestState::wait_aquire2) {
+    // wait channel A to fire
+    if (cAgent->is_d_fired()) {
+      // How many cycle will D channel hold the data?
+      blkProcessed++;
+    }
+    if (blkProcessed == blkCountLimit) {
+      state = bwTestState::aquire;
+      blkProcessed = 0;
+      filledAddrs.pop();
+    }
+  }
 }
 
 void CFuzzer::tick() {

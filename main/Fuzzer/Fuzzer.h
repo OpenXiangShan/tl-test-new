@@ -10,7 +10,9 @@
 #include "../TLAgent/CAgent.h"
 #include "../TLAgent/MMIOAgent.h"
 
+#include <cstdint>
 #include <vector>
+#include <queue>
 
 
 #ifndef CFUZZER_RAND_RANGE_TAG
@@ -140,6 +142,24 @@ struct CFuzzRange {
 class CFuzzer: public Fuzzer {
 private:
     tl_agent::CAgent*   cAgent;
+
+    enum bwTestState {
+        aquire = 0,
+        wait_aquire,
+        releasing,
+        wait_release,
+        aquire2,
+        wait_aquire2
+    };
+
+    int state = bwTestState::aquire;
+
+    uint32_t writeResponsedCount = 0;
+
+    uint32_t blkProcessed = 0;
+    uint32_t blkCountLimit = 0;
+
+    std::queue<uint64_t> filledAddrs;
 
 public:
     CFuzzer(tl_agent::CAgent *cAgent) noexcept;

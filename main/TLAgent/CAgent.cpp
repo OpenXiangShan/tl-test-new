@@ -1060,6 +1060,10 @@ namespace tl_agent {
         }
     }
 
+    bool CAgent::is_d_fired() {
+      return this->port->d.fire();
+    }
+
     void CAgent::fire_d() {
         if (this->port->d.fire()) {
             auto& chnD = this->port->d;

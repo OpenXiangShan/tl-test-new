@@ -208,6 +208,7 @@ namespace tl_agent {
         virtual void fire_b() = 0;
         virtual void fire_c() = 0;
         virtual void fire_d() = 0;
+        virtual bool is_d_fired() {return false;};
         virtual void fire_e() = 0;
         virtual void handle_channel() = 0;
         virtual void update_signal() = 0;
