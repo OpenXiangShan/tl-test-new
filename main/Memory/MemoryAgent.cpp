@@ -623,12 +623,6 @@ namespace axi_agent {
                 {
                     if (iter->get() == trans.get())
                     {
-                        std::cout << "[memory.axi] [erase R] " 
-                            << "(id: " << trans->request.bundle.id << ", " << trans->request.bundle.addr << ")"
-                            << " -> "
-                            << "(id: " << iter->get()->request.bundle.id << ", " << iter->get()->request.bundle.addr << ")"
-                            << std::endl;
-
                         activeReads.erase(iter);
                         break;
                     }
