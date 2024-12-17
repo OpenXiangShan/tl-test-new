@@ -299,18 +299,58 @@ void CFuzzer::randomTest(bool do_alias) {
 }
 
 void CFuzzer::caseTest() {
-    if (*cycles == 100) {
-        this->cAgent->do_acquireBlock(0x1040, TLParamAcquire::NtoT, 0);
+    //复用fuzzStream Code
+    paddr_t addr;
+    int     alias;
+    bool do_alias = false;
+
+    addr = this->fuzzStreamOffset + this->fuzzStreamStart;
+    alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % FUZZ_STREAM_RANGE.maxAlias) : 0;
+
+    if (addr >= this->fuzzStreamEnd)
+    {
+        this->fuzzStreamEnded = true;
+        return;
     }
-    if (*cycles == 300) {
-        auto putdata = make_shared_tldata<DATASIZE>();
-        for (int i = 0; i < DATASIZE; i++) {
-            putdata->data[i] = (uint8_t)CAGENT_RAND64(cAgent, "CFuzzer");
+
+    if (!cAgent->config().memoryEnable)
+        return;
+
+    addr = remap_memory_address(addr);
+    cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias); // AcquireBlock NtoT
+
+    auto putdata = make_shared_tldata<DATASIZE>();
+    for (int i = 0; i < DATASIZE; i++) {
+        putdata->data[i] = (uint8_t)CAGENT_RAND64(cAgent, "CFuzzer");
+    }
+    cAgent->do_releaseData(addr, TLParamRelease::TtoN, putdata,0); // ReleaseData                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+    
+    if (cAgent->config().cmoEnable)
+    {
+        addr = remap_cmo_address(addr);
+
+        bool alwaysHit = (CAGENT_RAND64(cAgent, "CFuzzer") % 8) == 0;
+
+        switch (CAGENT_RAND64(cAgent, "CFuzzer") % 3)
+        {
+            case 0: // cbo.clean
+                if (cAgent->config().cmoEnableCBOClean)
+                    cAgent->do_cbo_clean(addr, alwaysHit);
+                break;
+
+            case 1: // cbo.flush
+                if (cAgent->config().cmoEnableCBOFlush)
+                    cAgent->do_cbo_flush(addr, alwaysHit);
+                break;
+
+            case 2: // cbo.inval
+                if (cAgent->config().cmoEnableCBOInval)
+                    cAgent->do_cbo_inval(addr, alwaysHit);
+                break;
+
+            default:
+                break;
         }
-        this->cAgent->do_releaseData(0x1040, TLParamRelease::TtoN, putdata, 0);
-    }
-    if (*cycles == 400) {
-      this->cAgent->do_acquireBlock(0x1040, TLParamAcquire::NtoT, 0);
     }
 }
 
@@ -358,6 +398,34 @@ void CFuzzer::tick() {
     {
         this->randomTest(true);
 
+        if (this->cAgent->cycle() >= this->fuzzStreamStepTime)
+        {
+            this->fuzzStreamStepTime += this->fuzzStreamInterval;
+            this->fuzzStreamOffset   += this->fuzzStreamStep;
+        }
+
+        if (this->fuzzStreamEnded)
+        {
+            TLSystemFinishEvent().Fire();
+        }
+    }
+    else if (this->mode == TLSequenceMode::FUZZ_STREAM_GS) {
+        this->caseTest();
+        
+        if (this->cAgent->cycle() >= this->fuzzStreamStepTime)
+        {
+            this->fuzzStreamStepTime += this->fuzzStreamInterval;
+            this->fuzzStreamOffset   += this->fuzzStreamStep;
+        }
+
+        if (this->fuzzStreamEnded)
+        {
+            TLSystemFinishEvent().Fire();
+        }
+    }
+    else if (this->mode == TLSequenceMode::FUZZ_STREAM_GS) {
+        this->caseTest();
+        
         if (this->cAgent->cycle() >= this->fuzzStreamStepTime)
         {
             this->fuzzStreamStepTime += this->fuzzStreamInterval;
