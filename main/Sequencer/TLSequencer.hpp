@@ -14,6 +14,7 @@
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
 #include "../TLAgent/MMIOAgent.h"
+#include "../Memory/MemoryAgent.hpp"
 #include "../Fuzzer/Fuzzer.h"
 
 /*
@@ -56,6 +57,9 @@ public:
     using MMIOPort          = tl_agent::Bundle<ReqField, RespField, EchoField, DATASIZE_MMIO>;
     using MMIOGlobalStatus  = tl_agent::MMIOGlobalStatus;
 
+    using MemoryAgent       = axi_agent::MemoryAgent;
+    using MemoryAXIPort     = axi_agent::Bundle<BEATSIZE_MEMORY>;
+
 private:
     State                   state;
 
@@ -70,10 +74,13 @@ private:
     MMIOAgent**             mmioAgents;
     MMIOFuzzer**            mmioFuzzers;
 
+    MemoryAgent**           memories;
+
     TLLocalConfig           config;
 
     IOPort**                io;
     MMIOPort**              mmio;
+    MemoryAXIPort**         memoryAXI;
 
     uint64_t                cycles;
 
@@ -83,25 +90,28 @@ public:
 
     const TLLocalConfig&    GetLocalConfig() const noexcept;
 
-    State       GetState() const noexcept;
-    bool        IsAlive() const noexcept;
-    bool        IsFailed() const noexcept;
-    bool        IsFinished() const noexcept;
+    State           GetState() const noexcept;
+    bool            IsAlive() const noexcept;
+    bool            IsFailed() const noexcept;
+    bool            IsFinished() const noexcept;
 
-    size_t      GetAgentCount() const noexcept;
-    size_t      GetCAgentCount() const noexcept;
-    size_t      GetULAgentCount() const noexcept;
+    size_t          GetAgentCount() const noexcept;
+    size_t          GetCAgentCount() const noexcept;
+    size_t          GetULAgentCount() const noexcept;
 
-    void        Initialize(const TLLocalConfig& cfg) noexcept;
-    void        Finalize() noexcept;
-    void        Tick(uint64_t cycles) noexcept;
-    void        Tock() noexcept;
+    void            Initialize(const TLLocalConfig& cfg) noexcept;
+    void            Finalize() noexcept;
+    void            Tick(uint64_t cycles) noexcept;
+    void            Tock() noexcept;
 
-    IOPort*     IO() noexcept;
-    IOPort&     IO(int deviceId) noexcept;
+    IOPort*         IO() noexcept;
+    IOPort&         IO(int deviceId) noexcept;
 
-    MMIOPort*   MMIO() noexcept;
-    MMIOPort&   MMIO(int deviceId) noexcept;
+    MMIOPort*       MMIO() noexcept;
+    MMIOPort&       MMIO(int deviceId) noexcept;
+
+    MemoryAXIPort*  MemoryAXI() noexcept;
+    MemoryAXIPort&  MemoryAXI(int deviceId) noexcept;
 };
 
 

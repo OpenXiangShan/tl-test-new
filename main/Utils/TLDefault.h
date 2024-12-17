@@ -35,6 +35,10 @@
 #   define TLTEST_DEFAULT_MEMORY_END                    0x80000000
 #endif
 
+#ifndef TLTEST_DEFAULT_MEMORY_OOOR
+#   define TLTEST_DEFAULT_MEMORY_OOOR                   1
+#endif
+
 
 #ifndef TLTEST_DEFAULT_MMIO_ENABLE
 #   define TLTEST_DEFAULT_MMIO_ENABLE                   0

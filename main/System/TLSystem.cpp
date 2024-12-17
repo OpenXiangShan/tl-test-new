@@ -53,6 +53,7 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.memoryEnable                  = TLTEST_DEFAULT_MEMORY_ENABLE;
     tlcfg.memoryStart                   = TLTEST_DEFAULT_MEMORY_START;
     tlcfg.memoryEnd                     = TLTEST_DEFAULT_MEMORY_END;
+    tlcfg.memoryOOOR                    = TLTEST_DEFAULT_MEMORY_OOOR;
 
     tlcfg.mmioEnable                    = TLTEST_DEFAULT_MMIO_ENABLE;
     tlcfg.mmioStart                     = TLTEST_DEFAULT_MMIO_START;
@@ -79,6 +80,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     glbl.cfg.verbose_xact_fired         = false;
     glbl.cfg.verbose_xact_sequenced     = false;
     glbl.cfg.verbose_xact_data_complete = false;
+    glbl.cfg.verbose_memory_axi_write   = false;
+    glbl.cfg.verbose_memory_axi_read    = false;
     glbl.cfg.verbose_data_full          = false;
     glbl.cfg.verbose_agent_debug        = false;
 
@@ -100,6 +103,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.logger", "verbose.xact_fired",         glbl.cfg.verbose_xact_fired);
     INI_OVERRIDE_INT("tltest.logger", "verbose.xact_sequenced",     glbl.cfg.verbose_xact_sequenced);
     INI_OVERRIDE_INT("tltest.logger", "verbose.xact_data_complete", glbl.cfg.verbose_xact_data_complete);
+    INI_OVERRIDE_INT("tltest.logger", "verbose.memory.axi_write",   glbl.cfg.verbose_memory_axi_write);
+    INI_OVERRIDE_INT("tltest.logger", "verbose.memory.axi_read",    glbl.cfg.verbose_memory_axi_read);
     INI_OVERRIDE_INT("tltest.logger", "verbose.data_full",          glbl.cfg.verbose_data_full);
     INI_OVERRIDE_INT("tltest.logger", "verbose.agent_debug",        glbl.cfg.verbose_agent_debug);
 
@@ -110,6 +115,7 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.config", "memory.enable",              tlcfg.memoryEnable);
     INI_OVERRIDE_INT("tltest.config", "memory.start",               tlcfg.memoryStart);
     INI_OVERRIDE_INT("tltest.config", "memory.end",                 tlcfg.memoryEnd);
+    INI_OVERRIDE_INT("tltest.config", "memory.backend.ooor",        tlcfg.memoryOOOR);
 
     INI_OVERRIDE_INT("tltest.config", "mmio.enable",                tlcfg.mmioEnable);
     INI_OVERRIDE_INT("tltest.config", "mmio.start",                 tlcfg.mmioStart);
