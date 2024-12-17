@@ -157,7 +157,10 @@ private:
     uint32_t writeResponsedCount = 0;
 
     uint32_t blkProcessed = 0;
-    uint32_t blkCountLimit = 0;
+    uint32_t blkFired = 0;
+    uint32_t blkCountLimit = 11;
+    uint64_t perfCycleStart=0;
+    uint64_t perfCycleEnd=0;
 
     std::queue<uint64_t> filledAddrs;
 
