@@ -162,6 +162,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
                     tlcfg.sequenceModes[i] = TLSequenceMode::FUZZ_ARI;
                 else if (mode.compare("fuzz_stream") == 0)
                     tlcfg.sequenceModes[i] = TLSequenceMode::FUZZ_STREAM;
+                else if (mode.compare("fuzz_stream_gs") == 0)
+                    tlcfg.sequenceModes[i] = TLSequenceMode::FUZZ_STREAM_GS;
                 else if (mode.compare("fuzz_counter") == 0)
                     tlcfg.sequenceModes[i] = TLSequenceMode::FUZZ_COUNTER;
                 else if (mode.compare("stream_copy2") == 0)

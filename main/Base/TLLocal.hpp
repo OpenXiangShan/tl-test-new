@@ -12,6 +12,7 @@ enum class TLSequenceMode {
     PASSIVE         = 0,
     FUZZ_ARI,
     FUZZ_STREAM,
+    FUZZ_STREAM_GS,
     FUZZ_COUNTER,
     FUZZ_COUNTER_SYNC,
     STREAM_COPY2,
