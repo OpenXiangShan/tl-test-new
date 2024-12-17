@@ -640,24 +640,6 @@ namespace axi_agent {
         fire_b();
         fire_ar();
         fire_r();
-
-        if (!(cycle() % 50000))
-        {
-            std::cout << "[memory.axi] active reads: " << std::endl;
-            for (auto& trans : activeReads)
-            {
-                std::cout << Gravity::StringAppender()
-                    .Append("[memory.axi] [", trans->request.time, "] ")
-                    .Hex().ShowBase()
-                    .Append("id: ",         uint64_t(trans->request.bundle.id))
-                    .Append(", addr: ",     uint64_t(trans->request.bundle.addr))
-                    .Append(", burst: ",    uint64_t(trans->request.bundle.burst))
-                    .Append(", size: ",     uint64_t(trans->request.bundle.size))
-                    .Append(", len: ",      uint64_t(trans->request.bundle.len))
-                    .EndLine()
-                    .ToString();
-            }
-        }
     }
 
     void MemoryAgent::update_signal()
