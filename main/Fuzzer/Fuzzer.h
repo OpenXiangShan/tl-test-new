@@ -158,7 +158,7 @@ private:
 
     uint32_t blkProcessed = 0;
     uint32_t blkFired = 0;
-    uint32_t blkCountLimit = 11;
+    uint32_t blkCountLimit = 256; // 256*64B=16KB
     uint64_t perfCycleStart=0;
     uint64_t perfCycleEnd=0;
 

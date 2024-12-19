@@ -185,12 +185,13 @@ void CFuzzer::caseTest() {
   int     alias;
   bool do_alias = false;
 
+  // dont alias
+  alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % FUZZ_STREAM_RANGE.maxAlias) : 0;
   // Read And NtoT
   // Write 
   if (state == bwTestState::aquire) {
     // this->fuzzStreamOffset   += this->fuzzStreamStep;
     addr =  this->fuzzStreamStart + this->fuzzStreamStep * blkProcessed;
-    alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % FUZZ_STREAM_RANGE.maxAlias) : 0;
 
     if (!cAgent->config().memoryEnable)
       return;
