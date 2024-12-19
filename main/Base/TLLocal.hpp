@@ -34,6 +34,8 @@ public:
 
     uint64_t            memoryOOOR;                             // Memory (cacheable) backend out-of-order read
 
+    uint64_t            memorySyncStrict;                       // Memory (cacheable) strict sync mode (must be disabled on multi-core for cbo.inval)
+
     uint64_t            mmioEnable;                             // MMIO region enable
     uint64_t            mmioStart;                              // MMIO region start address
     uint64_t            mmioEnd;                                // MMIO region end address

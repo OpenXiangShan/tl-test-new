@@ -282,7 +282,7 @@ namespace tl_agent {
         void timeout_check() override;
 
     public:
-        CAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ub, int sys, int id, unsigned int seed, uint64_t* cycles) noexcept;
+        CAgent(TLLocalConfig* cfg, MemoryBackend* mem, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ub, int sys, int id, unsigned int seed, uint64_t* cycles) noexcept;
         virtual ~CAgent() noexcept;
 
         uint64_t    cycle() const noexcept override;

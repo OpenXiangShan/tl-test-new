@@ -77,6 +77,14 @@ inline shared_tldata_t<N> make_shared_tldata_zero() noexcept
 
 typedef uint64_t paddr_t;
 
+class MemoryBackend {
+public:
+    virtual uint8_t&    access(paddr_t addr) noexcept = 0;
+    virtual uint8_t     access(paddr_t addr) const noexcept = 0;
+
+    virtual bool        accessible(paddr_t addr) const noexcept = 0;
+};
+
 
 inline std::string GetDeviceName(const TLLocalContext* ctx)
 {

@@ -4,6 +4,7 @@
 
 #include "../Base/TLEnum.hpp"
 
+#include "BaseAgent.h"
 #include "Bundle.h"
 #include <memory>
 #include "ULAgent.h"
@@ -17,8 +18,8 @@
 
 namespace tl_agent {
 
-    ULAgent::ULAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t> *gb, UncachedBoard<paddr_t>* ubs, int sys, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
-            BaseAgent(cfg, sys, sysId, seed), pendingA(), pendingD()
+    ULAgent::ULAgent(TLLocalConfig* cfg, MemoryBackend* mem, GlobalBoard<paddr_t> *gb, UncachedBoard<paddr_t>* ubs, int sys, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
+            BaseAgent(cfg, mem, sys, sysId, seed), pendingA(), pendingD()
     {
         this->globalBoard = gb;
         this->uncachedBoards = ubs;

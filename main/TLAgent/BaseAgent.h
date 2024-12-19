@@ -179,6 +179,7 @@ namespace tl_agent {
         tlport_t*                   port;
         GlobalBoard<paddr_t>*       globalBoard;
         UncachedBoard<paddr_t>*     uncachedBoards;
+        MemoryBackend*              mem;
         IDPool                      idpool;
         virtual void timeout_check() = 0;
 
@@ -211,8 +212,8 @@ namespace tl_agent {
         virtual void fire_e() = 0;
         virtual void handle_channel() = 0;
         virtual void update_signal() = 0;
-        BaseAgent(TLLocalConfig* cfg, int sys, int sysId, unsigned int seed, unsigned int limitSource): cfg(cfg), core(sys), id(sysId), idpool(0, limitSource), seed(seed), rand(sysId + seed) {};
-        BaseAgent(TLLocalConfig* cfg, int sys, int sysId, unsigned int seed): cfg(cfg), core(sys), id(sysId), idpool(0, NR_SOURCEID), seed(seed), rand(sysId + seed) {};
+        BaseAgent(TLLocalConfig* cfg, MemoryBackend* mem, int sys, int sysId, unsigned int seed, unsigned int limitSource): cfg(cfg), core(sys), id(sysId), mem(mem), idpool(0, limitSource), seed(seed), rand(sysId + seed) {};
+        BaseAgent(TLLocalConfig* cfg, MemoryBackend* mem, int sys, int sysId, unsigned int seed): cfg(cfg), core(sys), id(sysId), mem(mem), idpool(0, NR_SOURCEID), seed(seed), rand(sysId + seed) {};
         virtual ~BaseAgent() = default;
 
         inline void  connect(tlport_t* p){ this->port = p; }

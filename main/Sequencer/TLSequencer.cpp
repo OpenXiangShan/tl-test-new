@@ -253,6 +253,17 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
         */
 
         //
+        for (unsigned int i = 0; i < 1; i++)
+        {
+            memoryAXI   [i] = new MemoryAXIPort;
+            memories    [i] = new MemoryAgent(&this->config, cfg.seed, &cycles);
+            memories    [i]->connect(memoryAXI[i]);
+
+            LogInfo("INIT", Append("TLSequencer::Initialize: ")
+                .Append("Instantiated AXI Memory Agent #", i).EndLine());
+        }
+
+        //
         unsigned int i = 0;
         for (unsigned int j = 0; j < cfg.coreCount; j++)
         {
@@ -260,7 +271,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             {
                 //
                 io      [i] = new IOPort;
-                agents  [i] = new CAgent(&this->config, globalBoard, uncachedBoard, j, i, cfg.seed, &cycles);
+                agents  [i] = new CAgent(&this->config, memories[0], globalBoard, uncachedBoard, j, i, cfg.seed, &cycles);
                 agents  [i]->connect(io[i]);
 
                 fuzzers [i] = new CFuzzer(static_cast<CAgent*>(agents[i]));
@@ -277,7 +288,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             {
                 //
                 io      [i] = new IOPort;
-                agents  [i] = new ULAgent(&this->config, globalBoard, uncachedBoard, j, i, cfg.seed, &cycles);
+                agents  [i] = new ULAgent(&this->config, memories[0], globalBoard, uncachedBoard, j, i, cfg.seed, &cycles);
                 agents  [i]->connect(io[i]);
 
                 fuzzers [i] = new ULFuzzer(static_cast<ULAgent*>(agents[i]));
@@ -300,17 +311,6 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
             LogInfo("INIT", Append("TLSequencer::Initialize: ")
                 .Append("Instantiated MMIO Agent #", j, " with deviceId=", j, " for Core #", j).EndLine());
-        }
-
-        //
-        for (unsigned int i = 0; i < 1; i++)
-        {
-            memoryAXI   [i] = new MemoryAXIPort;
-            memories    [i] = new MemoryAgent(&this->config, cfg.seed, &cycles);
-            memories    [i]->connect(memoryAXI[i]);
-
-            LogInfo("INIT", Append("TLSequencer::Initialize: ")
-                .Append("Instantiated Memory Agent #", i).EndLine());
         }
 
         // IO data field pre-allocation

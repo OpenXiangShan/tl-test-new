@@ -54,6 +54,7 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.memoryStart                   = TLTEST_DEFAULT_MEMORY_START;
     tlcfg.memoryEnd                     = TLTEST_DEFAULT_MEMORY_END;
     tlcfg.memoryOOOR                    = TLTEST_DEFAULT_MEMORY_OOOR;
+    tlcfg.memorySyncStrict              = TLTEST_DEFAULT_MEMORY_SYNC_STRICT;
 
     tlcfg.mmioEnable                    = TLTEST_DEFAULT_MMIO_ENABLE;
     tlcfg.mmioStart                     = TLTEST_DEFAULT_MMIO_START;
@@ -116,6 +117,7 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.config", "memory.start",               tlcfg.memoryStart);
     INI_OVERRIDE_INT("tltest.config", "memory.end",                 tlcfg.memoryEnd);
     INI_OVERRIDE_INT("tltest.config", "memory.backend.ooor",        tlcfg.memoryOOOR);
+    INI_OVERRIDE_INT("tltest.config", "memory.sync.strict",         tlcfg.memorySyncStrict);
 
     INI_OVERRIDE_INT("tltest.config", "mmio.enable",                tlcfg.mmioEnable);
     INI_OVERRIDE_INT("tltest.config", "mmio.start",                 tlcfg.mmioStart);
