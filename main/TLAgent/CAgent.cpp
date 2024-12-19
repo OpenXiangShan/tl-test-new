@@ -104,8 +104,8 @@ namespace tl_agent {
         }
     }
 
-    CAgent::CAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ubs, int sys, int sysId, unsigned int seed, uint64_t *cycles) noexcept :
-        BaseAgent(cfg, sys, sysId, seed), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(), probeIDpool(NR_SOURCEID, NR_SOURCEID+1)
+    CAgent::CAgent(TLLocalConfig* cfg, MemoryBackend* mem, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ubs, int sys, int sysId, unsigned int seed, uint64_t *cycles) noexcept :
+        BaseAgent(cfg, mem, sys, sysId, seed), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(), probeIDpool(NR_SOURCEID, NR_SOURCEID+1)
     {
         this->globalBoard = gb;
         this->uncachedBoards = ubs;
@@ -740,6 +740,10 @@ namespace tl_agent {
                             .EndLine());
                     }
                     localCMOStatus->setFired(this, chnA.address);
+
+                    if (!cfg->memorySyncStrict)
+                        globalBoard->grant_memory_alt(this, chnA.address);
+
                     break;
 
                 default:
@@ -1248,6 +1252,44 @@ namespace tl_agent {
                                     .ToString());
                             }
                         }
+
+                        if (!cfg->memorySyncStrict)
+                        {
+                            globalBoard->reclaim_memory_alt(this, addr);
+                        }
+                        else
+                        {
+                            if (globalBoard->haskey(addr))
+                            {
+                                auto globalEntry = globalBoard->query(this, addr);
+
+                                if (globalEntry->status == Global_SBEntry::SB_PENDING)
+                                {
+                                    tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                                        .Append("unsafe strict mode data sync override from memory at ", addr)
+                                        .ToString());
+                                }
+
+                                if (globalEntry->status == Global_SBEntry::SB_VALID)
+                                {
+                                    auto oldData = globalEntry->data;
+
+                                    globalEntry->data = make_shared_tldata<DATASIZE>();
+                                    for (size_t i = 0; i < DATASIZE; i++)
+                                        globalEntry->data->data[i] = mem->access(addr + i);
+
+                                    if (glbl.cfg.verbose)
+                                    {
+                                        Log(this, Hex().ShowBase()
+                                            .Append("[strict data sync] override data from memory at ", addr));
+                                        LogEx(data_dump_embedded<DATASIZE>(oldData->data));
+                                        LogEx(std::cout << " to ");
+                                        LogEx(data_dump_embedded<DATASIZE>(globalEntry->data->data));
+                                    }
+                                }
+                            }
+                        }
+
                         break;
 
                     default:
@@ -1335,7 +1377,21 @@ namespace tl_agent {
                                 LogEx(std::cout << std::endl);
                             }
                             
-                            this->globalBoard->verify(this, addr, pendingD.info->data);
+                            bool memoryAlted = false;
+
+                            this->globalBoard->verify(this, mem, addr, pendingD.info->data, &memoryAlted);
+                            
+                            if (glbl.cfg.verbose)
+                            {
+                                if (memoryAlted)
+                                {
+                                    Log(this, Hex().ShowBase()
+                                        .Append("[relax data sync] memory alternative at ", addr, " with "));
+                                    LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
+                                    LogEx(std::cout << std::endl);
+                                }
+                            }
+
                             // info->update_dirty(*chnD.dirty, alias);
                             break;
                         }

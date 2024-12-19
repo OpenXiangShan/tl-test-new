@@ -162,6 +162,21 @@ namespace axi_agent {
         return pmem;
     }
 
+    uint8_t& MemoryAgent::access(paddr_t addr) noexcept
+    {
+        return pmem[addr - cfg->memoryStart];
+    }
+
+    uint8_t MemoryAgent::access(paddr_t addr) const noexcept
+    {
+        return pmem[addr - cfg->memoryStart];
+    }
+
+    bool MemoryAgent::accessible(paddr_t addr) const noexcept
+    {
+        return addr >= cfg->memoryStart && addr < cfg->memoryEnd;
+    }
+
     size_t MemoryAgent::size() const noexcept
     {
         return cfg->memoryEnd - cfg->memoryStart;

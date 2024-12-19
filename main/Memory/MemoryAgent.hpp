@@ -9,6 +9,8 @@
 #include <random>
 
 #include "../Base/TLLocal.hpp"
+#include "../TLAgent/BaseAgent.h"
+
 #include "Bundle.hpp"
 
 
@@ -69,7 +71,7 @@ namespace axi_agent {
     };
 
     //
-    class MemoryAgent : public TLLocalContext {
+    class MemoryAgent : public TLLocalContext, public MemoryBackend {
     public:
         using axi_port  = Bundle<BEATSIZE_MEMORY>;
         using axiport_t = axi_port;
@@ -114,28 +116,33 @@ namespace axi_agent {
         virtual bool                    mainSys() const noexcept override;
 
     public:
-        uint8_t*        memory() noexcept;
-        const uint8_t*  memory() const noexcept;
+        uint8_t*            memory() noexcept;
+        const uint8_t*      memory() const noexcept;
 
-        size_t          size() const noexcept;
+        virtual uint8_t&    access(paddr_t addr) noexcept override;
+        virtual uint8_t     access(paddr_t addr) const noexcept override;
 
-        bool            is_w_active(uint32_t wid) const noexcept;
-        bool            is_r_active(uint32_t rid) const noexcept;
+        virtual bool        accessible(paddr_t addr) const noexcept override;
 
-        void            handle_aw();
-        void            handle_w();
-        void            send_b();
-        void            handle_ar();
-        void            send_r();
+        size_t              size() const noexcept;
 
-        void            fire_aw();
-        void            fire_w();
-        void            fire_b();
-        void            fire_ar();
-        void            fire_r();
+        bool                is_w_active(uint32_t wid) const noexcept;
+        bool                is_r_active(uint32_t rid) const noexcept;
 
-        void            handle_channel();
-        void            update_signal();
+        void                handle_aw();
+        void                handle_w();
+        void                send_b();
+        void                handle_ar();
+        void                send_r();
+
+        void                fire_aw();
+        void                fire_w();
+        void                fire_b();
+        void                fire_ar();
+        void                fire_r();
+
+        void                handle_channel();
+        void                update_signal();
 
     public:
         inline void     connect(axiport_t* p) { this->port = p; }

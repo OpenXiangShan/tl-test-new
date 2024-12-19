@@ -39,6 +39,10 @@
 #   define TLTEST_DEFAULT_MEMORY_OOOR                   1
 #endif
 
+#ifndef TLTEST_DEFAULT_MEMORY_SYNC_STRICT
+#   define TLTEST_DEFAULT_MEMORY_SYNC_STRICT            0
+#endif
+
 
 #ifndef TLTEST_DEFAULT_MMIO_ENABLE
 #   define TLTEST_DEFAULT_MMIO_ENABLE                   0

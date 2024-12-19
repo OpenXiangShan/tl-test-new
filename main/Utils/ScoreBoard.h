@@ -176,15 +176,29 @@ struct ScoreBoardUpdateCallbackGlobalEntry : public ScoreBoardUpdateCallback<Tk,
 };
 
 
+class GlobalMemoryAlternative {
+public:
+    unsigned int    life    = 0;
+};
+
 template<typename T>
 class GlobalBoard : public ScoreBoard<T, Global_SBEntry, ScoreBoardUpdateCallbackGlobalEntry<T>> {
+private:
+    std::unordered_map<T, GlobalMemoryAlternative>  memoryAlt;
+
 private:
     int data_check(TLLocalContext* ctx, const uint8_t* dut, const uint8_t* ref, std::string assert_info);
     uint8_t init_zeros[DATASIZE];
 public:
     GlobalBoard() noexcept;
-    int verify(TLLocalContext* ctx, const T& key, shared_tldata_t<DATASIZE> data);
+    int verify(TLLocalContext* ctx, MemoryBackend* mem, const T& key, shared_tldata_t<DATASIZE> data, bool* memoryAlted);
+    void update(const TLLocalContext* ctx, const T& key, std::shared_ptr<Global_SBEntry>& data);
     void unpending(TLLocalContext* ctx, const T& key);
+public:
+    bool has_memory_alt(const TLLocalContext* ctx, const T& key);
+    bool touch_memory_alt(const TLLocalContext* ctx, const T& key);
+    void grant_memory_alt(const TLLocalContext* ctx, const T& key);
+    bool reclaim_memory_alt(const TLLocalContext* ctx, const T& key);
 };
 
 
@@ -268,11 +282,29 @@ int GlobalBoard<T>::data_check(TLLocalContext* ctx, const uint8_t *dut, const ui
 }
 
 template<typename T>
-int GlobalBoard<T>::verify(TLLocalContext* ctx, const T& key, shared_tldata_t<DATASIZE> data) {
+int GlobalBoard<T>::verify(TLLocalContext* ctx, MemoryBackend* mem, const T& key, shared_tldata_t<DATASIZE> data, bool* memoryAlted) {
     if (this->mapping.count(key) == 0) { // we assume data is all zero initially
         return this->data_check(ctx, data->data, init_zeros, "Init data is non-zero!");
     }
     tlc_assert(this->mapping.count(key) == 1, ctx, "Duplicate records found in GlobalBoard!");
+
+    if (memoryAlted)
+        *memoryAlted = false;
+
+    if (has_memory_alt(ctx, key) && mem)
+    {
+        bool flag = true;
+        for (int i = 0; i < DATASIZE; i++)
+            if (data->data[i] != mem->access(key + i))
+                flag = false;
+
+        if (flag)
+        {
+            if (memoryAlted)
+                *memoryAlted = true;
+            return 0;
+        }
+    }
 
     Global_SBEntry value = *this->mapping.at(key).get();
     if (value.status == Global_SBEntry::SB_VALID) {
@@ -308,6 +340,13 @@ int GlobalBoard<T>::verify(TLLocalContext* ctx, const T& key, shared_tldata_t<DA
 }
 
 template<typename T>
+void GlobalBoard<T>::update(const TLLocalContext* ctx, const T& key, std::shared_ptr<Global_SBEntry>& data)
+{
+    ScoreBoard<T, Global_SBEntry, ScoreBoardUpdateCallbackGlobalEntry<T>>::update(ctx, key, data);
+    touch_memory_alt(ctx, key);
+}
+
+template<typename T>
 void GlobalBoard<T>::unpending(TLLocalContext* ctx, const T& key) {
     tlc_assert(this->mapping.count(key) == 1, ctx, "Un-pending non-exist entry in GlobalBoard!");
     Global_SBEntry* value = this->mapping.at(key).get();
@@ -318,6 +357,53 @@ void GlobalBoard<T>::unpending(TLLocalContext* ctx, const T& key) {
     value->data = value->pending_data;
     value->pending_data = nullptr;
     value->status = Global_SBEntry::SB_VALID;
+
+    touch_memory_alt(ctx, key);
+}
+
+template<typename T>
+bool GlobalBoard<T>::has_memory_alt(const TLLocalContext* ctx, const T& key)
+{
+    return memoryAlt.find(key) != memoryAlt.end();
+}
+
+template<typename T>
+bool GlobalBoard<T>::touch_memory_alt(const TLLocalContext* ctx, const T& key)
+{
+    auto pos = memoryAlt.find(key);
+
+    if (pos == memoryAlt.end())
+        return false;
+
+    bool evict = pos->second.life == 0;
+
+    if (evict)
+        memoryAlt.erase(pos);
+
+    return !evict;
+}
+
+template<typename T>
+void GlobalBoard<T>::grant_memory_alt(const TLLocalContext* ctx, const T& key)
+{
+    memoryAlt[key].life++;
+}
+
+template<typename T>
+bool GlobalBoard<T>::reclaim_memory_alt(const TLLocalContext* ctx, const T& key)
+{
+    auto pos = memoryAlt.find(key);
+    
+    if (pos == memoryAlt.end())
+        return false;
+
+    if (pos->second.life == 0)
+        tlc_assert(false, ctx, Gravity::StringAppender().Hex().ShowBase()
+            .Append("reclaim on zero memory alternative at ", key)
+            .ToString());
+
+    pos->second.life--;
+    return true;
 }
 
 #endif // TLC_TEST_SCOREBOARD_H
