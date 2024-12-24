@@ -305,7 +305,31 @@ namespace tl_agent {
                 }
 
                 if (hasData) {
-                    uncachedBoards->verify(this, id, info->address, pendingD.info->source, pendingD.info->data);
+                    bool flag = false;
+                    if (this->globalBoard->has_memory_alt(this, info->address))
+                    {
+                        flag = true;
+
+                        for (size_t i = 0; i < DATASIZE; i++)
+                        {
+                            if (pendingD.info->data->data[i] != mem->access(info->address + i))
+                            {
+                                flag = false;
+                                break;
+                            }
+                        }
+
+                        if (glbl.cfg.verbose && flag)
+                        {
+                            Log(this, Hex().ShowBase()
+                                .Append("[uncached data sync] memory alternative at ", info->address, " with "));
+                            LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
+                            LogEx(std::cout << std::endl);
+                        }
+                    }
+
+                    if (!flag)
+                        uncachedBoards->verify(this, id, info->address, pendingD.info->source, pendingD.info->data);
                 } else if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck)) 
                 { 
                     // finish pending status in GlobalBoard
