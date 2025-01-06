@@ -84,6 +84,8 @@ size_t TLSequencer::GetAgentCount() const noexcept
     return config.GetAgentCount();
 }
 
+int ULFuzzer::index = 0;
+
 void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 {
     if (state != State::NOT_INITIALIZED)
@@ -525,8 +527,13 @@ void TLSequencer::Tock() noexcept
         for (size_t i = 0; i < total_n_agents; i++)
             agents[i]->handle_channel();
 
-        for (size_t i = 0; i < total_n_agents; i++)
+        for (size_t i = 0; i < total_c_agents; i++)
             fuzzers[i]->tick();
+        // TL-UL fuzzers
+        for (size_t i = total_c_agents; i < total_n_agents; i++){
+            ULFuzzer::setIndex(i);
+            fuzzers[i]->tick();
+        }
 
         for (size_t i = 0; i < total_n_agents; i++)
             agents[i]->update_signal();

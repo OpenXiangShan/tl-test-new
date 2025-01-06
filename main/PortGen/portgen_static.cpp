@@ -113,7 +113,7 @@ namespace V3::PortGen {
                 PullULMasterPort(i, j, "a_bits_mask"        , "a.mask");
                 cpp_file.Append("    std::memcpy(",
                         "verilated->", GenerateMasterULPortName(i, j, "a_bits_data"), ", "
-                        "port->a.data->data",
+                        "port->a.data->data, ",
                         BEATSIZE,
                     ");").EndLine();
                 cpp_file.Append("    verilated->", GenerateMasterULPortName(i, j, "a_bits_corrupt"), " = 0;").EndLine();
@@ -188,14 +188,14 @@ namespace V3::PortGen {
                 cpp_file.EndLine();
             }
 
-            for (int j = 0; j < tlULPerCore; j++)
-            {
-                int deviceId = i * (1 + tlULPerCore) + 1 + j;
+            // for (int j = 0; j < tlULPerCore; j++)
+            // {
+            //     int deviceId = i * (1 + tlULPerCore) + 1 + j;
 
-                cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
-                PushULMasterPort(i, j, "c.ready", "c_ready");
-                cpp_file.EndLine();
-            }
+            //     cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
+            //     PushULMasterPort(i, j, "c.ready", "c_ready");
+            //     cpp_file.EndLine();
+            // }
         }
         cpp_file.Append("}").EndLine();
         cpp_file.EndLine();
@@ -230,26 +230,26 @@ namespace V3::PortGen {
                 cpp_file.EndLine();
             }
 
-            for (int j = 0; j < tlULPerCore; j++)
-            {
-                int deviceId = i * (1 + tlULPerCore) + 1 + j;
+            // for (int j = 0; j < tlULPerCore; j++)
+            // {
+            //     int deviceId = i * (1 + tlULPerCore) + 1 + j;
 
-                cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
-                PullULMasterPort(i, j, "c_valid"        , "c.valid");
-                PullULMasterPort(i, j, "c_bits_opcode"  , "c.opcode");
-                PullULMasterPort(i, j, "c_bits_param"   , "c.param");
-                PullULMasterPort(i, j, "c_bits_size"    , "c.size");
-                PullULMasterPort(i, j, "c_bits_source"  , "c.source");
-                PullULMasterPort(i, j, "c_bits_address" , "c.address");
-                cpp_file.Append("    verilated->", GenerateMasterULPortName(i, j, "c_bits_user_alias"), " = 0;").EndLine();
-                cpp_file.Append("    std::memcpy(",
-                        "verilated->", GenerateMasterULPortName(i, j, "c_bits_data"), ",",
-                        "port->c.data->data, ",
-                        BEATSIZE,
-                    ");").EndLine();
-                cpp_file.Append("    verilated->", GenerateMasterULPortName(i, j, "c_bits_corrupt"), " = 0;").EndLine();
-                cpp_file.EndLine();
-            }
+            //     cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
+            //     PullULMasterPort(i, j, "c_valid"        , "c.valid");
+            //     PullULMasterPort(i, j, "c_bits_opcode"  , "c.opcode");
+            //     PullULMasterPort(i, j, "c_bits_param"   , "c.param");
+            //     PullULMasterPort(i, j, "c_bits_size"    , "c.size");
+            //     PullULMasterPort(i, j, "c_bits_source"  , "c.source");
+            //     PullULMasterPort(i, j, "c_bits_address" , "c.address");
+            //     cpp_file.Append("    verilated->", GenerateMasterULPortName(i, j, "c_bits_user_alias"), " = 0;").EndLine();
+            //     cpp_file.Append("    std::memcpy(",
+            //             "verilated->", GenerateMasterULPortName(i, j, "c_bits_data"), ",",
+            //             "port->c.data->data, ",
+            //             BEATSIZE,
+            //         ");").EndLine();
+            //     cpp_file.Append("    verilated->", GenerateMasterULPortName(i, j, "c_bits_corrupt"), " = 0;").EndLine();
+            //     cpp_file.EndLine();
+            // }
         }
         cpp_file.Append("}").EndLine();
         cpp_file.EndLine();

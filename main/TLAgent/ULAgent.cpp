@@ -221,6 +221,9 @@ namespace tl_agent {
 
     }
 
+    bool ULAgent::is_d_fired() {
+      return this->port->d.fire();
+    }
     void ULAgent::fire_d() {
         if (this->port->d.fire()) {
             auto& chnD = this->port->d;
@@ -257,7 +260,7 @@ namespace tl_agent {
                     .EndLine().ToString());
             }
 
-            bool hasData = TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData);
+            bool hasData = TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData);//FIXME Status error! 0x340
             tlc_assert(info->status == S_A_WAITING_D, this, "Status error!");
             if (pendingD.is_pending()) { // following beats
                 // TODO: wrap the following assertions into a function

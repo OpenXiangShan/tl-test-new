@@ -77,6 +77,7 @@ namespace tl_agent {
         void fire_a() override;
         void fire_b() override;
         void fire_c() override;
+        bool is_d_fired() override;
         void fire_d() override;
         void fire_e() override;
         void handle_channel() override;
