@@ -83,6 +83,26 @@ public:
     size_t              fuzzStreamStep;
     size_t              fuzzStreamStart;
     size_t              fuzzStreamEnd;
+    // FIXME add
+    enum bwTestState {
+        aquire = 0,
+        wait_aquire,
+        releasing,
+        wait_release,
+        aquire2,
+        wait_aquire2
+    };
+
+    int state = bwTestState::aquire;
+
+    uint32_t writeResponsedCount = 0;
+
+    uint32_t blkProcessed = 0;
+    uint32_t blkFired = 0;
+    uint32_t blkCountLimit = 10;
+    uint64_t perfCycleStart=0;
+    uint64_t perfCycleEnd=0;
+    std::queue<uint64_t> filledAddrs;
 public:
     Fuzzer() noexcept = default;
     virtual ~Fuzzer() noexcept = default;
@@ -104,12 +124,17 @@ public:
 class ULFuzzer: public Fuzzer {
 private:
     tl_agent::ULAgent *ulAgent;
+    static int index;  // 静态成员变量，所有实例共享
 public:
     ULFuzzer(tl_agent::ULAgent *ulAgent) noexcept;
     virtual ~ULFuzzer() noexcept = default;
+    static void setIndex(int idx) {
+        index = idx;
+    }
     void randomTest(bool put);
     void caseTest();
     void caseTest2();
+    void caseTest3();
     void tick();
 };
 
@@ -170,27 +195,6 @@ private:
     bool                    flagDone;
 
     BandwidthProfilerStatus bwprof;
-
-    enum bwTestState {
-        aquire = 0,
-        wait_aquire,
-        releasing,
-        wait_release,
-        aquire2,
-        wait_aquire2
-    };
-
-    int state = bwTestState::aquire;
-
-    uint32_t writeResponsedCount = 0;
-
-    uint32_t blkProcessed = 0;
-    uint32_t blkFired = 0;
-    uint32_t blkCountLimit = 256; // 256*64B=16KB
-    uint64_t perfCycleStart=0;
-    uint64_t perfCycleEnd=0;
-
-    std::queue<uint64_t> filledAddrs;
 
 public:
     CFuzzer(tl_agent::CAgent *cAgent) noexcept;

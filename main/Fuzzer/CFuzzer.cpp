@@ -311,8 +311,8 @@ void CFuzzer::caseTest() {
   // Write 
   if (state == bwTestState::aquire) {
     // this->fuzzStreamOffset   += this->fuzzStreamStep;
-    addr =  this->fuzzStreamStart + this->fuzzStreamStep * blkProcessed;
-
+    // addr =  this->fuzzStreamStart + 0x100 * blkProcessed + this->fuzzStreamStep;//0x040, 0x140, 0x240...
+    addr =  this->fuzzStreamStart + blkProcessed * this->fuzzStreamStep;            //0x00, 0x40, 0x80, 0xC0...
     if (!cAgent->config().memoryEnable)
       return;
 
@@ -371,16 +371,17 @@ void CFuzzer::caseTest() {
     // wait channel D to fire
     if (cAgent->is_d_fired()) {
       // How many cycle will A channel hold the data?
-      blkFired++;
+      blkFired++;//0x180
     }
-    if (blkFired == blkCountLimit) {
+    if (blkFired == blkCountLimit+1) {
       state = bwTestState::aquire2;
       perfCycleStart=this->cAgent->cycle();
       blkFired = 0;
+      printf("#################Test\n\n");
     }
   }
 
-    // Read 2 
+    // Read 2 0x00,0x40,0x80,0xc0
   if (state == bwTestState::aquire2) {
     addr = filledAddrs.front();
     
@@ -404,7 +405,7 @@ void CFuzzer::caseTest() {
       state = bwTestState::aquire;
       blkFired = 0;
       filledAddrs.pop();
-      perfCycleEnd=this->cAgent->cycle()-perfCycleStart;
+      perfCycleEnd=(this->cAgent->cycle()-perfCycleStart)/2;
       TLSystemFinishEvent().Fire();// stop
       std::cout<<"perf debug : "<<blkCountLimit*64/perfCycleEnd<<"B/Cycle"<<std::endl;
     }
@@ -467,7 +468,7 @@ void CFuzzer::tick() {
         }
     }
     else if (this->mode == TLSequenceMode::FUZZ_STREAM_GS) {
-        this->caseTest();
+        // this->caseTest();
 
         if (this->cAgent->cycle() >= this->fuzzStreamStepTime)
         {

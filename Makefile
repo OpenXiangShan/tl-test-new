@@ -38,7 +38,7 @@ tltest-prepare-v3-coupledL2:
 
 
 tltest-prepare-all-openLLC:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) \
+	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON -DCMAKE_BUILD_TYPE=Debug $(CMAKE_CXX_COMPILER) \
 		-DDUT_PATH="${PWD}/dut/OpenLLC"
 
 tltest-prepare-dpi-openLLC:
