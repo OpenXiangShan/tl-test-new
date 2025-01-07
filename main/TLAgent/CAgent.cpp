@@ -409,7 +409,15 @@ namespace tl_agent {
             int dirty = (exact_privilege == TLPermission::TIP) && (info->dirty[b->alias] || CAGENT_RAND64(this, "CAgent") % 3);
             // When should we probeAck with data? request need_data or dirty itself
             req_c->opcode = uint8_t((dirty || b->needdata) ? TLOpcodeC::ProbeAckData : TLOpcodeC::ProbeAck);
-            if (TLEnumEquals(b->param, TLParamProbe::toB)) {
+            if (TLEnumEquals(b->param, TLParamProbe::toT)) {
+                switch (exact_privilege) {
+                    case TLPermission::TIP:    req_c->param = uint8_t(TLParamProbeAck::TtoT); break;
+                    case TLPermission::BRANCH: req_c->param = uint8_t(TLParamProbeAck::BtoB); break;
+                    case TLPermission::INVALID:req_c->param = uint8_t(TLParamProbeAck::NtoN); break;
+                    default: tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                        .Append("[Internal] Try to probe toT an unknown permission block: ", b->address).ToString());
+                }
+            } else if (TLEnumEquals(b->param, TLParamProbe::toB)) {
                 switch (exact_privilege) {
                     case TLPermission::TIP:    req_c->param = uint8_t(TLParamProbeAck::TtoB); break;
                     case TLPermission::BRANCH: req_c->param = uint8_t(TLParamProbeAck::BtoB); break;
@@ -425,6 +433,9 @@ namespace tl_agent {
                     default: tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
                         .Append("[Internal] Try to probe toN an unknown permission block: ", b->address).ToString());
                 }
+            } else {
+                tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                    .Append("unknown Probe param: ", uint64_t(b->param), " at ", b->address).ToString());
             }
             if (!globalBoard->haskey(b->address)) {
                 // want to probe an all-zero block which does not exist in global board
