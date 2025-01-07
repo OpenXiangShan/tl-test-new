@@ -34,6 +34,7 @@ namespace tl_agent {
     class C_SBEntry {
     public:
         uint64_t        time_stamp;
+        bool            cmoProbed;
         int             status[4];
         TLPermission    privilege[4];
         TLPermission    pending_privilege[4];
@@ -42,6 +43,7 @@ namespace tl_agent {
         inline C_SBEntry(const TLLocalContext* ctx, const int status[], const TLPermission privilege[])
         {
             this->time_stamp = ctx->cycle();
+            this->cmoProbed = false;
             for(int i = 0; i<4; i++){
               this->privilege[i] = privilege[i];
               this->status[i] = status[i];

@@ -437,6 +437,16 @@ namespace tl_agent {
                 tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
                     .Append("unknown Probe param: ", uint64_t(b->param), " at ", b->address).ToString());
             }
+
+            if (localCMOStatus->isInflight(this, b->address))
+            {
+                if (glbl.cfg.verbose)
+                    Log(this, Append("CMO nested probe detected and marked at ")
+                        .Hex().ShowBase().Append(b->address).EndLine());
+                
+                info->cmoProbed = true;
+            }
+
             if (!globalBoard->haskey(b->address)) {
                 // want to probe an all-zero block which does not exist in global board
                 if (glbl.cfg.verbose_agent_debug)
@@ -1175,13 +1185,21 @@ namespace tl_agent {
                         {
                             int          status = entry->status[i];
                             TLPermission perm   = entry->privilege[i];
-                            if (TLEnumEquals(perm, TLPermission::BRANCH)
+                            if (TLEnumEquals(perm, TLPermission::TIP)
+                            ||  TLEnumEquals(perm, TLPermission::BRANCH)
                             ||  TLEnumEquals(perm, TLPermission::INVALID))
                             {
                                 if (glbl.cfg.verbose)
                                 {
                                     Log(this, Append("[CMOAck] [cbo.clean] checked CMO final state on system #", sysId(), ": ")
                                         .Append(PrivilegeToString(perm)).EndLine());
+                                }
+
+                                if (TLEnumEquals(perm, TLPermission::TIP))
+                                {
+                                    tlc_assert(entry->cmoProbed, this, Gravity::StringAppender().Hex().ShowBase()
+                                        .Append("[CBOAck] [cbo.clean] ended up with TIP without nested probe")
+                                        .ToString());
                                 }
 
                                 if (status == S_CBO_A_WAITING_D_NESTED_SENDING_C)
