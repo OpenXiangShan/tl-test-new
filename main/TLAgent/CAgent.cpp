@@ -344,7 +344,9 @@ namespace tl_agent {
         req_c->needHint = 0;
 #endif
         // Log("== id == handleB %d\n", *req_c->source);
-        Log(this, ShowBase().Hex().Append("Accepting over Probe to ProbeAck: ", uint64_t(b->source), " -> ", uint64_t(req_c->source)).EndLine());
+        Log(this, ShowBase().Hex()
+            .Append("Accepting over Probe to ProbeAck ", uint64_t(b->source), " -> ", uint64_t(req_c->source))
+            .Append(" at ", b->address).EndLine());
         if (exact_status[b->alias] == S_SENDING_A || exact_status[b->alias] == S_A_WAITING_D)
         {
             // Probe under AcquirePerm/AcquireBlock
@@ -367,7 +369,7 @@ namespace tl_agent {
                 case TLPermission::BRANCH:  req_c->param = uint8_t(TLParamProbeAck::BtoN); break;
                 default:
                     tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
-                        .Append("Acquire happened on T block, touched by Probe").ToString());
+                        .Append("Acquire happened on T block, touched by Probe at ", b->address).ToString());
             }
 
             pendingC.init(req_c, 1);
@@ -968,6 +970,10 @@ namespace tl_agent {
                                 && TLEnumEquals(chnC.param, TLParamProbeAck::TtoB, TLParamProbeAck::BtoB);
             bool probeAckToB     = TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAck)
                                 && TLEnumEquals(chnC.param, TLParamProbeAck::TtoB, TLParamProbeAck::BtoB);
+            bool probeAckDataToT = TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAckData) 
+                                && TLEnumEquals(chnC.param, TLParamProbeAck::TtoT);
+            bool probeAckToT     = TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAck)
+                                && TLEnumEquals(chnC.param, TLParamProbeAck::TtoT);
             tlc_assert(pendingC.is_pending(), this, "No pending C but C fired!");
             pendingC.update(this);
             if (!pendingC.is_pending()) { // req C finished
@@ -1032,7 +1038,7 @@ namespace tl_agent {
                     } else if (exact_status == S_A_WAITING_D_NESTED_SENDING_C) {
                         info->update_status(this, S_A_WAITING_D, pendingC.info->alias);
                     } else if (exact_status == S_SENDING_C) {
-                        if (probeAckDataToB || probeAckToB) {
+                        if (probeAckDataToB || probeAckToB || probeAckDataToT || probeAckToT) {
                             info->update_status(this, S_VALID, pendingC.info->alias);
                         } else {
                             info->update_status(this, S_INVALID, pendingC.info->alias);
