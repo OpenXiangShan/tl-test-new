@@ -344,7 +344,9 @@ namespace tl_agent {
         req_c->needHint = 0;
 #endif
         // Log("== id == handleB %d\n", *req_c->source);
-        Log(this, ShowBase().Hex().Append("Accepting over Probe to ProbeAck: ", uint64_t(b->source), " -> ", uint64_t(req_c->source)).EndLine());
+        Log(this, ShowBase().Hex()
+            .Append("Accepting over Probe to ProbeAck ", uint64_t(b->source), " -> ", uint64_t(req_c->source))
+            .Append(" at ", b->address).EndLine());
         if (exact_status[b->alias] == S_SENDING_A || exact_status[b->alias] == S_A_WAITING_D)
         {
             // Probe under AcquirePerm/AcquireBlock
@@ -367,7 +369,7 @@ namespace tl_agent {
                 case TLPermission::BRANCH:  req_c->param = uint8_t(TLParamProbeAck::BtoN); break;
                 default:
                     tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
-                        .Append("Acquire happened on T block, touched by Probe").ToString());
+                        .Append("Acquire happened on T block, touched by Probe at ", b->address).ToString());
             }
 
             pendingC.init(req_c, 1);
@@ -409,7 +411,15 @@ namespace tl_agent {
             int dirty = (exact_privilege == TLPermission::TIP) && (info->dirty[b->alias] || CAGENT_RAND64(this, "CAgent") % 3);
             // When should we probeAck with data? request need_data or dirty itself
             req_c->opcode = uint8_t((dirty || b->needdata) ? TLOpcodeC::ProbeAckData : TLOpcodeC::ProbeAck);
-            if (TLEnumEquals(b->param, TLParamProbe::toB)) {
+            if (TLEnumEquals(b->param, TLParamProbe::toT)) {
+                switch (exact_privilege) {
+                    case TLPermission::TIP:    req_c->param = uint8_t(TLParamProbeAck::TtoT); break;
+                    case TLPermission::BRANCH: req_c->param = uint8_t(TLParamProbeAck::BtoB); break;
+                    case TLPermission::INVALID:req_c->param = uint8_t(TLParamProbeAck::NtoN); break;
+                    default: tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                        .Append("[Internal] Try to probe toT an unknown permission block: ", b->address).ToString());
+                }
+            } else if (TLEnumEquals(b->param, TLParamProbe::toB)) {
                 switch (exact_privilege) {
                     case TLPermission::TIP:    req_c->param = uint8_t(TLParamProbeAck::TtoB); break;
                     case TLPermission::BRANCH: req_c->param = uint8_t(TLParamProbeAck::BtoB); break;
@@ -425,7 +435,20 @@ namespace tl_agent {
                     default: tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
                         .Append("[Internal] Try to probe toN an unknown permission block: ", b->address).ToString());
                 }
+            } else {
+                tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                    .Append("unknown Probe param: ", uint64_t(b->param), " at ", b->address).ToString());
             }
+
+            if (localCMOStatus->isInflight(this, b->address))
+            {
+                if (glbl.cfg.verbose)
+                    Log(this, Append("CMO nested probe detected and marked at ")
+                        .Hex().ShowBase().Append(b->address).EndLine());
+                
+                info->cmoProbed = true;
+            }
+
             if (!globalBoard->haskey(b->address)) {
                 // want to probe an all-zero block which does not exist in global board
                 if (glbl.cfg.verbose_agent_debug)
@@ -472,6 +495,7 @@ namespace tl_agent {
             }
 
             tlc_assert(TLEnumEquals(req_c->param,
+                    TLParamProbeAck::TtoT,
                     TLParamProbeAck::TtoN,
                     TLParamProbeAck::TtoB,
                     TLParamProbeAck::NtoN,
@@ -946,6 +970,10 @@ namespace tl_agent {
                                 && TLEnumEquals(chnC.param, TLParamProbeAck::TtoB, TLParamProbeAck::BtoB);
             bool probeAckToB     = TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAck)
                                 && TLEnumEquals(chnC.param, TLParamProbeAck::TtoB, TLParamProbeAck::BtoB);
+            bool probeAckDataToT = TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAckData) 
+                                && TLEnumEquals(chnC.param, TLParamProbeAck::TtoT);
+            bool probeAckToT     = TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAck)
+                                && TLEnumEquals(chnC.param, TLParamProbeAck::TtoT);
             tlc_assert(pendingC.is_pending(), this, "No pending C but C fired!");
             pendingC.update(this);
             if (!pendingC.is_pending()) { // req C finished
@@ -1010,7 +1038,7 @@ namespace tl_agent {
                     } else if (exact_status == S_A_WAITING_D_NESTED_SENDING_C) {
                         info->update_status(this, S_A_WAITING_D, pendingC.info->alias);
                     } else if (exact_status == S_SENDING_C) {
-                        if (probeAckDataToB || probeAckToB) {
+                        if (probeAckDataToB || probeAckToB || probeAckDataToT || probeAckToT) {
                             info->update_status(this, S_VALID, pendingC.info->alias);
                         } else {
                             info->update_status(this, S_INVALID, pendingC.info->alias);
@@ -1163,13 +1191,21 @@ namespace tl_agent {
                         {
                             int          status = entry->status[i];
                             TLPermission perm   = entry->privilege[i];
-                            if (TLEnumEquals(perm, TLPermission::BRANCH)
+                            if (TLEnumEquals(perm, TLPermission::TIP)
+                            ||  TLEnumEquals(perm, TLPermission::BRANCH)
                             ||  TLEnumEquals(perm, TLPermission::INVALID))
                             {
                                 if (glbl.cfg.verbose)
                                 {
                                     Log(this, Append("[CMOAck] [cbo.clean] checked CMO final state on system #", sysId(), ": ")
                                         .Append(PrivilegeToString(perm)).EndLine());
+                                }
+
+                                if (TLEnumEquals(perm, TLPermission::TIP))
+                                {
+                                    tlc_assert(entry->cmoProbed, this, Gravity::StringAppender().Hex().ShowBase()
+                                        .Append("[CBOAck] [cbo.clean] ended up with TIP without nested probe")
+                                        .ToString());
                                 }
 
                                 if (status == S_CBO_A_WAITING_D_NESTED_SENDING_C)
