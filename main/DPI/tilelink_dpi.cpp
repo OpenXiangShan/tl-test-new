@@ -40,11 +40,11 @@
 *      subsystem should be called from the TLSystemFinalization<*>Event.
 * =======================================================================
 */
-static TLSequencer*     passive;
+static TLSequencer*     passive = nullptr;
 
 /*
 */
-static PluginManager*   plugins;
+static PluginManager*   plugins = nullptr;
 
 
 /*
@@ -117,6 +117,9 @@ extern "C" void TileLinkPushChannelA(
     const int           deviceId,
     const uint8_t       ready)
 {
+    if (!passive)
+        return;
+
     TLSequencer::IOPort& port = passive->IO(deviceId);
     port.a.ready = ready;
 }
@@ -139,6 +142,26 @@ extern "C" void TileLinkPullChannelA(
     uint64_t*           data3,
     uint8_t*            corrupt)
 {
+    if (!passive)
+    {
+        *valid          = 0;
+        *opcode         = 0;
+        *param          = 0;
+        *size           = 0;
+        *source         = 0;
+        *address        = 0;
+        *user_needHint  = 0;
+        *user_vaddr     = 0;
+        *user_alias     = 0;
+        *mask           = 0;
+        *data0          = 0;
+        *data1          = 0;
+        *data2          = 0;
+        *data3          = 0;
+        *corrupt        = 0;
+        return;
+    }
+
     TLSequencer::IOPort& port = passive->IO(deviceId);
 
     *valid          =  port.a.valid;
@@ -206,6 +229,9 @@ extern "C" void TileLinkPushChannelB(
     const uint64_t      data3,
     const uint8_t       corrupt)
 {
+    if (!passive)
+        return;
+
     TLSequencer::IOPort& port = passive->IO(deviceId);
     port.b.valid        = valid;
     port.b.opcode       = opcode;
@@ -220,6 +246,12 @@ extern "C" void TileLinkPullChannelB(
     const int           deviceId,
     uint8_t*            ready)
 {
+    if (!passive)
+    {
+        *ready = 0;
+        return;
+    }
+
     TLSequencer::IOPort& port = passive->IO(deviceId);
     *ready = port.b.ready;
 }
@@ -233,6 +265,9 @@ extern "C" void TileLinkPushChannelC(
     const int           deviceId,
     const uint8_t       ready)
 {
+    if (!passive)
+        return;
+
     TLSequencer::IOPort& port = passive->IO(deviceId);
     port.c.ready = ready;
 }
@@ -254,6 +289,25 @@ extern "C" void TileLinkPullChannelC(
     uint64_t*           data3,
     uint8_t*            corrupt)
 {
+    if (!passive)
+    {
+        *valid          = 0;
+        *opcode         = 0;
+        *param          = 0;
+        *size           = 0;
+        *source         = 0;
+        *address        = 0;
+        *user_needHint  = 0;
+        *user_vaddr     = 0;
+        *user_alias     = 0;
+        *data0          = 0;
+        *data1          = 0;
+        *data2          = 0;
+        *data3          = 0;
+        *corrupt        = 0;
+        return;
+    }
+
     TLSequencer::IOPort& port = passive->IO(deviceId);
     *valid          =  port.c.valid;
     *opcode         =  port.c.opcode;
@@ -319,6 +373,9 @@ extern "C" void TileLinkPushChannelD(
     const uint64_t      data3,
     const uint8_t       corrupt)
 {
+    if (!passive)
+        return;
+
     TLSequencer::IOPort& port = passive->IO(deviceId);
     port.d.valid            = valid;
     port.d.opcode           = opcode;
@@ -366,6 +423,12 @@ extern "C" void TileLinkPullChannelD(
     const int           deviceId,
     uint8_t*            ready)
 {
+    if (!passive)
+    {
+        *ready = 0;
+        return;
+    }
+
     TLSequencer::IOPort& port = passive->IO(deviceId);
     *ready = port.d.ready;
 }
@@ -379,6 +442,9 @@ extern "C" void TileLinkPushChannelE(
     const int           deviceId,
     const uint8_t       ready)
 {
+    if (!passive)
+        return;
+
     TLSequencer::IOPort& port = passive->IO(deviceId);
     port.e.ready = ready;
 }
@@ -388,6 +454,13 @@ extern "C" void TileLinkPullChannelE(
     uint8_t*            valid,
     uint64_t*           sink)
 {
+    if (!passive)
+    {
+        *valid = 0;
+        *sink  = 0;
+        return;
+    }
+
     TLSequencer::IOPort& port = passive->IO(deviceId);
     *valid = port.e.valid;
     *sink  = port.e.sink;
@@ -402,6 +475,9 @@ extern "C" void TileLinkMMIOPushChannelA(
     const int           deviceId,
     const uint8_t       ready)
 {
+    if (!passive)
+        return;
+
     TLSequencer::MMIOPort& port = passive->MMIO(deviceId);
     port.a.ready = ready;
 }
@@ -418,6 +494,20 @@ extern "C" void TileLinkMMIOPullChannelA(
     uint64_t*           data,
     uint8_t*            corrupt)
 {
+    if (!passive)
+    {
+        *valid   = 0;
+        *opcode  = 0;
+        *param   = 0;
+        *size    = 0;
+        *source  = 0;
+        *address = 0;
+        *mask    = 0;
+        *data    = 0;
+        *corrupt = 0;
+        return;
+    }
+
     TLSequencer::MMIOPort& port = passive->MMIO(deviceId);
     *valid          = port.a.valid;
     *opcode         = port.a.opcode;
@@ -454,6 +544,9 @@ extern "C" void TileLinkMMIOPushChannelD(
     const uint64_t      data,
     const uint8_t       corrupt)
 {
+    if (!passive)
+        return;
+
     TLSequencer::MMIOPort& port = passive->MMIO(deviceId);
     port.d.valid            = valid;
     port.d.opcode           = opcode;
@@ -477,6 +570,12 @@ extern "C" void TileLinkMMIOPullChannelD(
     const int           deviceId,
     uint8_t*            ready)
 {
+    if (!passive)
+    {
+        *ready = 0;
+        return;
+    }
+
     TLSequencer::MMIOPort& port = passive->MMIO(deviceId);
     *ready          = port.d.ready;
 }
@@ -489,6 +588,12 @@ extern "C" void TileLinkMMIOPullChannelD(
 extern "C" void MemoryAXIPullChannelAW(
     uint8_t*            ready)
 {
+    if (!passive)
+    {
+        *ready = 0;
+        return;
+    }
+
     TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
     *ready = port.aw.ready;
 }
@@ -501,6 +606,9 @@ extern "C" void MemoryAXIPushChannelAW(
     const uint8_t       size,
     const uint8_t       len)
 {
+    if (!passive)
+        return;
+
     TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
     port.aw.valid   = valid;
     port.aw.id      = id;
@@ -518,6 +626,12 @@ extern "C" void MemoryAXIPushChannelAW(
 extern "C" void MemoryAXIPullChannelW(
     uint8_t*            ready)
 {
+    if (!passive)
+    {
+        *ready = 0;
+        return;
+    }
+
     TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
     *ready = port.w.ready;
 }
@@ -531,6 +645,9 @@ extern "C" void MemoryAXIPushChannelW(
     const uint64_t      data2,
     const uint64_t      data3)
 {
+    if (!passive)
+        return;
+
     TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
     port.w.valid            = valid;
     port.w.strb             = strb;
@@ -579,6 +696,14 @@ extern "C" void MemoryAXIPullChannelB(
     uint32_t*           id,
     uint8_t*            resp)
 {
+    if (!passive)
+    {
+        *valid  = 0;
+        *id     = 0;
+        *resp   = 0;
+        return;
+    }
+
     TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
     *valid  = port.b.valid;
     *id     = port.b.id;
@@ -588,6 +713,9 @@ extern "C" void MemoryAXIPullChannelB(
 extern "C" void MemoryAXIPushChannelB(
     const uint8_t       ready)
 {
+    if (!passive)
+        return;
+
     TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
     port.b.ready = ready;
 }
@@ -600,6 +728,12 @@ extern "C" void MemoryAXIPushChannelB(
 extern "C" void MemoryAXIPullChannelAR(
     uint8_t*            ready)
 {
+    if (!passive)
+    {
+        *ready = 0;
+        return;
+    }
+
     TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
     *ready = port.ar.ready;
 }
@@ -612,6 +746,9 @@ extern "C" void MemoryAXIPushChannelAR(
     const uint8_t       size,
     const uint8_t       len)
 {
+    if (!passive)
+        return;
+
     TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
     port.ar.valid   = valid;
     port.ar.id      = id;
@@ -636,6 +773,19 @@ extern "C" void MemoryAXIPullChannelR(
     uint64_t*           data2,
     uint64_t*           data3)
 {
+    if (!passive)
+    {
+        *valid = 0;
+        *id    = 0;
+        *resp  = 0;
+        *last  = 0;
+        *data0 = 0;
+        *data1 = 0;
+        *data2 = 0;
+        *data3 = 0;
+        return;
+    }
+
     TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
     *valid      = port.r.valid;
     *id         = port.r.id;
@@ -678,6 +828,9 @@ extern "C" void MemoryAXIPullChannelR(
 extern "C" void MemoryAXIPushChannelR(
     const uint8_t       ready)
 {
+    if (!passive)
+        return;
+
     TLSequencer::MemoryAXIPort& port = passive->MemoryAXI(0);
     port.r.ready = ready;
 }
