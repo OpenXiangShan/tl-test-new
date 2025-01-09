@@ -343,7 +343,9 @@ namespace axi_agent {
             {
                 Log(this, Hex().ShowBase()
                     .Append("[memory.axi] [fire W] ")
-                    .Append("last: ",   uint64_t(chnW.last))
+                    .Append("(id: ",        uint64_t(trans->request.bundle.id))
+                    .Append(", addr: ",     uint64_t(trans->request.bundle.addr), ")")
+                    .Append(", last: ",     uint64_t(chnW.last))
                     .Append(", data: ")); 
                 LogEx(details::data_dump_embedded(
                     chnW.data->data, 1 << trans->request.bundle.size, chnW.strb));
