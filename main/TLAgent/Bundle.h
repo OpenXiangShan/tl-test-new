@@ -38,6 +38,9 @@ namespace tl_agent {
         Usr                 usr;
         Echo                echo;
         uint8_t             corrupt;
+#ifndef MatrixTest
+        uint8_t             matrix;
+#endif
         uint8_t             needHint;
         paddr_t             vaddr;
         uint8_t             alias;

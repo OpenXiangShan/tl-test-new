@@ -8,7 +8,7 @@
 
 namespace V3::PortGen {
 
-    std::string Generate(int coreCount, int tlULPerCore);
+    std::string Generate(int coreCount, int tlULPerCore, int tlMPerCore);
 }
 
 

@@ -1631,6 +1631,7 @@ namespace tl_agent {
             send_a(pendingA.info);
         }
         if (pendingB.is_pending()) {
+            printf("Is HADLE_B\n");
             handle_b(pendingB.info);
         }
         if (pendingC.is_pending()) {

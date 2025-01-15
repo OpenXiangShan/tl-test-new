@@ -63,6 +63,12 @@ tltest-config-user:
 	@cat ./configs/user.tltest.ini > ./main/build/tltest.ini
 	@echo "" >> ./main/build/tltest.ini
 
+tltest-config-coupledL2-test-matrix: tltest-config-user
+	@cat ./configs/coupledL2-test-matrix.tltest.ini
+	@echo ""
+	@cat ./configs/coupledL2-test-matrix.tltest.ini >> ./main/build/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-matrix" > ./main/build/Makefile.config
+
 tltest-config-coupledL2-test-l2l3: tltest-config-user
 	@cat ./configs/coupledL2-test-l2l3.tltest.ini
 	@echo ""

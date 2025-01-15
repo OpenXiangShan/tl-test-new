@@ -20,10 +20,18 @@ namespace V3::PortGen {
             .ToString();
     }
 
-    static void GenerateInfo(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore)
+    std::string GenerateMasterMPortName(int coreId, int portId, std::string name)
+    {
+        return Gravity::StringAppender()
+            .Append("master_m_port_", coreId, "_", portId, "_0_", name)
+            .ToString();
+    }
+
+    static void GenerateInfo(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
     {
         cpp_file.Append("extern \"C\" uint64_t GetCoreCount() { return ", coreCount, "; }").EndLine();
         cpp_file.Append("extern \"C\" uint64_t GetULPortCountPerCore() { return ", tlULPerCore, "; }").EndLine();
+        cpp_file.Append("extern \"C\" uint64_t GetMPortCountPerCore() { return ", tlMPerCore, "; }").EndLine();
         cpp_file.EndLine();
     }
 
@@ -33,13 +41,19 @@ namespace V3::PortGen {
 #   define PushULMasterPort(coreId, portId, lname, rname) \
         cpp_file.Append("    port->", lname, " = verilated->", GenerateMasterULPortName(coreId, portId, rname), ";").EndLine()
 
+#   define PushMMasterPort(coreId, portId, lname, rname) \
+        cpp_file.Append("    port->", lname, " = verilated->", GenerateMasterMPortName(coreId, portId, rname), ";").EndLine()
+
 #   define PullMasterPort(coreId, lname, rname) \
         cpp_file.Append("    verilated->", GenerateMasterPortName(coreId, lname), " = port->", rname, ";").EndLine()
 
 #   define PullULMasterPort(coreId, portId, lname, rname) \
         cpp_file.Append("    verilated->", GenerateMasterULPortName(coreId, portId, lname), " = port->", rname, ";").EndLine()
 
-    static void GeneratePushChannelA(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore)
+#   define PullMMasterPort(coreId, portId, lname, rname) \
+        cpp_file.Append("    verilated->", GenerateMasterMPortName(coreId, portId, lname), " = port->", rname, ";").EndLine()
+
+    static void GeneratePushChannelA(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
     {
         cpp_file.Append("extern \"C\" void PushChannelA(VTestTop* verilated, TLSequencer* tltest)").EndLine();
         cpp_file.Append("{").EndLine();
@@ -49,7 +63,7 @@ namespace V3::PortGen {
         {
             for (int j = 0; j < 1; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PushMasterPort(i, "a.ready", "a_ready");
@@ -58,10 +72,19 @@ namespace V3::PortGen {
 
             for (int j = 0; j < tlULPerCore; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + 1 + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + 1 + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PushULMasterPort(i, j, "a.ready", "a_ready");
+                cpp_file.EndLine();
+            }
+
+            for (int j = 0; j < tlMPerCore; j++)
+            {
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + 2 + j;
+
+                cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
+                PushMMasterPort(i, j, "a.ready", "a_ready");
                 cpp_file.EndLine();
             }
         }
@@ -69,7 +92,7 @@ namespace V3::PortGen {
         cpp_file.EndLine();
     }
 
-    static void GeneratePullChannelA(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore)
+    static void GeneratePullChannelA(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
     {
         cpp_file.Append("extern \"C\" void PullChannelA(VTestTop* verilated, TLSequencer* tltest)").EndLine();
         cpp_file.Append("{").EndLine();
@@ -79,7 +102,7 @@ namespace V3::PortGen {
         {
             for (int j = 0; j < 1; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PullMasterPort(i, "a_valid"             , "a.valid");
@@ -101,7 +124,7 @@ namespace V3::PortGen {
 
             for (int j = 0; j < tlULPerCore; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + 1 + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + 1 + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PullULMasterPort(i, j, "a_valid"            , "a.valid");
@@ -118,12 +141,33 @@ namespace V3::PortGen {
                     ");").EndLine();
                 cpp_file.Append("    verilated->", GenerateMasterULPortName(i, j, "a_bits_corrupt"), " = 0;").EndLine();
             }
+
+            for (int j = 0; j < tlMPerCore; j++)
+            {
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + 2 + j;
+
+                cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
+                PullMMasterPort(i, j, "a_valid"            , "a.valid");
+                PullMMasterPort(i, j, "a_bits_opcode"      , "a.opcode");
+                PullMMasterPort(i, j, "a_bits_param"       , "a.param");
+                PullMMasterPort(i, j, "a_bits_size"        , "a.size");
+                PullMMasterPort(i, j, "a_bits_source"      , "a.source");
+                PullMMasterPort(i, j, "a_bits_address"     , "a.address");
+                PullMMasterPort(i, j, "a_bits_mask"        , "a.mask");
+                PullMMasterPort(i, j,"a_bits_user_matrix"  , "a.matrix");
+                cpp_file.Append("    std::memcpy(",
+                        "verilated->", GenerateMasterMPortName(i, j, "a_bits_data"), ", "
+                        "port->a.data->data, ",
+                        BEATSIZE,
+                    ");").EndLine();
+                cpp_file.Append("    verilated->", GenerateMasterMPortName(i, j, "a_bits_corrupt"), " = 0;").EndLine();
+            }
         }
         cpp_file.Append("}").EndLine();
         cpp_file.EndLine();
     }
 
-    static void GeneratePushChannelB(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore)
+    static void GeneratePushChannelB(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
     {
         cpp_file.Append("extern \"C\" void PushChannelB(VTestTop* verilated, TLSequencer* tltest)").EndLine();
         cpp_file.Append("{").EndLine();
@@ -133,7 +177,7 @@ namespace V3::PortGen {
         {
             for (int j = 0; j < 1; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PushMasterPort(i, "b.valid"     , "b_valid");
@@ -150,7 +194,7 @@ namespace V3::PortGen {
         cpp_file.EndLine();
     }
 
-    static void GeneratePullChannelB(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore)
+    static void GeneratePullChannelB(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
     {
         cpp_file.Append("extern \"C\" void PullChannelB(VTestTop* verilated, TLSequencer* tltest)").EndLine();
         cpp_file.Append("{").EndLine();
@@ -160,7 +204,7 @@ namespace V3::PortGen {
         {
             for (int j = 0; j < 1; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PullMasterPort(i, "b_ready", "b.ready");
@@ -171,7 +215,7 @@ namespace V3::PortGen {
         cpp_file.EndLine();
     }
 
-    static void GeneratePushChannelC(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore)
+    static void GeneratePushChannelC(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
     {
         cpp_file.Append("extern \"C\" void PushChannelC(VTestTop* verilated, TLSequencer* tltest)").EndLine();
         cpp_file.Append("{").EndLine();
@@ -181,7 +225,7 @@ namespace V3::PortGen {
         {
             for (int j = 0; j < 1; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PushMasterPort(i, "c.ready", "c_ready");
@@ -192,7 +236,7 @@ namespace V3::PortGen {
         cpp_file.EndLine();
     }
 
-    static void GeneratePullChannelC(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore)
+    static void GeneratePullChannelC(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
     {
         cpp_file.Append("extern \"C\" void PullChannelC(VTestTop* verilated, TLSequencer* tltest)").EndLine();
         cpp_file.Append("{").EndLine();
@@ -202,7 +246,7 @@ namespace V3::PortGen {
         {
             for (int j = 0; j < 1; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PullMasterPort(i, "c_valid"         , "c.valid");
@@ -225,7 +269,7 @@ namespace V3::PortGen {
         cpp_file.EndLine();
     }
 
-    static void GeneratePushChannelD(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore)
+    static void GeneratePushChannelD(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
     {
         cpp_file.Append("extern \"C\" void PushChannelD(VTestTop* verilated, TLSequencer* tltest)").EndLine();
         cpp_file.Append("{").EndLine();
@@ -235,7 +279,7 @@ namespace V3::PortGen {
         {
             for (int j = 0; j < 1; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PushMasterPort(i, "d.valid"     , "d_valid");
@@ -256,7 +300,7 @@ namespace V3::PortGen {
 
             for (int j = 0; j < tlULPerCore; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + 1 + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + 1 + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PushULMasterPort(i, j, "d.valid"     , "d_valid");
@@ -274,12 +318,33 @@ namespace V3::PortGen {
                 PushULMasterPort(i, j, "d.corrupt"   , "d_bits_corrupt");
                 cpp_file.EndLine();
             }
+
+            for (int j = 0; j < tlMPerCore; j++)
+            {
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + 2 + j;
+
+                cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
+                PushMMasterPort(i, j, "d.valid"     , "d_valid");
+                PushMMasterPort(i, j, "d.opcode"    , "d_bits_opcode");
+                PushMMasterPort(i, j, "d.param"     , "d_bits_param");
+                PushMMasterPort(i, j, "d.size"      , "d_bits_size");
+                PushMMasterPort(i, j, "d.source"    , "d_bits_source");
+                PushMMasterPort(i, j, "d.sink"      , "d_bits_sink");
+                PushMMasterPort(i, j, "d.denied"    , "d_bits_denied");
+                cpp_file.Append("    std::memcpy(",
+                        "port->d.data->data, ",
+                        "verilated->", GenerateMasterMPortName(i, j, "d_bits_data"), ", ",
+                        BEATSIZE,
+                    ");").EndLine();
+                PushMMasterPort(i, j, "d.corrupt"   , "d_bits_corrupt");
+                cpp_file.EndLine();
+            }
         }
         cpp_file.Append("}").EndLine();
         cpp_file.EndLine();
     }
 
-    static void GeneratePullChannelD(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore)
+    static void GeneratePullChannelD(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
     {
         cpp_file.Append("extern \"C\" void PullChannelD(VTestTop* verilated, TLSequencer* tltest)").EndLine();
         cpp_file.Append("{").EndLine();
@@ -289,7 +354,7 @@ namespace V3::PortGen {
         {
             for (int j = 0; j < 1; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PullMasterPort(i, "d_ready", "d.ready");
@@ -298,10 +363,19 @@ namespace V3::PortGen {
 
             for (int j = 0; j < tlULPerCore; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + 1 + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + 1 + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PullULMasterPort(i, j,  "d_ready", "d.ready");
+                cpp_file.EndLine();
+            }
+
+            for (int j = 0; j < tlMPerCore; j++)
+            {
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + 2 + j;
+
+                cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
+                PullMMasterPort(i, j,  "d_ready", "d.ready");
                 cpp_file.EndLine();
             }
         }
@@ -309,7 +383,7 @@ namespace V3::PortGen {
         cpp_file.EndLine();
     }
 
-    static void GeneratePushChannelE(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore)
+    static void GeneratePushChannelE(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
     {
         cpp_file.Append("extern \"C\" void PushChannelE(VTestTop* verilated, TLSequencer* tltest)").EndLine();
         cpp_file.Append("{").EndLine();
@@ -319,7 +393,7 @@ namespace V3::PortGen {
         {
             for (int j = 0; j < 1; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PushMasterPort(i, "e.ready", "e_ready");
@@ -330,7 +404,7 @@ namespace V3::PortGen {
         cpp_file.EndLine();
     }
 
-    static void GeneratePullChannelE(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore)
+    static void GeneratePullChannelE(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
     {
         cpp_file.Append("extern \"C\" void PullChannelE(VTestTop* verilated, TLSequencer* tltest)").EndLine();
         cpp_file.Append("{").EndLine();
@@ -340,7 +414,7 @@ namespace V3::PortGen {
         {
             for (int j = 0; j < 1; j++)
             {
-                int deviceId = i * (1 + tlULPerCore) + j;
+                int deviceId = i * (1 + tlULPerCore + tlMPerCore) + j;
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PullMasterPort(i, "e_valid"     , "e.valid");
@@ -353,7 +427,7 @@ namespace V3::PortGen {
     }
 
     //
-    std::string Generate(int coreCount, int tlULPerCore)
+    std::string Generate(int coreCount, int tlULPerCore, int tlMPerCore)
     {
         //
         Gravity::StringAppender cpp_file;
@@ -364,22 +438,22 @@ namespace V3::PortGen {
         cpp_file.Append("#include <cstdint>").EndLine();
         cpp_file.EndLine();
 
-        GenerateInfo(cpp_file, coreCount, tlULPerCore);
+        GenerateInfo(cpp_file, coreCount, tlULPerCore, tlMPerCore);
 
-        GeneratePushChannelA(cpp_file, coreCount, tlULPerCore);
-        GeneratePullChannelA(cpp_file, coreCount, tlULPerCore);
+        GeneratePushChannelA(cpp_file, coreCount, tlULPerCore, tlMPerCore);
+        GeneratePullChannelA(cpp_file, coreCount, tlULPerCore, tlMPerCore);
 
-        GeneratePushChannelB(cpp_file, coreCount, tlULPerCore);
-        GeneratePullChannelB(cpp_file, coreCount, tlULPerCore);
+        GeneratePushChannelB(cpp_file, coreCount, tlULPerCore, tlMPerCore);
+        GeneratePullChannelB(cpp_file, coreCount, tlULPerCore, tlMPerCore);
 
-        GeneratePushChannelC(cpp_file, coreCount, tlULPerCore);
-        GeneratePullChannelC(cpp_file, coreCount, tlULPerCore);
+        GeneratePushChannelC(cpp_file, coreCount, tlULPerCore, tlMPerCore);
+        GeneratePullChannelC(cpp_file, coreCount, tlULPerCore, tlMPerCore);
 
-        GeneratePushChannelD(cpp_file, coreCount, tlULPerCore);
-        GeneratePullChannelD(cpp_file, coreCount, tlULPerCore);
+        GeneratePushChannelD(cpp_file, coreCount, tlULPerCore, tlMPerCore);
+        GeneratePullChannelD(cpp_file, coreCount, tlULPerCore, tlMPerCore);
 
-        GeneratePushChannelE(cpp_file, coreCount, tlULPerCore);
-        GeneratePullChannelE(cpp_file, coreCount, tlULPerCore);
+        GeneratePushChannelE(cpp_file, coreCount, tlULPerCore, tlMPerCore);
+        GeneratePullChannelE(cpp_file, coreCount, tlULPerCore, tlMPerCore);
 
         //
         return cpp_file.ToString();

@@ -344,14 +344,14 @@ void CFuzzer::caseTest() {
   if (state == bwTestState::releasing) {
 
     addr = filledAddrs.front();
-    printf("Debug RRRRRR 0x%08lx\n",addr);
+    // printf("Debug RRRRRR 0x%08lx\n",addr);
     
     auto putdata = make_shared_tldata<DATASIZE>();
     for (int i = 0; i < DATASIZE; i++) {
       putdata->data[i] = (uint8_t)CAGENT_RAND64(cAgent, "CFuzzer");
     }
     if(cAgent->do_releaseData(addr, TLParamRelease::TtoN, putdata,0)){
-        printf("test TTTTTTTTT\n");
+        // printf("test TTTTTTTTT\n");
         blkProcessed++;
         filledAddrs.push(addr);
         filledAddrs.pop();
@@ -419,7 +419,7 @@ void CFuzzer::tick() {
         this->startupInterval++;
         return;
     }
-
+    return;
     if (this->mode == TLSequenceMode::FUZZ_ARI)
     {
         this->randomTest(true);

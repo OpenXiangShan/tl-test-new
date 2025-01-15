@@ -24,6 +24,7 @@ namespace V3::PortGen {
 
     static LoadedPortInfo   loadedGetCoreCount;
     static LoadedPortInfo   loadedGetULPortCountPerCore;
+    static LoadedPortInfo   loadedGetMPortCountPerCore;
 
     static LoadedPortGen    loadedPushChannelA;
     static LoadedPortGen    loadedPullChannelA;
@@ -36,7 +37,7 @@ namespace V3::PortGen {
     static LoadedPortGen    loadedPushChannelE;
     static LoadedPortGen    loadedPullChannelE;
 
-    void LoadDynamic(std::vector<std::string> includePaths, int coreCount, int tlULPerCore)
+    void LoadDynamic(std::vector<std::string> includePaths, int coreCount, int tlULPerCore, int tlMPerCore)
     {
         //
         Gravity::StringAppender cpp_file_name("/tmp/tltest_portgen");
@@ -60,7 +61,7 @@ namespace V3::PortGen {
             return; //
         }
 
-        fout << Generate(coreCount, tlULPerCore);
+        fout << Generate(coreCount, tlULPerCore, tlMPerCore);
         fout.flush();
         fout.close();
 
@@ -125,6 +126,7 @@ namespace V3::PortGen {
 
         LOAD_PORTGEN_SYM(LoadedPortInfo, loadedGetCoreCount, "GetCoreCount");
         LOAD_PORTGEN_SYM(LoadedPortInfo, loadedGetULPortCountPerCore, "GetULPortCountPerCore");
+        LOAD_PORTGEN_SYM(LoadedPortInfo, loadedGetMPortCountPerCore, "GetMPortCountPerCore");
 
         LOAD_PORTGEN_SYM(LoadedPortGen, loadedPushChannelA, "PushChannelA");
         LOAD_PORTGEN_SYM(LoadedPortGen, loadedPullChannelA, "PullChannelA");
@@ -219,6 +221,14 @@ uint64_t V3::PortGen::GetCoreCount()
 uint64_t V3::PortGen::GetULPortCountPerCore()
 {
     tlsys_assert(V3::PortGen::loadedGetULPortCountPerCore,
+        "PortGen not available");
+    
+    return V3::PortGen::loadedGetULPortCountPerCore();
+}
+
+uint64_t V3::PortGen::GetMPortCountPerCore()
+{
+    tlsys_assert(V3::PortGen::loadedGetMPortCountPerCore,
         "PortGen not available");
     
     return V3::PortGen::loadedGetULPortCountPerCore();

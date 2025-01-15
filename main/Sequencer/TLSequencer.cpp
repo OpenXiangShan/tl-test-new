@@ -81,12 +81,17 @@ size_t TLSequencer::GetULAgentCount() const noexcept
     return config.GetULAgentCount();
 }
 
+size_t TLSequencer::GetMAgentCount() const noexcept
+{
+    return config.GetMAgentCount();
+}
+
 size_t TLSequencer::GetAgentCount() const noexcept
 {
     return config.GetAgentCount();
 }
 
-int ULFuzzer::index = 0;
+int MFuzzer::index = 0;
 
 void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 {
@@ -306,6 +311,22 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 i++;
             }
 
+            for (unsigned int k = 0; k < cfg.masterCountPerCoreTLM; k++)
+            {
+                //
+                io      [i] = new IOPort;
+                agents  [i] = new MAgent(&this->config, globalBoard, uncachedBoard, j, i, cfg.seed, &cycles);
+                agents  [i]->connect(io[i]);
+
+                fuzzers [i] = new MFuzzer(static_cast<MAgent*>(agents[i]));
+                fuzzers [i]->set_cycles(&cycles);
+
+                LogInfo("INIT", Append("TLSequencer::Initialize: ")
+                    .Append("Instantiated TL-M Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
+
+                //
+                i++;
+            }
             //
             mmio        [j] = new MMIOPort;
             mmioAgents  [j] = new MMIOAgent(&this->config, mmioGlobalStatus, j, cfg.seed, &cycles);
@@ -525,6 +546,7 @@ void TLSequencer::Tock() noexcept
     {
         size_t total_n_agents = GetAgentCount();
         size_t total_c_agents = GetCAgentCount();
+        size_t total_m_agents = GetMAgentCount();
 
         //
         for (size_t i = 0; i < total_n_agents; i++)
@@ -533,11 +555,14 @@ void TLSequencer::Tock() noexcept
         for (size_t i = 0; i < total_c_agents; i++)
             fuzzers[i]->tick();
         // TL-UL fuzzers
-        for (size_t i = total_c_agents; i < total_n_agents; i++){
-            ULFuzzer::setIndex(i);
+        for (size_t i = total_c_agents; i < total_n_agents-total_m_agents; i++){
             fuzzers[i]->tick();
         }
-
+        // TL-M fuzzers
+        for (size_t i = total_n_agents-total_m_agents; i < total_n_agents; i++){
+            MFuzzer::setIndex(i);
+            fuzzers[i]->tick();
+        }
         for (size_t i = 0; i < total_n_agents; i++)
             agents[i]->update_signal();
 

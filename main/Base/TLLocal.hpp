@@ -27,6 +27,7 @@ public:
     unsigned int        coreCount;                              // L1-L2 system count
     unsigned int        masterCountPerCoreTLC;                  // TL-C master count per core
     unsigned int        masterCountPerCoreTLUL;                 // TL-UL master count per core
+    unsigned int        masterCountPerCoreTLM;             // TL-M master count per core
 
     std::unordered_map<int, TLSequenceMode> sequenceModes;      // Agent sequence modes
 
@@ -74,6 +75,7 @@ public:
     size_t                          GetAgentCount() const noexcept;
     size_t                          GetCAgentCount() const noexcept;
     size_t                          GetULAgentCount() const noexcept;
+    size_t                          GetMAgentCount() const noexcept;
 };
 
 
@@ -92,6 +94,7 @@ public:
     size_t                          GetAgentCount() const noexcept;
     size_t                          GetCAgentCount() const noexcept;
     size_t                          GetULAgentCount() const noexcept;
+    size_t                          GetMAgentCount() const noexcept;
 };
 
 inline size_t TLLocalConfig::GetCAgentCount() const noexcept
@@ -104,9 +107,14 @@ inline size_t TLLocalConfig::GetULAgentCount() const noexcept
     return coreCount * masterCountPerCoreTLUL;
 }
 
+inline size_t TLLocalConfig::GetMAgentCount() const noexcept
+{
+    return coreCount * masterCountPerCoreTLM;
+}
+
 inline size_t TLLocalConfig::GetAgentCount() const noexcept
 {
-    return GetCAgentCount() + GetULAgentCount();
+    return GetCAgentCount() + GetULAgentCount() + GetMAgentCount();
 }
 
 inline bool TLLocalContext::mainSys() const noexcept
@@ -122,6 +130,11 @@ inline size_t TLLocalContext::GetCAgentCount() const noexcept
 inline size_t TLLocalContext::GetULAgentCount() const noexcept
 {
     return config().GetULAgentCount();
+}
+
+inline size_t TLLocalContext::GetMAgentCount() const noexcept
+{
+    return config().GetMAgentCount();
 }
 
 inline size_t TLLocalContext::GetAgentCount() const noexcept

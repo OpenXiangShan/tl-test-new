@@ -4,11 +4,10 @@
 
 #include "../Base/TLEnum.hpp"
 
-#include "BaseAgent.h"
 #include "Bundle.h"
 #include <cstdint>
 #include <memory>
-#include "ULAgent.h"
+#include "MAgent.h"
 
 
 //
@@ -19,8 +18,8 @@
 
 namespace tl_agent {
 
-    ULAgent::ULAgent(TLLocalConfig* cfg, MemoryBackend* mem, GlobalBoard<paddr_t> *gb, UncachedBoard<paddr_t>* ubs, int sys, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
-            BaseAgent(cfg, mem, sys, sysId, seed), pendingA(), pendingD()
+    MAgent::MAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t> *gb, UncachedBoard<paddr_t>* ubs, int sys, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
+            BaseAgent(cfg, sys, sysId, seed), pendingA(), pendingD()
     {
         this->globalBoard = gb;
         this->uncachedBoards = ubs;
@@ -28,17 +27,17 @@ namespace tl_agent {
         this->localBoard = new LocalScoreBoard();
     }
 
-    ULAgent::~ULAgent() noexcept
+    MAgent::~MAgent() noexcept
     {
         delete this->localBoard;
     }
 
-    uint64_t ULAgent::cycle() const noexcept 
+    uint64_t MAgent::cycle() const noexcept 
     {
         return *this->cycles;
     }
 
-    Resp ULAgent::send_a(std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>> &a) 
+    Resp MAgent::send_a(std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>> &a) 
     {
         switch (TLOpcodeA(a->opcode)) 
         {
@@ -88,19 +87,16 @@ namespace tl_agent {
         this->port->a.size     = a->size;
         this->port->a.mask     = a->mask;
         this->port->a.source   = a->source;
-        this->port->a.param    = 0;
         this->port->a.valid    = true;
-        #ifndef MatrixTest
-        this->port->a.matrix   = a->matrix;
-        #endif
+        this->port->a.matrix   = a->matrix?1:1;
         return OK;
     }
 
-    Resp ULAgent::send_c(std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>> &c) {
+    Resp MAgent::send_c(std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>> &c) {
         return OK;
     }
 
-    void ULAgent::fire_a() {
+    void MAgent::fire_a() {
         if (this->port->a.fire()) {
             auto& chnA = this->port->a;
 
@@ -216,37 +212,28 @@ namespace tl_agent {
                             uncachedBoards->allocate(this, id, chnA.address, chnA.source,
                                 global_SBEntry->pending_data);
                     }
-
-                    if (globalBoard->has_memory_alt(this, chnA.address))
-                    {
-                        auto data = make_shared_tldata<DATASIZE>();
-                        for (size_t i = 0; i < DATASIZE; i++)
-                            data->data[i] = mem->access(chnA.address + i);
-
-                        uncachedBoards->appendAll(this, chnA.address, data);
-                    }
                 }
             }
         }
     }
 
-    void ULAgent::fire_b() {
+    void MAgent::fire_b() {
 
     }
 
-    void ULAgent::fire_c() {
+    void MAgent::fire_c() {
 
     }
 
-    bool ULAgent::is_d_fired() {
+    bool MAgent::is_d_fired() {
       return this->port->d.fire();
     }
-    void ULAgent::fire_d() {
+    void MAgent::fire_d() {
         if (this->port->d.fire()) {
             auto& chnD = this->port->d;
             auto info = localBoard->query(this, chnD.source);
 
-            if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck))
+            if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck,TLOpcodeD::ReleaseAck))
             {
                 if (glbl.cfg.verbose_xact_fired)
                 {
@@ -257,7 +244,7 @@ namespace tl_agent {
                         .EndLine());
                 }
             }
-            else if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData))
+            else if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData,TLOpcodeD::GrantData))
             {
                 if (glbl.cfg.verbose_xact_fired)
                 {
@@ -277,7 +264,7 @@ namespace tl_agent {
                     .EndLine().ToString());
             }
 
-            bool hasData = TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData);//FIXME Status error! 0x340
+            bool hasData = TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData, TLOpcodeD::GrantData);//FIXME Status error! 0x340
             tlc_assert(info->status == S_A_WAITING_D, this, "Status error!");
             if (pendingD.is_pending()) { // following beats
                 // TODO: wrap the following assertions into a function
@@ -291,11 +278,11 @@ namespace tl_agent {
                 resp_d->param   = chnD.param;
                 resp_d->source  = chnD.source;
                 resp_d->data    = hasData ? make_shared_tldata<DATASIZE>() : nullptr;
-                int nr_beat     = TLEnumEquals(chnD.opcode, TLOpcodeD::Grant, TLOpcodeD::AccessAck) ? 0 :
+                int nr_beat     = TLEnumEquals(chnD.opcode, TLOpcodeD::Grant,TLOpcodeD::ReleaseAck) ? 0 :
                                   (chnD.size <= 5) ? 0 :
                                   (chnD.size == 6) ? 1 :
                                   (chnD.size == 7) ? 2 : 0;
-                pendingD.init(resp_d, nr_beat);
+                pendingD.init(resp_d, nr_beat);//TODO
             }
             // Store data to pendingD
             if (hasData) {
@@ -310,7 +297,7 @@ namespace tl_agent {
 
             if (!pendingD.is_pending()) 
             {
-                // ULAgent needn't care about endurance
+                // MAgent needn't care about endurance
                 if (glbl.cfg.verbose_xact_data_complete)
                 {
                     if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData))
@@ -324,31 +311,7 @@ namespace tl_agent {
                 }
 
                 if (hasData) {
-                    bool flag = false;
-                    if (this->globalBoard->has_memory_alt(this, info->address))
-                    {
-                        flag = true;
-
-                        for (size_t i = 0; i < DATASIZE; i++)
-                        {
-                            if (pendingD.info->data->data[i] != mem->access(info->address + i))
-                            {
-                                flag = false;
-                                break;
-                            }
-                        }
-
-                        if (glbl.cfg.verbose && flag)
-                        {
-                            Log(this, Hex().ShowBase()
-                                .Append("[uncached data sync] memory alternative at ", info->address, " with "));
-                            LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
-                            LogEx(std::cout << std::endl);
-                        }
-                    }
-
-                    if (!flag)
-                        uncachedBoards->verify(this, id, info->address, pendingD.info->source, pendingD.info->data);
+                    uncachedBoards->verify(this, id, info->address, pendingD.info->source, pendingD.info->data);
                 } else if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck)) 
                 { 
                     // finish pending status in GlobalBoard
@@ -364,18 +327,18 @@ namespace tl_agent {
         }
     }
     
-    void ULAgent::fire_e() {
+    void MAgent::fire_e() {
     }
 
-    void ULAgent::handle_b(std::shared_ptr<BundleChannelB> &b) {
+    void MAgent::handle_b(std::shared_ptr<BundleChannelB> &b) {
     }
     
-    void ULAgent::handle_channel() {
+    void MAgent::handle_channel() {
         fire_a();
         fire_d();
     }
 
-    void ULAgent::update_signal() {
+    void MAgent::update_signal() {
         this->port->d.ready = true; // TODO: do random here
         if (pendingA.is_pending()) {
             // TODO: do delay here
@@ -390,7 +353,7 @@ namespace tl_agent {
         idpool.update(this);
     }
     
-    bool ULAgent::do_getAuto(paddr_t address)
+    bool MAgent::do_getAuto(paddr_t address)
     {
         if (pendingA.is_pending() || idpool.full())
             return false;
@@ -420,7 +383,7 @@ namespace tl_agent {
         return true;
     }
 
-    bool ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask)
+    bool MAgent::do_get(paddr_t address, uint8_t size, uint32_t mask)
     {
         if (pendingA.is_pending() || idpool.full())
             return false;
@@ -431,6 +394,7 @@ namespace tl_agent {
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
         req_a->vaddr    = address;
+        req_a->matrix   = 1;
 #ifdef ULAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
@@ -450,7 +414,7 @@ namespace tl_agent {
         return true;
     }
     
-    bool ULAgent::do_putfulldata(paddr_t address, shared_tldata_t<DATASIZE> data)
+    bool MAgent::do_putfulldata(paddr_t address, shared_tldata_t<DATASIZE> data)
     {
         if (pendingA.is_pending() || idpool.full())
             return false;
@@ -486,7 +450,7 @@ namespace tl_agent {
         return true;
     }
 
-    bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data)
+    bool MAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data)
     {
         if (pendingA.is_pending() || idpool.full())
             return false;
@@ -530,8 +494,8 @@ namespace tl_agent {
         Dump(EndLine());
         return true;
     }
-    
-    void ULAgent::timeout_check() {
+
+    void MAgent::timeout_check() {
         if (localBoard->get().empty()) {
             return;
         }

@@ -104,14 +104,17 @@ inline std::string GetDeviceName(const TLLocalContext* ctx)
     int64_t coreId  = int64_t(ctx->sysId() / (ctx->config().masterCountPerCoreTLC + ctx->config().masterCountPerCoreTLUL));
     int64_t tlcId   = int64_t(ctx->sysId() % (ctx->config().masterCountPerCoreTLC + ctx->config().masterCountPerCoreTLUL));
     int64_t tlulId  = int64_t(ctx->sysId() % (ctx->config().masterCountPerCoreTLC + ctx->config().masterCountPerCoreTLUL)) - ctx->config().masterCountPerCoreTLC;
+    int64_t tlmId  = int64_t(ctx->sysId() % (ctx->config().masterCountPerCoreTLC + ctx->config().masterCountPerCoreTLUL+ctx->config().masterCountPerCoreTLM)) - ctx->config().masterCountPerCoreTLC- ctx->config().masterCountPerCoreTLUL;
 
     strapp.Append("#", ctx->sysId(), " L2[", coreId, "].");
-        
-    if (tlulId < 0)
-        strapp.Append("C[", tlcId, "]");
-    else
-        strapp.Append("UL[", tlulId, "]");
-
+    if (tlmId < 0) {
+        if (tlulId < 0)
+            strapp.Append("C[", tlcId, "]");
+        else
+            strapp.Append("UL[", tlulId, "]");
+    }else{
+        strapp.Append("M[", tlmId, "]");
+    }
     if (ctx->sysId() < DEVICE_NAME_CACHE_SIZE)
         cached[ctx->sysId()] = strapp.ToString();
 

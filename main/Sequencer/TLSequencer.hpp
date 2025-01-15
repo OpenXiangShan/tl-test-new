@@ -13,6 +13,7 @@
 #include "../Utils/Common.h"
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
+#include "../TLAgent/MAgent.h"
 #include "../TLAgent/MMIOAgent.h"
 #include "../Memory/MemoryAgent.hpp"
 #include "../Fuzzer/Fuzzer.h"
@@ -32,6 +33,7 @@ public:
 
 public:
     using BaseAgent         = tl_agent::BaseAgent<>;
+    using MAgent           = tl_agent::MAgent;
     using ULAgent           = tl_agent::ULAgent;
     using CAgent            = tl_agent::CAgent;
 
@@ -100,6 +102,7 @@ public:
     size_t          GetAgentCount() const noexcept;
     size_t          GetCAgentCount() const noexcept;
     size_t          GetULAgentCount() const noexcept;
+    size_t          GetMAgentCount() const noexcept;
 
     void            Initialize(const TLLocalConfig& cfg) noexcept;
     void            Finalize() noexcept;
