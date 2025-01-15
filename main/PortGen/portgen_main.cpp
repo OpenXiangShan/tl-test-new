@@ -23,6 +23,7 @@ int main(int argc, char** argv)
     uint64_t coreCount                  = TLTEST_DEFAULT_CORE_COUNT;
     uint64_t masterCountPerCoreTLC      = TLTEST_DEFAULT_MASTER_COUNT_PER_CORE_TLC;
     uint64_t masterCountPerCoreTLUL     = TLTEST_DEFAULT_MASTER_COUNT_PER_CORE_TLUL;
+    uint64_t masterCountPerCoreTLM     = TLTEST_DEFAULT_MASTER_COUNT_PER_CORE_TLM;
 
     //
     char* endptr = NULL;
@@ -71,7 +72,8 @@ int main(int argc, char** argv)
 
     INI_OVERRIDE_INT("tltest.config", "core",           coreCount);
     INI_OVERRIDE_INT("tltest.config", "core.tl_c",      masterCountPerCoreTLC);
-    INI_OVERRIDE_INT("tltest.config", "core.tl_ul",     masterCountPerCoreTLUL)
+    INI_OVERRIDE_INT("tltest.config", "core.tl_ul",     masterCountPerCoreTLUL);
+    INI_OVERRIDE_INT("tltest.config", "core.tl_m",      masterCountPerCoreTLM);
 
 #   undef INI_OVERRIDE_INT
 
@@ -84,7 +86,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    fout << V3::PortGen::Generate(coreCount, masterCountPerCoreTLUL);
+    fout << V3::PortGen::Generate(coreCount, masterCountPerCoreTLUL, masterCountPerCoreTLM);
 
     fout.flush();
     fout.close();

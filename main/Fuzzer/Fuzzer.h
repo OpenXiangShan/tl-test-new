@@ -7,6 +7,7 @@
 
 #include "../Base/TLLocal.hpp"
 #include "../TLAgent/ULAgent.h"
+#include "../TLAgent/MAgent.h"
 #include "../TLAgent/CAgent.h"
 #include "../TLAgent/MMIOAgent.h"
 
@@ -122,13 +123,9 @@ public:
 class ULFuzzer: public Fuzzer {
 private:
     tl_agent::ULAgent *ulAgent;
-    static int index;  // 静态成员变量，所有实例共享
 public:
     ULFuzzer(tl_agent::ULAgent *ulAgent) noexcept;
     virtual ~ULFuzzer() noexcept = default;
-    static void setIndex(int idx) {
-        index = idx;
-    }
     void randomTest(bool put);
     void caseTest();
     void caseTest2();
@@ -146,6 +143,23 @@ public:
     void tick();
 };
 
+class MFuzzer: public Fuzzer {
+private:
+    tl_agent::MAgent *mAgent;
+
+    static int index;  // 静态成员变量，所有实例共享
+public:
+    MFuzzer(tl_agent::MAgent *mAgent) noexcept;
+    virtual ~MFuzzer() noexcept = default;
+    static void setIndex(int idx) {
+        index = idx;
+    }
+    void randomTest(bool put);
+    void caseTest();
+    void caseTest2();
+    void caseTest3();
+    void tick();
+};
 
 struct CFuzzRange {
     size_t      ordinal;

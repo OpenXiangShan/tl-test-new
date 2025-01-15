@@ -111,6 +111,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.config", "core",                       tlcfg.coreCount);
     INI_OVERRIDE_INT("tltest.config", "core.tl_c",                  tlcfg.masterCountPerCoreTLC);
     INI_OVERRIDE_INT("tltest.config", "core.tl_ul",                 tlcfg.masterCountPerCoreTLUL);
+    INI_OVERRIDE_INT("tltest.config", "core.tl_m",                  tlcfg.masterCountPerCoreTLM);
+
 
     INI_OVERRIDE_INT("tltest.config", "memory.enable",              tlcfg.memoryEnable);
     INI_OVERRIDE_INT("tltest.config", "memory.start",               tlcfg.memoryStart);

@@ -15,12 +15,13 @@
 
 namespace V3::PortGen {
 
-    void LoadDynamic(std::vector<std::string> includePaths, int coreCount, int tlULPerCore);
+    void LoadDynamic(std::vector<std::string> includePaths, int coreCount, int tlULPerCore, int tlMPerCore);
 
     void LoadStatic();
 
     uint64_t GetCoreCount();
     uint64_t GetULPortCountPerCore();
+    uint64_t GetMPortCountPerCore();
 
     void PushChannelA(VTestTop* verilated, TLSequencer* tltest);
     void PullChannelA(VTestTop* verilated, TLSequencer* tltest);
