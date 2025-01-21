@@ -302,6 +302,10 @@ jobs:
         ls
         sed -i 's/mode.0.*/mode.0 = FUZZ_ARI/g' ./configs/user.tltest.ini
         sed -i 's/mode.1.*/mode.1 = FUZZ_ARI/g' ./configs/user.tltest.ini
+        sed -i 's/mode.2.*/mode.2 = FUZZ_ARI/g' ./configs/user.tltest.ini
+        sed -i 's/mode.3.*/mode.3 = FUZZ_ARI/g' ./configs/user.tltest.ini
+        sed -i 's/mode.4.*/mode.4 = FUZZ_ARI/g' ./configs/user.tltest.ini
+        sed -i 's/mode.5.*/mode.5 = FUZZ_ARI/g' ./configs/user.tltest.ini
         cat ./configs/user.tltest.ini
 
     - name: Setup mode configuration FUZZ_STREAM
@@ -311,6 +315,10 @@ jobs:
         ls
         sed -i 's/mode.0.*/mode.0 = FUZZ_STREAM/g' ./configs/user.tltest.ini
         sed -i 's/mode.1.*/mode.1 = FUZZ_STREAM/g' ./configs/user.tltest.ini
+        sed -i 's/mode.2.*/mode.2 = FUZZ_STREAM/g' ./configs/user.tltest.ini
+        sed -i 's/mode.3.*/mode.3 = FUZZ_STREAM/g' ./configs/user.tltest.ini
+        sed -i 's/mode.4.*/mode.4 = FUZZ_STREAM/g' ./configs/user.tltest.ini
+        sed -i 's/mode.5.*/mode.5 = FUZZ_STREAM/g' ./configs/user.tltest.ini
         cat ./configs/user.tltest.ini
 
     - name: Run TL-Test-New for OpenLLC
