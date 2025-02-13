@@ -168,7 +168,8 @@ void MFuzzer::caseTest3() {
   if (state == bwTestState::aquire) {
     // this->fuzzStreamOffset   += this->fuzzStreamStep;
     // addr =  this->fuzzStreamStart + 0x100 * blkProcessed + this->fuzzStreamStep;//0x040, 0x140, 0x240...
-    addr =  this->fuzzStreamStart + (blkProcessed+index) * this->fuzzStreamStep;            //0x00, 0x40, 0x80, 0xC0...
+    addr =  this->fuzzStreamStart + (blkProcessed*11+index) * this->fuzzStreamStep;            //0x00, 0x40, 0x80, 0xC0...
+    //FIXME blkProcessed*7+index is NULL
     if (!mAgent->config().memoryEnable)
       return;
 
@@ -196,27 +197,20 @@ void MFuzzer::caseTest3() {
       blkFired = 0;
     }
   }
-
+// FIXME 重地址冲突(M1和M3相邻时间对同一地址读写)
   if (state == bwTestState::releasing) {
 
     addr = filledAddrs.front();
-    // printf("Debug RRRRRR 0x%08lx\n",addr);
-    
     auto putdata = make_shared_tldata<DATASIZE>();
     for (int i = 0; i < DATASIZE; i++) {
       putdata->data[i] = (uint8_t)CAGENT_RAND64(mAgent, "CFuzzer");
     }
     if(mAgent->do_putfulldata(addr, putdata)){
-        // printf("test TTTTTTTTT\n");
         blkProcessed++;
         filledAddrs.push(addr);
         filledAddrs.pop();
     }
-    // else{
-    //     mAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias);
-    //     printf("HAVE RWRWRWRWRWRW\n");
-    // }; // ReleaseData
-    
+
     if (blkProcessed == blkCountLimit) {
       state = bwTestState::wait_release;
       blkProcessed = 0;
@@ -229,6 +223,7 @@ void MFuzzer::caseTest3() {
       // How many cycle will A channel hold the data?
       blkFired++;//0x180
     }
+    // is AccessAck
     if (blkFired == blkCountLimit+1) {
       state = bwTestState::aquire2;
       perfCycleStart=this->mAgent->cycle();
@@ -257,14 +252,14 @@ void MFuzzer::caseTest3() {
       // How many cycle will D channel hold the data?
       blkFired++;
     }
-    if (blkFired == blkCountLimit*2) {
+    if (blkFired == blkCountLimit*2+1) {
       state = bwTestState::aquire;
       blkFired = 0;
       filledAddrs.pop();
-      perfCycleEnd=(this->mAgent->cycle()-perfCycleStart)/2;
-      
-      TLSystemFinishEvent().Fire();// stop
-      std::cout<<"perf debug : "<<blkCountLimit*64/perfCycleEnd<<"B/Cycle"<<std::endl;
+      perfCycleEnd=this->mAgent->cycle();
+      // perfCycleEnd=(this->mAgent->cycle()-perfCycleStart)/2;
+      // TLSystemFinishEvent().Fire();// stop
+      std::cout<<"perf debug : "<<blkCountLimit*64/((this->mAgent->cycle()-perfCycleStart)/2)<<"B/Cycle"<<std::endl;
     }
   }
 }
@@ -319,17 +314,17 @@ void MFuzzer::tick() {
     // }
     // else 
     // if (this->mode == TLSequenceMode::FUZZ_STREAM_GS) {
-    if(true){
-        this->caseTest3();
+    if(perfCycleEnd==0){
+      this->caseTest3();
 
-    if (this->mAgent->cycle() >= this->fuzzStreamStepTime)
-    {
-        this->fuzzStreamStepTime += this->fuzzStreamInterval;
-    }
+      if (this->mAgent->cycle() >= this->fuzzStreamStepTime)
+      {
+          this->fuzzStreamStepTime += this->fuzzStreamInterval;
+      }
 
-    if (this->fuzzStreamEnded)
-    {
-        // TLSystemFinishEvent().Fire();
+      if (this->fuzzStreamEnded)
+      {
+          // TLSystemFinishEvent().Fire();
+      }
     }
-}
 }

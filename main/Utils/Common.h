@@ -29,7 +29,7 @@ enum {
     BEATSIZE = 32,
     BEATSIZE_MEMORY = 32,
     DATASIZE_MMIO = 8,
-    NR_SOURCEID = 16,
+    NR_SOURCEID = 8,
     NR_SOURCEID_MMIO = 16,
     TIMEOUT_INTERVAL = 50000,
 };
@@ -93,7 +93,7 @@ inline std::string GetDeviceName(const TLLocalContext* ctx)
 
     Gravity::StringAppender strapp;
 
-    int64_t coreId  = int64_t(ctx->sysId() / (ctx->config().masterCountPerCoreTLC + ctx->config().masterCountPerCoreTLUL));
+    int64_t coreId  = int64_t(ctx->sysId() / (ctx->config().masterCountPerCoreTLC + ctx->config().masterCountPerCoreTLUL+ctx->config().masterCountPerCoreTLM));
     int64_t tlcId   = int64_t(ctx->sysId() % (ctx->config().masterCountPerCoreTLC + ctx->config().masterCountPerCoreTLUL));
     int64_t tlulId  = int64_t(ctx->sysId() % (ctx->config().masterCountPerCoreTLC + ctx->config().masterCountPerCoreTLUL)) - ctx->config().masterCountPerCoreTLC;
     int64_t tlmId  = int64_t(ctx->sysId() % (ctx->config().masterCountPerCoreTLC + ctx->config().masterCountPerCoreTLUL+ctx->config().masterCountPerCoreTLM)) - ctx->config().masterCountPerCoreTLC- ctx->config().masterCountPerCoreTLUL;

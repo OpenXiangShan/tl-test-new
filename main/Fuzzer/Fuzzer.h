@@ -98,7 +98,7 @@ public:
 
     uint32_t blkProcessed = 0;
     uint32_t blkFired = 0;
-    uint32_t blkCountLimit = 10;
+    uint32_t blkCountLimit = 512;//2048; // 2k*64B
     uint64_t perfCycleStart=0;
     uint64_t perfCycleEnd=0;
     std::queue<uint64_t> filledAddrs;

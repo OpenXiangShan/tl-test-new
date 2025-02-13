@@ -4,6 +4,8 @@
 //
 
 #include <cstddef>
+#include <cstdint>
+#include <ostream>
 
 #include "../Events/TLSystemEvent.hpp"
 
@@ -439,6 +441,28 @@ void TLSequencer::Finalize() noexcept
         Gravity::UnregisterListener<TLSystemFinishEvent>(
             Gravity::StringAppender("tltest.sequencer.finish:", uint64_t(this)).ToString());
 
+        size_t total_n_agents = GetAgentCount();
+        size_t total_c_agents = GetCAgentCount();
+        size_t total_m_agents = GetMAgentCount();
+
+        // TL-C
+        for (size_t i = 0; i < total_c_agents; i++){}
+        // TL-UL fuzzers
+        for (size_t i = total_c_agents; i < total_n_agents-total_m_agents; i++){
+        }
+        // TL-M fuzzers
+        int total_data_size=0;
+        int total_cycles=1;
+        uint32_t StartCycle=-1;
+        uint32_t EndCycle=0;
+        for (size_t i = total_n_agents-total_m_agents; i < total_n_agents; i++){
+            StartCycle = StartCycle < fuzzers[i]->perfCycleStart? StartCycle:fuzzers[i]->perfCycleStart;
+            EndCycle = StartCycle > fuzzers[i]->perfCycleEnd? StartCycle:fuzzers[i]->perfCycleEnd;
+            total_data_size+=fuzzers[i]->blkCountLimit*64;
+        }
+        total_cycles=(EndCycle-StartCycle)/2;
+        std::cout<<"perf debug : "<<total_data_size<<" / "<<total_cycles<<" = "<<total_data_size/total_cycles<<"B/Cycle"<<std::endl;
+
         for (size_t i = 0; i < GetAgentCount(); i++)
         {
             if (fuzzers[i])
@@ -539,7 +563,7 @@ void TLSequencer::Tock() noexcept
     if (!IsAlive())
         return;
 
-    try 
+    try
     {
         size_t total_n_agents = GetAgentCount();
         size_t total_c_agents = GetCAgentCount();
@@ -556,9 +580,14 @@ void TLSequencer::Tock() noexcept
             fuzzers[i]->tick();
         }
         // TL-M fuzzers
+        bool endTLM=true;
         for (size_t i = total_n_agents-total_m_agents; i < total_n_agents; i++){
             MFuzzer::setIndex(i);
             fuzzers[i]->tick();
+            endTLM = endTLM && fuzzers[i]->perfCycleEnd;
+        }
+        if(endTLM){
+            TLSystemFinishEvent().Fire();
         }
         for (size_t i = 0; i < total_n_agents; i++)
             agents[i]->update_signal();

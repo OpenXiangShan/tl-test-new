@@ -123,6 +123,7 @@ namespace tl_agent {
                     LogEx(data_dump_embedded<BEATSIZE>(chnA.data->data));
                     LogEx(std::cout << std::endl);
                 }
+                // this->probeIDpool.freeid(this->port->c.source);
             }
             else if (TLEnumEquals(chnA.opcode, TLOpcodeA::PutPartialData))
             {
@@ -351,6 +352,7 @@ namespace tl_agent {
             this->timeout_check();
         }
         idpool.update(this);
+        // probeIDpool.update(this);
     }
     
     bool MAgent::do_getAuto(paddr_t address)
