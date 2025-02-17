@@ -243,7 +243,7 @@ namespace tl_agent {
             case TLOpcodeA::CBOFlush:
             case TLOpcodeA::CBOInval:
             {
-                if (localCMOStatus->hasInflight())
+                if (localCMOStatus->isInflight(this, a->address))
                     return FAIL;
 
                 localCMOStatus->setInflight(this, a->address, TLOpcodeA(a->opcode));
@@ -1993,7 +1993,7 @@ namespace tl_agent {
 
     bool CAgent::do_cbo(TLOpcodeA opcode, paddr_t address, bool alwaysHit)
     {
-        if (localCMOStatus->hasInflight())
+        if (localCMOStatus->isInflight(this, address))
             return false;
 
         if (pendingA.is_pending() || idpool.full())
