@@ -243,11 +243,6 @@ namespace tl_agent {
             case TLOpcodeA::CBOFlush:
             case TLOpcodeA::CBOInval:
             {
-                if (localCMOStatus->isInflight(this, a->address))
-                    return FAIL;
-
-                localCMOStatus->setInflight(this, a->address, TLOpcodeA(a->opcode));
-
                 auto idmap_entry = std::make_shared<C_IDEntry>(a->address, a->alias);
                 idMap->update(this, a->source, idmap_entry);
 
@@ -2053,6 +2048,8 @@ namespace tl_agent {
                 .Append("source: ", uint64_t(req_a->source))
                 .Append(", addr: ", uint64_t(address)).EndLine());
         }
+
+        localCMOStatus->setInflight(this, address, opcode);
 
         return true;
     }
