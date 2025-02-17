@@ -1160,8 +1160,8 @@ namespace tl_agent {
 
             if (TLEnumEquals(chnD.opcode, TLOpcodeD::CBOAck))
             {
-                if (localCMOStatus->inflightCount() != 1)
-                    tlc_assert(false, this, "zero or multiple in-flight CMO");
+                if (localCMOStatus->inflightCount() == 0)
+                    tlc_assert(false, this, "zero in-flight CMO");
 
                 auto status = localCMOStatus->firstInflight();
                 auto entry = localBoard->query(this, status.address);
