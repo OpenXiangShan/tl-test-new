@@ -250,7 +250,11 @@ namespace tl_agent {
                 {
                     auto entry = localBoard->query(this, a->address);
                     for (int i = 0; i < 4; i++)
-                        if (entry->status[i] == S_VALID || entry->status[i] == S_INVALID) {
+                        if (entry->status[i] == S_CBO_SENDING_A
+                         || entry->status[i] == S_CBO_SENDING_A_NESTED_SENDING_C
+                         || entry->status[i] == S_CBO_SENDING_A_NESTED_C_WAITING_D) {
+                            // keep the old state
+                        } else if (entry->status[i] == S_VALID || entry->status[i] == S_INVALID) {
                             entry->update_status(this, S_CBO_SENDING_A, i);
                         } else if (entry->status[i] == S_SENDING_C) {
                             entry->update_status(this, S_CBO_SENDING_A_NESTED_SENDING_C, i);
