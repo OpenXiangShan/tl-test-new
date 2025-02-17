@@ -1162,7 +1162,7 @@ namespace tl_agent {
                 if (localCMOStatus->inflightCount() == 0)
                     tlc_assert(false, this, "zero in-flight CMO");
 
-                auto status = localCMOStatus->firstInflight();
+                auto status = localCMOStatus->query(this, addr);
                 auto entry = localBoard->query(this, status.address);
 
                 for (int i = 0; i < 4; i++)
