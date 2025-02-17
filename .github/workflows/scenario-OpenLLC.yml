@@ -295,7 +295,7 @@ jobs:
       working-directory: ${{ github.workspace }}
       run: tar -zxvf ${{ env.TLTEST_ARCHIVE }}
 
-    - name: Setup mode configuration FUZZ_ARI
+    - name: Setup mode configuration FUZZ_ARI with CMO
       if: matrix.case.mode == 'FUZZ_ARI'
       run: |
         pwd
@@ -306,6 +306,9 @@ jobs:
         sed -i 's/mode.3.*/mode.3 = FUZZ_ARI/g' ./configs/user.tltest.ini
         sed -i 's/mode.4.*/mode.4 = FUZZ_ARI/g' ./configs/user.tltest.ini
         sed -i 's/mode.5.*/mode.5 = FUZZ_ARI/g' ./configs/user.tltest.ini
+        sed -i 's/cmo.enable .*=.*/cmo.enable = 1/g' ./configs/user.tltest.ini
+        sed -i 's/cmo.enable.cbo.clean.*=.*/cmo.enable.cbo.clean = 1/g' ./configs/user.tltest.ini
+        sed -i 's/cmo.enable.cbo.flush.*=.*/cmo.enable.cbo.flush = 1/g' ./configs/user.tltest.ini
         cat ./configs/user.tltest.ini
 
     - name: Setup mode configuration FUZZ_STREAM
