@@ -243,11 +243,6 @@ namespace tl_agent {
             case TLOpcodeA::CBOFlush:
             case TLOpcodeA::CBOInval:
             {
-                if (localCMOStatus->hasInflight())
-                    return FAIL;
-
-                localCMOStatus->setInflight(this, a->address, TLOpcodeA(a->opcode));
-
                 auto idmap_entry = std::make_shared<C_IDEntry>(a->address, a->alias);
                 idMap->update(this, a->source, idmap_entry);
 
@@ -255,7 +250,11 @@ namespace tl_agent {
                 {
                     auto entry = localBoard->query(this, a->address);
                     for (int i = 0; i < 4; i++)
-                        if (entry->status[i] == S_VALID || entry->status[i] == S_INVALID) {
+                        if (entry->status[i] == S_CBO_SENDING_A
+                         || entry->status[i] == S_CBO_SENDING_A_NESTED_SENDING_C
+                         || entry->status[i] == S_CBO_SENDING_A_NESTED_C_WAITING_D) {
+                            // keep the old state
+                        } else if (entry->status[i] == S_VALID || entry->status[i] == S_INVALID) {
                             entry->update_status(this, S_CBO_SENDING_A, i);
                         } else if (entry->status[i] == S_SENDING_C) {
                             entry->update_status(this, S_CBO_SENDING_A_NESTED_SENDING_C, i);
@@ -1160,10 +1159,10 @@ namespace tl_agent {
 
             if (TLEnumEquals(chnD.opcode, TLOpcodeD::CBOAck))
             {
-                if (localCMOStatus->inflightCount() != 1)
-                    tlc_assert(false, this, "zero or multiple in-flight CMO");
+                if (localCMOStatus->inflightCount() == 0)
+                    tlc_assert(false, this, "zero in-flight CMO");
 
-                auto status = localCMOStatus->firstInflight();
+                auto status = localCMOStatus->query(this, addr);
                 auto entry = localBoard->query(this, status.address);
 
                 for (int i = 0; i < 4; i++)
@@ -1993,7 +1992,7 @@ namespace tl_agent {
 
     bool CAgent::do_cbo(TLOpcodeA opcode, paddr_t address, bool alwaysHit)
     {
-        if (localCMOStatus->hasInflight())
+        if (localCMOStatus->isInflight(this, address))
             return false;
 
         if (pendingA.is_pending() || idpool.full())
@@ -2053,6 +2052,8 @@ namespace tl_agent {
                 .Append("source: ", uint64_t(req_a->source))
                 .Append(", addr: ", uint64_t(address)).EndLine());
         }
+
+        localCMOStatus->setInflight(this, address, opcode);
 
         return true;
     }
@@ -2145,9 +2146,11 @@ namespace tl_agent {
             }
             else
             {
+                /*
                 tlc_assert(false, ctx, Gravity::StringAppender().Hex().ShowBase()
                     .Append("Multiple CMO in-flight on set")
                     .ToString());
+                */
             }
         }
 
