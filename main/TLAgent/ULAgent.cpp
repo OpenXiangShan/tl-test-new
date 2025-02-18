@@ -209,6 +209,15 @@ namespace tl_agent {
                             uncachedBoards->allocate(this, id, chnA.address, chnA.source,
                                 global_SBEntry->pending_data);
                     }
+
+                    if (globalBoard->has_memory_alt(this, chnA.address))
+                    {
+                        auto data = make_shared_tldata<DATASIZE>();
+                        for (size_t i = 0; i < DATASIZE; i++)
+                            data->data[i] = mem->access(chnA.address + i);
+
+                        uncachedBoards->appendAll(this, chnA.address, data);
+                    }
                 }
             }
         }
