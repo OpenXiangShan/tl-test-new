@@ -132,7 +132,7 @@ openLLC-verilog-clean:
 
 
 VERILATOR := verilator
-VERILATOR_COMMON_ARGS_COUPLEDL2 := ./dut/CoupledL2/build/*.v \
+VERILATOR_COMMON_ARGS_COUPLEDL2 := ./dut/CoupledL2/build/*.*v \
 		--Mdir ./verilated \
 		-O3 \
 		--trace-fst \
@@ -140,7 +140,7 @@ VERILATOR_COMMON_ARGS_COUPLEDL2 := ./dut/CoupledL2/build/*.v \
 		--build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) \
 		-DSIM_TOP_MODULE_NAME=TestTop \
 		-Wno-fatal
-VERILATOR_COMMON_ARGS_OPENLLC := ./dut/OpenLLC/build/*.v \
+VERILATOR_COMMON_ARGS_OPENLLC := ./dut/OpenLLC/build/*.*v \
 		--Mdir ./verilated \
 		-O3 \
 		--trace-fst \
@@ -162,7 +162,7 @@ coupledL2-verilate-build:
 coupledL2-verilate:
 	rm -rf verilated
 	mkdir verilated
-	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/CoupledL2/build/*.v -Wno-fatal \
+	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/CoupledL2/build/*.*v -Wno-fatal \
 		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
 
 coupledL2-verilate-clean:
@@ -181,7 +181,7 @@ openLLC-verilate-build:
 openLLC-verilate:
 	rm -rf verilated
 	mkdir verilated
-	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/OpenLLC/build/*.v -Wno-fatal \
+	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/OpenLLC/build/*.*v -Wno-fatal \
 		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
 
 openLLC-verilate-clean:
