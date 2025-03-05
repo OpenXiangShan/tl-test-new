@@ -6,6 +6,7 @@
 
 #include "Bundle.h"
 #include <cstdint>
+#include <cstdio>
 #include <memory>
 #include "MAgent.h"
 
@@ -56,6 +57,7 @@ namespace tl_agent {
                     = std::make_shared<UL_SBEntry>(this, TLOpcodeA::PutFullData, S_SENDING_A, a->address);
                 localBoard->update(this, a->source, entry);
                 int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
+                // printf("0x%lx ----%d\n",a->address,beat_num+1);
                 /*
                 for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
                     this->port->a.data[i - BEATSIZE * beat_num] = a->data[i];
@@ -88,7 +90,7 @@ namespace tl_agent {
         this->port->a.mask     = a->mask;
         this->port->a.source   = a->source;
         this->port->a.valid    = true;
-        this->port->a.matrix   = a->matrix?1:1;
+        this->port->a.matrix   = a->matrix?1:0;
         return OK;
     }
 
@@ -196,11 +198,19 @@ namespace tl_agent {
                     global_SBEntry->status = Global_SBEntry::SB_PENDING;
                     printf("[ERROR]: %p sid: %ld ++++\n",(void *)pendingA.info->address, pendingA.info->source);
                     this->globalBoard->update(this, pendingA.info->address, global_SBEntry);
+                    // uncachedBoards->allocate(this, id, chnA.address, chnA.source,
+                    //             global_SBEntry->pending_data);
+                    uncachedBoards->appendAll(this, chnA.address, global_SBEntry->pending_data);
+                
                 }
 
                 if (recvData) {
-                    if (!globalBoard->haskey(chnA.address))
+                    if (!globalBoard->haskey(chnA.address)){
+                        #ifdef SB_DEBUG
+                        printf("uncachedBoards->allocateZero(this, id(%d), chnA.address(0x%lx), chnA.source(%lu));\n",id, chnA.address, chnA.source);
+                        #endif
                         uncachedBoards->allocateZero(this, id, chnA.address, chnA.source);
+                    }
                     else
                     {
                         auto global_SBEntry = globalBoard->query(this, chnA.address);
@@ -209,9 +219,13 @@ namespace tl_agent {
                             uncachedBoards->allocate(this, id, chnA.address, chnA.source,
                                 global_SBEntry->data);
 
-                        if (global_SBEntry->status == Global_SBEntry::SB_PENDING)
+                        if (global_SBEntry->status == Global_SBEntry::SB_PENDING){
+                            #ifdef SB_DEBUG
+                            printf("uncachedBoards->allocate(this, id(%d), chnA.address(0x%lx), chnA.source(%lu));########\n",id, chnA.address, chnA.source);
+                            #endif
                             uncachedBoards->allocate(this, id, chnA.address, chnA.source,
                                 global_SBEntry->pending_data);
+                        }
                     }
                 }
             }
@@ -227,7 +241,11 @@ namespace tl_agent {
     }
 
     bool MAgent::is_d_fired() {
+        this->port->m.fire();
       return this->port->d.fire();
+    }
+    bool MAgent::is_m_fired() {
+        return this->port->m.fire();
     }
     void MAgent::fire_d() {
         if (this->port->d.fire()) {
@@ -236,10 +254,13 @@ namespace tl_agent {
 
             if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck,TLOpcodeD::ReleaseAck))
             {
+                auto Info=TLEnumEquals(chnD.opcode, TLOpcodeD::ReleaseAck) ? "ReleaseAck":"AccessAck";
                 if (glbl.cfg.verbose_xact_fired)
                 {
                     Log(this, Hex().ShowBase()
-                        .Append("[fire D] [AccessAck] ")
+                        .Append("[fire D] [")
+                        .Append(Info)
+                        .Append("] ")
                         .Append("source: ", uint64_t(chnD.source))
                         .Append(", addr: ", info->address)
                         .EndLine());
@@ -283,7 +304,7 @@ namespace tl_agent {
                                   (chnD.size <= 5) ? 0 :
                                   (chnD.size == 6) ? 1 :
                                   (chnD.size == 7) ? 2 : 0;
-                pendingD.init(resp_d, nr_beat);//TODO
+                pendingD.init(resp_d, nr_beat);//TODO only 1 beat (chnD.size == 6) ? 0 :
             }
             // Store data to pendingD
             if (hasData) {
@@ -294,6 +315,8 @@ namespace tl_agent {
                 }
                 */
                 std::memcpy((uint8_t*)(pendingD.info->data->data) + BEATSIZE * beat_num, chnD.data->data, BEATSIZE);
+                // std::memcpy((uint8_t*)(pendingD.info->data->data) + BEATSIZE * 1, chnD.data1->data, BEATSIZE);
+                // TODO only 1 beat 
             }
 
             if (!pendingD.is_pending()) 
@@ -331,16 +354,77 @@ namespace tl_agent {
     void MAgent::fire_e() {
     }
 
+    void MAgent::fire_m() {
+        if (this->port->m.fire()) {
+            auto& chnM = this->port->m;
+            auto info = localBoard->query(this, chnM.source);
+
+            if (glbl.cfg.verbose_xact_fired)
+            {
+                Log(this, Hex().ShowBase()
+                    .Append("[fire M] [MAccessAckData] ")
+                    .Append("source: ", uint64_t(chnM.source))
+                    .Append(", addr: ", info->address, ", data: "));
+                LogEx(data_dump_embedded<DATASIZE>(chnM.data->data));
+                // LogEx(data_dump_embedded<BEATSIZE>(chnM.data->data+BEATSIZE));
+                LogEx(std::cout << std::endl);
+            }
+
+            bool hasData = true;//FIXME Status error! 0x340
+            // tlc_assert(info->status == S_A_WAITING_D, this, "Status error!");
+            if (pendingM.is_pending()) { // following beats
+                // TODO: wrap the following assertions into a function
+                pendingM.update(this);
+            } else { // new D resp
+                auto resp_m = std::make_shared<BundleChannelM>();
+                resp_m->source  = chnM.source;
+                resp_m->data    = hasData ? make_shared_tldata<DATASIZE>() : nullptr;
+                int nr_beat     = 0;
+                pendingM.init(resp_m, nr_beat);//TODO only 1 beat (chnD.size == 6) ? 0 :
+            }
+            // Store data to pendingD
+            if (hasData) {
+                int beat_num = pendingM.nr_beat - pendingM.beat_cnt;
+                std::memcpy((uint8_t*)(pendingM.info->data->data) + BEATSIZE * beat_num, chnM.data->data, DATASIZE);
+            }
+
+            if (!pendingM.is_pending()) 
+            {
+                // MAgent needn't care about endurance
+                // if (glbl.cfg.verbose_xact_data_complete)
+                // {
+                //     if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData))
+                //     {
+                //         Log(this, Hex().ShowBase()
+                //             .Append("[data complete D] [AccessAckData] ")
+                //             .Append("addr: ", info->address, ", data: "));
+                //         LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
+                //         LogEx(std::cout << std::endl);
+                //     }
+                // }
+
+                if (hasData) {
+                    uncachedBoards->verify(this, id, info->address, pendingM.info->source, pendingM.info->data);
+                }
+                localBoard->erase(this, chnM.source);
+                if (hasData)
+                    uncachedBoards->finish(this, id, info->address, pendingM.info->source);
+                this->idpool.freeid(chnM.source);
+            }
+        }
+    }
     void MAgent::handle_b(std::shared_ptr<BundleChannelB> &b) {
     }
     
     void MAgent::handle_channel() {
         fire_a();
         fire_d();
+        fire_m();
     }
 
     void MAgent::update_signal() {
         this->port->d.ready = true; // TODO: do random here
+        this->port->m.ready = true; // TODO: do random here
         if (pendingA.is_pending()) {
             // TODO: do delay here
             send_a(pendingA.info);
@@ -348,8 +432,9 @@ namespace tl_agent {
             this->port->a.valid = false;
         }
         // do timeout check lazily
-        if (*this->cycles % TIMEOUT_INTERVAL == 0) {
+        if (*this->cycles % (TIMEOUT_INTERVAL/5) == 0) {
             this->timeout_check();
+            printf("###########TIME OUT\n");
         }
         idpool.update(this);
         // probeIDpool.update(this);
@@ -366,6 +451,7 @@ namespace tl_agent {
         req_a->mask     = 0xffffffffUL;
         req_a->source   = this->idpool.getid();
         req_a->vaddr    = address;
+        req_a->matrix = 1;
 #ifdef ULAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
@@ -421,7 +507,7 @@ namespace tl_agent {
         if (pendingA.is_pending() || idpool.full())
             return false;
         if (this->globalBoard->haskey(address) && this->globalBoard->query(this, address)->status == Global_SBEntry::SB_PENDING) {
-            return false;
+            // return false;// 不运行对相同地址写 //(关掉会报key not find)
         }
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
         req_a->opcode   = uint8_t(TLOpcodeA::PutFullData);
@@ -499,11 +585,15 @@ namespace tl_agent {
 
     void MAgent::timeout_check() {
         if (localBoard->get().empty()) {
+            printf("localBoard->get().empty()\n");
             return;
         }
         for (auto it = this->localBoard->get().begin(); it != this->localBoard->get().end(); it++) {
             auto value = it->second;
             if (value->status != S_INVALID && value->status != S_VALID) {
+                // 10000
+                printf("*this->cycles(%lu) > 2*TIMEOUT_INTERVAL(%d) \nvalue->status(%d)\n",*this->cycles,TIMEOUT_INTERVAL,value->status);
+                // if (*this->cycles > 2*TIMEOUT_INTERVAL) {
                 if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
 
                     std::cout << Gravity::StringAppender()

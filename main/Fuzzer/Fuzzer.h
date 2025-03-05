@@ -91,7 +91,8 @@ public:
         releasing,
         wait_release,
         aquire2,
-        wait_aquire2
+        wait_aquire2,
+        exit_fuzzer
     };
 
     int state = bwTestState::aquire;
@@ -100,7 +101,7 @@ public:
 
     uint32_t blkProcessed = 0;
     uint32_t blkFired = 0;
-    uint32_t blkCountLimit = 512;//2048; // 2k*64B
+    uint32_t blkCountLimit = 1024;//512; // 2k*64B
     uint64_t perfCycleStart=0;
     uint64_t perfCycleEnd=0;
     std::queue<uint64_t> filledAddrs;

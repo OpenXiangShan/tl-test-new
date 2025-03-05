@@ -27,6 +27,12 @@ namespace V3::PortGen {
             .ToString();
     }
 
+    std::string GenerateDataMPortName(int portId, std::string name)
+    {
+        return Gravity::StringAppender()
+            .Append("matrix_data_out_", portId, "_", name)
+            .ToString();
+    }
     static void GenerateInfo(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
     {
         cpp_file.Append("extern \"C\" uint64_t GetCoreCount() { return ", coreCount, "; }").EndLine();
@@ -338,6 +344,22 @@ namespace V3::PortGen {
                     ");").EndLine();
                 PushMMasterPort(i, j, "d.corrupt"   , "d_bits_corrupt");
                 cpp_file.EndLine();
+
+                cpp_file.Append("    std::memcpy(",
+                        "port->m.data->data, ",
+                        "verilated->", GenerateDataMPortName(j,"bits_data_data"), ", ",
+                        DATASIZE,
+                    ");").EndLine();
+                cpp_file.Append("    port->", "m.source", " = verilated->",
+                        GenerateDataMPortName(j, "bits_sourceId"), ";")
+                    .EndLine();
+                cpp_file.Append("    port->", "m.valid", " = verilated->",
+                        GenerateDataMPortName(j, "valid"), ";")
+                    .EndLine();
+                cpp_file.Append("    port->", "m.ready", " = verilated->",
+                        GenerateDataMPortName(j, "ready"), ";")
+                    .EndLine();
+                cpp_file.EndLine();
             }
         }
         cpp_file.Append("}").EndLine();
@@ -376,6 +398,8 @@ namespace V3::PortGen {
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PullMMasterPort(i, j,  "d_ready", "d.ready");
+                cpp_file.Append("    verilated->", GenerateDataMPortName(j, "ready"),
+                        " = port->", "m.ready", ";").EndLine();
                 cpp_file.EndLine();
             }
         }

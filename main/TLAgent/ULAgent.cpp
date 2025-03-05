@@ -455,7 +455,7 @@ namespace tl_agent {
         if (pendingA.is_pending() || idpool.full())
             return false;
         if (this->globalBoard->haskey(address) && this->globalBoard->query(this, address)->status == Global_SBEntry::SB_PENDING) {
-            return false;
+            return false;// 不对已经写过但是没得到回复的地址再次写
         }
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
         req_a->opcode   = uint8_t(TLOpcodeA::PutFullData);

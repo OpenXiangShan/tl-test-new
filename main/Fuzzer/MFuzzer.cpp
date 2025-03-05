@@ -168,8 +168,10 @@ void MFuzzer::caseTest3() {
   if (state == bwTestState::aquire) {
     // this->fuzzStreamOffset   += this->fuzzStreamStep;
     // addr =  this->fuzzStreamStart + 0x100 * blkProcessed + this->fuzzStreamStep;//0x040, 0x140, 0x240...
-    addr =  this->fuzzStreamStart + (blkProcessed*11+index) * this->fuzzStreamStep;            //0x00, 0x40, 0x80, 0xC0...
-    //FIXME blkProcessed*7+index is NULL
+    addr =  this->fuzzStreamStart + (blkProcessed*8+index) * this->fuzzStreamStep;            //0x00, 0x40, 0x80, 0xC0...
+    #if DEBUG_ADDR_ERROR
+    addr = (addr+0x40*(16)-1) & ~(0x40*(16)-1)+blkProcessed%8;//FIXME BUG, key not find
+    #endif
     if (!mAgent->config().memoryEnable)
       return;
 
@@ -177,6 +179,7 @@ void MFuzzer::caseTest3() {
     if(mAgent->do_getAuto(addr)){
         blkProcessed++;
         filledAddrs.push(addr);
+        // printf("size1 %lu\n",filledAddrs.size());
     };  // AcquireBlock NtoT
         // Chan A
 
@@ -188,11 +191,11 @@ void MFuzzer::caseTest3() {
 
   if (state == bwTestState::wait_aquire || state == bwTestState::aquire) {
     // wait channel A to fire
-    if (mAgent->is_d_fired()) {
+    if (mAgent->is_m_fired()) {
       // How many cycle will D channel hold the data?
       blkFired++;
     }
-    if (blkFired == blkCountLimit*2) {// Notice! 64B need 2 fired.
+    if (blkFired == blkCountLimit) {// Notice! 64B need 2 fired.
       state = bwTestState::releasing;
       blkFired = 0;
     }
@@ -205,13 +208,16 @@ void MFuzzer::caseTest3() {
     for (int i = 0; i < DATASIZE; i++) {
       putdata->data[i] = (uint8_t)CAGENT_RAND64(mAgent, "CFuzzer");
     }
+    // printf("will do_putfulldata(%lx)\n",addr);
     if(mAgent->do_putfulldata(addr, putdata)){
         blkProcessed++;
         filledAddrs.push(addr);
         filledAddrs.pop();
+        // printf("size2 %lu\n",filledAddrs.size());
+        // printf("fine do_putfulldata(%lx)\n",addr);
     }
 
-    if (blkProcessed == blkCountLimit) {
+    if (blkProcessed == blkCountLimit*2) {
       state = bwTestState::wait_release;
       blkProcessed = 0;
     }
@@ -224,7 +230,7 @@ void MFuzzer::caseTest3() {
       blkFired++;//0x180
     }
     // is AccessAck
-    if (blkFired == blkCountLimit+1) {
+    if (blkFired == blkCountLimit-5) {
       state = bwTestState::aquire2;
       perfCycleStart=this->mAgent->cycle();
       blkFired = 0;
@@ -248,12 +254,12 @@ void MFuzzer::caseTest3() {
 
   if (state == bwTestState::aquire2||state == bwTestState::wait_aquire2) {
     // wait channel A to fire
-    if (mAgent->is_d_fired()) {
+    if (mAgent->is_m_fired()) {
       // How many cycle will D channel hold the data?
       blkFired++;
     }
-    if (blkFired == blkCountLimit*2+1) {
-      state = bwTestState::aquire;
+    if (blkFired == blkCountLimit-8) {
+      state = exit_fuzzer;
       blkFired = 0;
       filledAddrs.pop();
       perfCycleEnd=(this->mAgent->cycle()-perfCycleStart)/2;

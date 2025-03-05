@@ -22,6 +22,7 @@ namespace tl_agent {
         uint64_t* cycles;
         PendingTrans<BundleChannelA<ReqField, EchoField, DATASIZE>> pendingA;
         PendingTrans<BundleChannelD<RespField, EchoField, DATASIZE>> pendingD;
+        PendingTrans<BundleChannelM> pendingM;
         /* We only need a localBoard recording SourceID -> UL_SBEntry
          * because UL agent needn't store data.
          */
@@ -41,6 +42,8 @@ namespace tl_agent {
         void fire_b() override;
         void fire_c() override;
         bool is_d_fired() override;
+        bool is_m_fired() ;
+        void fire_m() ;
         void fire_d() override;
         void fire_e() override;
         void handle_channel() override;
