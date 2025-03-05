@@ -217,7 +217,7 @@ void MFuzzer::caseTest3() {
         // printf("fine do_putfulldata(%lx)\n",addr);
     }
 
-    if (blkProcessed == blkCountLimit*2) {
+    if (blkProcessed == blkCountLimit) {
       state = bwTestState::wait_release;
       blkProcessed = 0;
     }
@@ -230,7 +230,7 @@ void MFuzzer::caseTest3() {
       blkFired++;//0x180
     }
     // is AccessAck
-    if (blkFired == blkCountLimit-5) {
+    if (blkFired == blkCountLimit) {
       state = bwTestState::aquire2;
       perfCycleStart=this->mAgent->cycle();
       blkFired = 0;
@@ -258,7 +258,7 @@ void MFuzzer::caseTest3() {
       // How many cycle will D channel hold the data?
       blkFired++;
     }
-    if (blkFired == blkCountLimit-8) {
+    if (blkFired == blkCountLimit) {
       state = exit_fuzzer;
       blkFired = 0;
       filledAddrs.pop();
