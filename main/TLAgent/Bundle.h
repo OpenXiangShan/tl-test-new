@@ -99,6 +99,12 @@ namespace tl_agent {
         uint8_t             alias;
     };
 
+    class BundleChannelM : public DecoupledBundle {
+    public:
+        uint64_t            source;
+        shared_tldata_t<DATASIZE>  data;
+    };
+
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     class Bundle {
     public:
@@ -107,6 +113,7 @@ namespace tl_agent {
         BundleChannelC<ReqField, EchoField, N>  c;
         BundleChannelD<RespField, EchoField, N> d;
         BundleChannelE                          e;
+        BundleChannelM                          m;
     };
 
     //

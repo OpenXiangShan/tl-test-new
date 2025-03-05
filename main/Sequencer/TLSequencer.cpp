@@ -344,6 +344,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             io[i]->a.data = make_shared_tldata<BEATSIZE>();
             io[i]->c.data = make_shared_tldata<BEATSIZE>();
             io[i]->d.data = make_shared_tldata<BEATSIZE>();
+            io[i]->m.data = make_shared_tldata<DATASIZE>();
         }
 
         for (size_t i = 0; i < total_c_agents; i++)
@@ -376,6 +377,9 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
             io[i]->e.ready = 0;
             io[i]->e.valid = 0;
+
+            io[i]->m.ready = 0;
+            io[i]->m.valid = 0;
         }
 
         for (size_t i = 0; i < total_c_agents; i++)
@@ -461,7 +465,7 @@ void TLSequencer::Finalize() noexcept
             total_data_size+=fuzzers[i]->blkCountLimit*64;
         }
         total_cycles=(EndCycle-StartCycle)/2;
-        std::cout<<"perf debug : "<<total_data_size<<" / "<<total_cycles<<" = "<<total_data_size/total_cycles<<"B/Cycle"<<std::endl;
+        if(total_cycles!=0) std::cout<<"perf debug : "<<total_data_size<<" / "<<total_cycles<<" = "<<total_data_size/total_cycles<<"B/Cycle"<<std::endl;
 
         for (size_t i = 0; i < GetAgentCount(); i++)
         {
@@ -573,14 +577,20 @@ void TLSequencer::Tock() noexcept
         for (size_t i = 0; i < total_n_agents; i++)
             agents[i]->handle_channel();
 
-        for (size_t i = 0; i < total_c_agents; i++)
+        bool endTLM=true;
+
+        // TL-C fuzzers
+        for (size_t i = 0; i < total_c_agents; i++){
             fuzzers[i]->tick();
+            #ifdef TLC_TEST
+            endTLM = endTLM && (fuzzers[i]->perfCycleEnd);
+            #endif
+        }
         // TL-UL fuzzers
         for (size_t i = total_c_agents; i < total_n_agents-total_m_agents; i++){
             fuzzers[i]->tick();
         }
         // TL-M fuzzers
-        bool endTLM=true;
         for (size_t i = total_n_agents-total_m_agents; i < total_n_agents; i++){
             MFuzzer::setIndex(i);
             fuzzers[i]->tick();

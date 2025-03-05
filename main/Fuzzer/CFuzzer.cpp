@@ -193,6 +193,7 @@ void CFuzzer::caseTest() {
     // this->fuzzStreamOffset   += this->fuzzStreamStep;
     // addr =  this->fuzzStreamStart + 0x100 * blkProcessed + this->fuzzStreamStep;//0x040, 0x140, 0x240...
     addr =  this->fuzzStreamStart + blkProcessed * this->fuzzStreamStep;            //0x00, 0x40, 0x80, 0xC0...
+    // addr = (addr+0x40*(16)-1) & ~(0x40*(16)-1); // BUG!
     if (!cAgent->config().memoryEnable)
       return;
 
@@ -293,7 +294,9 @@ void CFuzzer::caseTest() {
 }
 
 void CFuzzer::tick() {
+#ifndef TLC_TEST
     return;
+#endif
     if (this->mode == TLSequenceMode::FUZZ_ARI)
     {
         this->randomTest(true);
@@ -342,8 +345,7 @@ void CFuzzer::tick() {
         }
     }
     else if (this->mode == TLSequenceMode::FUZZ_STREAM_GS) {
-        // this->caseTest();
-
+        this->caseTest();
         if (this->cAgent->cycle() >= this->fuzzStreamStepTime)
         {
             this->fuzzStreamStepTime += this->fuzzStreamInterval;
