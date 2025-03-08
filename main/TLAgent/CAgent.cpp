@@ -1995,6 +1995,9 @@ namespace tl_agent {
         if (localCMOStatus->isInflight(this, address))
             return false;
 
+        if (cfg->cmoParallelDepth && localCMOStatus->inflightCount() >= cfg->cmoParallelDepth)
+            return false;
+
         if (pendingA.is_pending() || idpool.full())
             return false;
 
