@@ -66,6 +66,7 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.cmoEnableCBOInval             = TLTEST_DEFAULT_CMO_ENABLE_CBO_INVAL;
     tlcfg.cmoStart                      = TLTEST_DEFAULT_CMO_START;
     tlcfg.cmoEnd                        = TLTEST_DEFAULT_CMO_END;
+    tlcfg.cmoParallelDepth              = TLTEST_DEFAULT_CMO_PARALLEL_DEPTH;
 
     tlcfg.fuzzARIInterval               = CFUZZER_RANGE_ITERATE_INTERVAL;
     tlcfg.fuzzARITarget                 = CFUZZER_RANGE_ITERATE_TARGET;
@@ -129,6 +130,7 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.config", "cmo.enable.cbo.inval",       tlcfg.cmoEnableCBOInval);
     INI_OVERRIDE_INT("tltest.config", "cmo.start",                  tlcfg.cmoStart);
     INI_OVERRIDE_INT("tltest.config", "cmo.end",                    tlcfg.cmoEnd);
+    INI_OVERRIDE_INT("tltest.config", "cmo.parallel.depth",         tlcfg.cmoParallelDepth);
 
     INI_OVERRIDE_INT("tltest.fuzzer", "seed",                       tlcfg.seed);
     INI_OVERRIDE_INT("tltest.fuzzer", "ari.interval",               tlcfg.fuzzARIInterval);

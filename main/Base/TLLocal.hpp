@@ -46,6 +46,7 @@ public:
     uint64_t            cmoEnableCBOInval;                      // CMO enable 'cbo.inval'
     uint64_t            cmoStart;                               // CMO region start address
     uint64_t            cmoEnd;                                 // CMO region end address
+    uint64_t            cmoParallelDepth;                       // CMO parallel depth
 
     uint64_t            fuzzARIInterval;                        // Fuzz Auto Range Iteration interval
     uint64_t            fuzzARITarget;                          // Fuzz Auto Range Iteration target

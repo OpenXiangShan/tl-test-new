@@ -81,5 +81,9 @@
 #   define TLTEST_DEFAULT_CMO_END                       0x80000000
 #endif
 
+#ifndef TLTEST_DEFAULT_CMO_PARALLEL_DEPTH
+#   define TLTEST_DEFAULT_CMO_PARALLEL_DEPTH            0
+#endif
+
 
 #endif // TLTEST_DEFAULT_H
