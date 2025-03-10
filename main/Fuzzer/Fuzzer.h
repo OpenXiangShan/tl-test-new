@@ -141,8 +141,6 @@ class CFuzzer: public Fuzzer {
 private:
     class BandwidthProfilerStatus {
     public:
-        uint64_t    step;
-
         uint64_t    addr;
         uint64_t    cycle;
         uint64_t    count;
