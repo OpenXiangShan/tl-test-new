@@ -91,7 +91,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
     Gravity::RegisterListener(
         Gravity::MakeListener<TLSystemFinishEvent>(
-            Gravity::StringAppender("tltest.sequencer.finish:", uint64_t(this)).ToString(),
+            Gravity::StringAppender("tltest.sequencer.finish", uint64_t(this)).ToString(),
             0,
             [this] (TLSystemFinishEvent& event) -> void {
 

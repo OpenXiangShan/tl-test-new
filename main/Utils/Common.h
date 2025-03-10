@@ -118,6 +118,30 @@ inline std::string GetDeviceName(const TLLocalContext* ctx)
     return strapp.ToString();
 }
 
+template<class _TIntegral>
+inline std::string GetBase1024B(_TIntegral val, int width = 6, const char** baseString = nullptr)
+{
+    static const char* BASE[] = {"B ", "KB", "MB", "GB", "TB"};
+
+    Gravity::StringAppender str;
+
+    int i;
+    for (i = 0; i < 4; i++)
+    {
+        if (val / 1024 >= 1)
+        {
+            val /= 1024;
+            continue;
+        }
+        else
+            break;
+    }
+
+    str.Right().NextWidth(width).Precision(3).Append(val).Append(baseString ? baseString[i] : BASE[i]);
+
+    return str.ToString();
+}
+
 
 #define Log(ctx, str_app) \
     do { \
@@ -143,6 +167,16 @@ inline std::string GetDeviceName(const TLLocalContext* ctx)
     do { \
         if (glbl.cfg.verbose) { \
             std::cout << "[" << time << "] [tl-test-new-INFO] "; \
+            std::cout << (Gravity::StringAppender().str_app.ToString()); \
+            fflush(stdout); \
+            fflush(stderr); \
+        } \
+    } while(0)
+
+#define LogWarn(time, str_app) \
+    do { \
+        { \
+            std::cout << "[" << time << "] [tl-test-new-WARN] "; \
             std::cout << (Gravity::StringAppender().str_app.ToString()); \
             fflush(stdout); \
             fflush(stderr); \

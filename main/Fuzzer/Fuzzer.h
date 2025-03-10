@@ -139,7 +139,33 @@ struct CFuzzRange {
 
 class CFuzzer: public Fuzzer {
 private:
-    tl_agent::CAgent*   cAgent;
+    class BandwidthProfilerStatus {
+    public:
+        uint64_t    step;
+
+        uint64_t    addr;
+        uint64_t    cycle;
+        uint64_t    count;
+
+        uint64_t    distributionSplit;
+        uint64_t    distributionCycle;
+        uint64_t    distributionCount;
+
+    public:
+        class Distributed {
+        public:
+            uint64_t    cycle;
+            uint64_t    count;
+        };
+
+        std::vector<Distributed>    distributions;
+    };
+
+private:
+    tl_agent::CAgent*       cAgent;
+    bool                    flagDone;
+
+    BandwidthProfilerStatus bwprof;
 
 public:
     CFuzzer(tl_agent::CAgent *cAgent) noexcept;
@@ -147,6 +173,7 @@ public:
     void randomTest(bool do_alias);
     void caseTest();
     void tick();
+    bool done() const noexcept;
 };
 
 
