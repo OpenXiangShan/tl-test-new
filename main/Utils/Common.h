@@ -173,6 +173,16 @@ inline std::string GetBase1024B(_TIntegral val, int width = 6, const char** base
         } \
     } while(0)
 
+#define LogWarn(time, str_app) \
+    do { \
+        { \
+            std::cout << "[" << time << "] [tl-test-new-WARN] "; \
+            std::cout << (Gravity::StringAppender().str_app.ToString()); \
+            fflush(stdout); \
+            fflush(stderr); \
+        } \
+    } while(0)
+
 #define LogFinal(time, str_app) \
     do { \
         { \

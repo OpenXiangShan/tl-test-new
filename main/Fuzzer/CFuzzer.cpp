@@ -56,11 +56,21 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
     this->fuzzStreamStart               = cAgent->config().fuzzStreamStart;
     this->fuzzStreamEnd                 = cAgent->config().fuzzStreamEnd;
 
+    this->bwprof.step                   = cAgent->config().fuzzStreamStep / BWPROF_STRIDE_ELEMENT;
     this->bwprof.addr                   = cAgent->config().fuzzStreamStart;
     this->bwprof.cycle                  = 0;
     this->bwprof.count                  = 0;
 
-    this->bwprof.distributionSplit      = (4 * 1024) / (BWPROF_STRIDE_ELEMENT * cAgent->config().fuzzStreamStep);
+    if (!this->bwprof.step)
+    {
+        LogWarn(this->cAgent->cycle(), 
+            Append("[Bandwidth Profiler] step was set to 0 below ", BWPROF_STRIDE_ELEMENT, ", overrided as 1 cache block")
+            .EndLine());
+
+        this->bwprof.step = 1;
+    }
+
+    this->bwprof.distributionSplit      = (4 * 1024) / (BWPROF_STRIDE_ELEMENT * this->bwprof.step);
     this->bwprof.distributionCycle      = 0;
     this->bwprof.distributionCount      = 0;
 
@@ -321,7 +331,7 @@ void CFuzzer::tick() {
 
         if (this->cAgent->do_acquireBlock(this->bwprof.addr, TLParamAcquire::NtoB, 0))
         {
-            this->bwprof.addr += BWPROF_STRIDE_ELEMENT * this->fuzzStreamStep;
+            this->bwprof.addr += BWPROF_STRIDE_ELEMENT * this->bwprof.step;
             this->bwprof.count++;
 
             this->bwprof.distributionCount++;
