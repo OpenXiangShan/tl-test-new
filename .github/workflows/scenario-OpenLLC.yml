@@ -269,6 +269,8 @@ jobs:
           - { id: l2l3l2, name: L2-L3-L2, mode: FUZZ_ARI }
           - { id: l2l3,   name: L2-L3   , mode: FUZZ_STREAM }
           - { id: l2l3l2, name: L2-L3-L2, mode: FUZZ_STREAM }
+          - { id: l2l3,   name: L2-L3   , mode: BWPROF_STREAM_STRIDE_READ }
+          - { id: l2l3l2, name: L2-L3-L2, mode: BWPROF_STREAM_STRIDE_READ }
         compiler:
           - { cc: clang-16, cxx: clang++-16 }
           - { cc: gcc,      cxx: g++        }
@@ -322,6 +324,19 @@ jobs:
         sed -i 's/mode.3.*/mode.3 = FUZZ_STREAM/g' ./configs/user.tltest.ini
         sed -i 's/mode.4.*/mode.4 = FUZZ_STREAM/g' ./configs/user.tltest.ini
         sed -i 's/mode.5.*/mode.5 = FUZZ_STREAM/g' ./configs/user.tltest.ini
+        cat ./configs/user.tltest.ini
+
+    - name: Setup mode configuration BWPROF_STREAM_STRIDE_READ
+      if: matrix.case.mode == 'BWPROF_STREAM_STRIDE_READ'
+      run: |
+        pwd
+        ls
+        sed -i 's/mode.0.*/mode.0 = BWPROF_STREAM_STRIDE_READ/g' ./configs/user.tltest.ini
+        sed -i 's/mode.1.*/mode.1 = BWPROF_STREAM_STRIDE_READ/g' ./configs/user.tltest.ini
+        sed -i 's/mode.2.*/mode.2 = BWPROF_STREAM_STRIDE_READ/g' ./configs/user.tltest.ini
+        sed -i 's/mode.3.*/mode.3 = BWPROF_STREAM_STRIDE_READ/g' ./configs/user.tltest.ini
+        sed -i 's/mode.4.*/mode.4 = BWPROF_STREAM_STRIDE_READ/g' ./configs/user.tltest.ini
+        sed -i 's/mode.5.*/mode.5 = BWPROF_STREAM_STRIDE_READ/g' ./configs/user.tltest.ini
         cat ./configs/user.tltest.ini
 
     - name: Run TL-Test-New for OpenLLC

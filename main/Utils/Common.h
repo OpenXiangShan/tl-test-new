@@ -118,6 +118,30 @@ inline std::string GetDeviceName(const TLLocalContext* ctx)
     return strapp.ToString();
 }
 
+template<class _TIntegral>
+inline std::string GetBase1024B(_TIntegral val, int width = 6, const char** baseString = nullptr)
+{
+    static const char* BASE[] = {"B ", "KB", "MB", "GB", "TB"};
+
+    Gravity::StringAppender str;
+
+    int i;
+    for (i = 0; i < 4; i++)
+    {
+        if (val / 1024 >= 1)
+        {
+            val /= 1024;
+            continue;
+        }
+        else
+            break;
+    }
+
+    str.Right().NextWidth(width).Precision(3).Append(val).Append(baseString ? baseString[i] : BASE[i]);
+
+    return str.ToString();
+}
+
 
 #define Log(ctx, str_app) \
     do { \
