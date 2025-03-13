@@ -179,8 +179,8 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
                             LogFinal(this->cAgent->cycle(), Append("(", this->cAgent->latencyMapA[int(TLOpcode##cat::op)].size(), " entires of distribution in total)").EndLine()); \
                             for (int i = 0; i < 1000; i++) \
                             { \
-                                auto iterLatencyMap = this->cAgent->latencyMapA[int(TLOpcode##cat::op)].find(i); \
-                                if (iterLatencyMap == this->cAgent->latencyMapA[int(TLOpcode##cat::op)].end()) \
+                                auto iterLatencyMap = this->cAgent->latencyMap##cat[int(TLOpcode##cat::op)].find(i); \
+                                if (iterLatencyMap == this->cAgent->latencyMap##cat[int(TLOpcode##cat::op)].end()) \
                                     continue; \
                                 if (!iterLatencyMap->second) \
                                     continue; \
