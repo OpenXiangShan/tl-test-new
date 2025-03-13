@@ -143,6 +143,47 @@ namespace tl_agent {
         return *cycles;
     }
 
+    void CAgent::map_latency(paddr_t addr)
+    {
+        auto iterTimeA = inflightTimeStampsA.find(addr);
+
+        if (iterTimeA != inflightTimeStampsA.end())
+        {
+            uint64_t latency = cycle() - iterTimeA->second.time;
+            auto iterLatencyMap = latencyMapA[int(iterTimeA->second.opcode)].find(latency / 10);
+            if (iterLatencyMap == latencyMapA[int(iterTimeA->second.opcode)].end())
+                latencyMapA[int(iterTimeA->second.opcode)][latency / 10] = 1;
+            else
+                iterLatencyMap->second++;
+
+            if (latency > 1000)
+                LogWarn(this->cycle(), Append("A -> D latency over 1000 cycles/ticks").EndLine());
+
+            inflightTimeStampsA.erase(iterTimeA);
+        }
+        else
+        {
+            auto iterTimeC = inflightTimeStampsC.find(addr);
+
+            if (iterTimeC != inflightTimeStampsC.end())
+            {
+                uint64_t latency = cycle() - iterTimeC->second.time;
+                auto iterLatencyMap = latencyMapA[int(iterTimeC->second.opcode)].find(latency / 10);
+                if (iterLatencyMap == latencyMapA[int(iterTimeC->second.opcode)].end())
+                    latencyMapA[int(iterTimeC->second.opcode)][latency / 10] = 1;
+                else
+                    iterLatencyMap->second++;
+
+                if (latency > 1000)
+                    LogWarn(this->cycle(), Append("A -> D latency over 1000 cycles/ticks").EndLine());
+
+                inflightTimeStampsC.erase(iterTimeC);
+            }
+            else
+                tlc_assert(false, this, "in-accurate inflight time count");
+        }
+    }
+
     Resp CAgent::send_a(std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>> &a) {
         /*
         * *NOTICE: The AcquirePermBoard is only needed to be updated in send_a() procedure,
@@ -712,7 +753,7 @@ namespace tl_agent {
                             .Append(", alias: ",    uint64_t(chnA.alias))
                             .EndLine());
                     }
-                    inflightTimeStamps[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::AcquireBlock };
+                    inflightTimeStampsA[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::AcquireBlock };
                     break;
 
                 case TLOpcodeA::AcquirePerm:
@@ -726,7 +767,7 @@ namespace tl_agent {
                             .Append(", alias: ",    uint64_t(chnA.alias))
                             .EndLine());
                     }
-                    inflightTimeStamps[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::AcquirePerm };
+                    inflightTimeStampsA[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::AcquirePerm };
                     break;
 
                 case TLOpcodeA::CBOClean:
@@ -740,7 +781,7 @@ namespace tl_agent {
                             .EndLine());
                     }
                     localCMOStatus->setFired(this, chnA.address);
-                    inflightTimeStamps[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::CBOClean };
+                    inflightTimeStampsA[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::CBOClean };
                     break;
 
                 case TLOpcodeA::CBOFlush:
@@ -754,7 +795,7 @@ namespace tl_agent {
                             .EndLine());
                     }
                     localCMOStatus->setFired(this, chnA.address);
-                    inflightTimeStamps[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::CBOFlush };
+                    inflightTimeStampsA[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::CBOFlush };
                     break;
 
                 case TLOpcodeA::CBOInval:
@@ -768,7 +809,7 @@ namespace tl_agent {
                             .EndLine());
                     }
                     localCMOStatus->setFired(this, chnA.address);
-                    inflightTimeStamps[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::CBOInval };
+                    inflightTimeStampsA[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::CBOInval };
 
                     if (!cfg->memorySyncStrict)
                         globalBoard->grant_memory_alt(this, chnA.address);
@@ -914,6 +955,7 @@ namespace tl_agent {
                             .Append(", alias: ",    uint64_t(chnC.alias))
                             .EndLine());
                     }
+                    inflightTimeStampsC[chnC.address] = { .time = cycle(), .opcode = TLOpcodeC::Release };
                     break;
 
                 case TLOpcodeC::ReleaseData:
@@ -930,6 +972,7 @@ namespace tl_agent {
                         LogEx(data_dump_embedded<BEATSIZE>(chnC.data->data));
                         LogEx(std::cout << std::endl);
                     }
+                    inflightTimeStampsC[chnC.address] = { .time = cycle(), .opcode = TLOpcodeC::ReleaseData };
                     break;
 
                 case TLOpcodeC::ProbeAck:
@@ -1192,6 +1235,7 @@ namespace tl_agent {
                 switch (status.opcode)
                 {
                     case TLOpcodeA::CBOClean:
+                        map_latency(addr);
                         for (int i = 0; i < 4; i++)
                         {
                             int          status = entry->status[i];
@@ -1236,6 +1280,7 @@ namespace tl_agent {
                         break;
 
                     case TLOpcodeA::CBOFlush:
+                        map_latency(addr);
                         for (int i = 0; i < 4; i++)
                         {
                             int          status = entry->status[i];
@@ -1266,6 +1311,7 @@ namespace tl_agent {
                         break;
 
                     case TLOpcodeA::CBOInval:
+                        map_latency(addr);
                         for (int i = 0; i < 4; i++)
                         {
                             int          status = entry->status[i];
@@ -1416,6 +1462,8 @@ namespace tl_agent {
                                     .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias, ", data: "));
                                 LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
                                 LogEx(std::cout << std::endl);
+
+                                map_latency(addr);
                             }
                             
                             bool memoryAlted = false;
@@ -1444,6 +1492,7 @@ namespace tl_agent {
                                     .ToString());
                             // Always set dirty in AcquirePerm toT txns
                             info->update_dirty(this, true, alias);
+                            map_latency(addr);
                             break;
                         }
                         case TLOpcodeD::ReleaseAck: {
@@ -1463,6 +1512,7 @@ namespace tl_agent {
                             }
                             if (this->globalBoard->haskey(addr))
                                 this->globalBoard->unpending(this, addr); // ReleaseData
+                            map_latency(addr);
                             break;
                         }
                         default:
@@ -1505,25 +1555,6 @@ namespace tl_agent {
                     idMap->erase(this, chnD.source);
                     this->idpool.freeid(chnD.source);
                 }
-            }
-
-            // latency map construction
-            if (!pendingD.is_pending())
-            {
-                auto iterTime = inflightTimeStamps.find(addr);
-                tlc_assert(iterTime != inflightTimeStamps.end(), this, "in-accurate inflight time count");
-
-                uint64_t latency = cycle() - iterTime->second.time;
-                auto iterLatencyMap = latencyMap[int(iterTime->second.opcode)].find(latency / 10);
-                if (iterLatencyMap == latencyMap[int(iterTime->second.opcode)].end())
-                    latencyMap[int(iterTime->second.opcode)][latency / 10] = 1;
-                else
-                    iterLatencyMap->second++;
-
-                if (latency > 1000)
-                    LogWarn(this->cycle(), Append("A -> D latency over 1000 cycles/ticks").EndLine());
-
-                inflightTimeStamps.erase(iterTime);
             }
         }
     }

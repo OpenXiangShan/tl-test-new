@@ -168,26 +168,41 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
                     }
                 }
 
+                 
+
                 if (1) // switch off latency map profiler
                 {
+                    #define LogFinalLatencyMap(cat, op) \
+                        if (!this->cAgent->latencyMapA[int(TLOpcode##cat::op)].empty()) \
+                        { \
+                            LogFinal(this->cAgent->cycle(), Append(#op " >>").EndLine()); \
+                            LogFinal(this->cAgent->cycle(), Append("(", this->cAgent->latencyMapA[int(TLOpcode##cat::op)].size(), " entires of distribution in total)").EndLine()); \
+                            for (int i = 0; i < 1000; i++) \
+                            { \
+                                auto iterLatencyMap = this->cAgent->latencyMapA[int(TLOpcode##cat::op)].find(i); \
+                                if (iterLatencyMap == this->cAgent->latencyMapA[int(TLOpcode##cat::op)].end()) \
+                                    continue; \
+                                if (!iterLatencyMap->second) \
+                                    continue; \
+                                LogFinal(this->cAgent->cycle(), Append("  ") \
+                                    .NextWidth(5).Right().Append(i * 10).Append(" - ").NextWidth(5).Right().Append(i * 10 + 9).Append(": ") \
+                                    .Left().Append(iterLatencyMap->second) \
+                                    .EndLine()); \
+                            } \
+                        }
+
                     LogFinal(this->cAgent->cycle(), Append("================================================================").EndLine());
                     LogFinal(this->cAgent->cycle(), Append("Latency Map Profiler of CFuzzer [", this->cAgent->sysId(), "]").EndLine());
                     LogFinal(this->cAgent->cycle(), Append("----------------------------------------------------------------").EndLine());
-                    // AcquireBlock
-                    LogFinal(this->cAgent->cycle(), Append("AcquireBlock >>").EndLine());
-                    LogFinal(this->cAgent->cycle(), Append("(", this->cAgent->latencyMap[int(TLOpcodeA::AcquireBlock)].size(), " entires of distribution in total)").EndLine());
-                    for (int i = 0; i < 1000; i++)
-                    {
-                        auto iterLatencyMap = this->cAgent->latencyMap[int(TLOpcodeA::AcquireBlock)].find(i);
-                        if (iterLatencyMap == this->cAgent->latencyMap[int(TLOpcodeA::AcquireBlock)].end())
-                            continue;
-                        if (!iterLatencyMap->second)
-                            continue;
-                        LogFinal(this->cAgent->cycle(), Append("  ")
-                            .NextWidth(5).Right().Append(i * 10).Append(" - ").NextWidth(5).Right().Append(i * 10 + 9).Append(": ")
-                            .Left().Append(iterLatencyMap->second)
-                            .EndLine());
-                    }
+                    LogFinalLatencyMap(A, AcquirePerm);
+                    LogFinalLatencyMap(A, AcquireBlock);
+                    LogFinalLatencyMap(A, CBOClean);
+                    LogFinalLatencyMap(A, CBOFlush);
+                    LogFinalLatencyMap(A, CBOInval);
+                    LogFinalLatencyMap(C, Release);
+                    LogFinalLatencyMap(C, ReleaseData);
+
+                    #undef LogFinalLatencyMap
                 }
 
                 LogFinal(this->cAgent->cycle(), Append("================================================================").EndLine());
