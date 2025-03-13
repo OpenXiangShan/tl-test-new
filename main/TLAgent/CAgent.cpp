@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <memory>
+#include <unordered_map>
 
 #include "BaseAgent.h"
 #include "Bundle.h"
@@ -711,6 +712,7 @@ namespace tl_agent {
                             .Append(", alias: ",    uint64_t(chnA.alias))
                             .EndLine());
                     }
+                    inflightTimeStamps[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::AcquireBlock };
                     break;
 
                 case TLOpcodeA::AcquirePerm:
@@ -724,6 +726,7 @@ namespace tl_agent {
                             .Append(", alias: ",    uint64_t(chnA.alias))
                             .EndLine());
                     }
+                    inflightTimeStamps[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::AcquirePerm };
                     break;
 
                 case TLOpcodeA::CBOClean:
@@ -737,6 +740,7 @@ namespace tl_agent {
                             .EndLine());
                     }
                     localCMOStatus->setFired(this, chnA.address);
+                    inflightTimeStamps[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::CBOClean };
                     break;
 
                 case TLOpcodeA::CBOFlush:
@@ -750,6 +754,7 @@ namespace tl_agent {
                             .EndLine());
                     }
                     localCMOStatus->setFired(this, chnA.address);
+                    inflightTimeStamps[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::CBOFlush };
                     break;
 
                 case TLOpcodeA::CBOInval:
@@ -763,6 +768,7 @@ namespace tl_agent {
                             .EndLine());
                     }
                     localCMOStatus->setFired(this, chnA.address);
+                    inflightTimeStamps[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::CBOInval };
 
                     if (!cfg->memorySyncStrict)
                         globalBoard->grant_memory_alt(this, chnA.address);
@@ -1500,6 +1506,25 @@ namespace tl_agent {
                     this->idpool.freeid(chnD.source);
                 }
             }
+
+            // latency map construction
+            if (!pendingD.is_pending())
+            {
+                auto iterTime = inflightTimeStamps.find(addr);
+                tlc_assert(iterTime != inflightTimeStamps.end(), this, "in-accurate inflight time count");
+
+                uint64_t latency = cycle() - iterTime->second.time;
+                auto iterLatencyMap = latencyMap[int(iterTime->second.opcode)].find(latency / 10);
+                if (iterLatencyMap == latencyMap[int(iterTime->second.opcode)].end())
+                    latencyMap[int(iterTime->second.opcode)][latency / 10] = 1;
+                else
+                    iterLatencyMap->second++;
+
+                if (latency > 1000)
+                    LogWarn(this->cycle(), Append("A -> D latency over 1000 cycles/ticks").EndLine());
+
+                inflightTimeStamps.erase(iterTime);
+            }
         }
     }
 
@@ -2077,6 +2102,7 @@ namespace tl_agent {
     }
 
     void CAgent::timeout_check() {
+        return;
         if (localBoard->get().empty()) {
             return;
         }

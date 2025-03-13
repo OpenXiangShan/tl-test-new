@@ -23,6 +23,11 @@
 #endif
 
 
+#ifndef TLTEST_DEFAULT_STARTUP_CYCLE
+#   define TLTEST_DEFAULT_STARTUP_CYCLE                 100
+#endif
+
+
 #ifndef TLTEST_DEFAULT_MEMORY_ENABLE
 #   define TLTEST_DEFAULT_MEMORY_ENABLE                 1
 #endif

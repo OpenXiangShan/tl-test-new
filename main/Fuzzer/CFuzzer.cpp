@@ -35,6 +35,8 @@ static inline size_t fact(size_t n) noexcept
 CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
     this->cAgent = cAgent;
 
+    this->startupInterval               = 0;
+
     this->memoryStart                   = cAgent->config().memoryStart;
     this->memoryEnd                     = cAgent->config().memoryEnd;
 
@@ -140,7 +142,7 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
                         .count = this->bwprof.distributionCount
                     });
 
-                    LogFinal(this->cAgent->cycle(), Append("----------------------------------------------------------------").EndLine());
+                    LogFinal(this->cAgent->cycle(), Append("================================================================").EndLine());
                     LogFinal(this->cAgent->cycle(), Append("Bandwidth Profiler of CFuzzer [", this->cAgent->sysId(), "]").EndLine());
                     LogFinal(this->cAgent->cycle(), Append("Address start    : ").Hex().ShowBase().Append(this->fuzzStreamStart).EndLine());
                     LogFinal(this->cAgent->cycle(), Append("Address stopped  : ").Hex().ShowBase().Append(this->bwprof.addr).EndLine());
@@ -164,9 +166,31 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
                             .Append(Gravity::StringAppender().NextWidth(6).Precision(3).Right().Append(bytePerCycle).Append("B/cycle").ToString())
                             .Append(" (", GetBase1024B(bytePerCycle * 1000 * 1000 * 1000) ,"/s per GHz)").EndLine());
                     }
-
-                    LogFinal(this->cAgent->cycle(), Append("----------------------------------------------------------------").EndLine());
                 }
+
+                if (1) // switch off latency map profiler
+                {
+                    LogFinal(this->cAgent->cycle(), Append("================================================================").EndLine());
+                    LogFinal(this->cAgent->cycle(), Append("Latency Map Profiler of CFuzzer [", this->cAgent->sysId(), "]").EndLine());
+                    LogFinal(this->cAgent->cycle(), Append("----------------------------------------------------------------").EndLine());
+                    // AcquireBlock
+                    LogFinal(this->cAgent->cycle(), Append("AcquireBlock >>").EndLine());
+                    LogFinal(this->cAgent->cycle(), Append("(", this->cAgent->latencyMap[int(TLOpcodeA::AcquireBlock)].size(), " entires of distribution in total)").EndLine());
+                    for (int i = 0; i < 1000; i++)
+                    {
+                        auto iterLatencyMap = this->cAgent->latencyMap[int(TLOpcodeA::AcquireBlock)].find(i);
+                        if (iterLatencyMap == this->cAgent->latencyMap[int(TLOpcodeA::AcquireBlock)].end())
+                            continue;
+                        if (!iterLatencyMap->second)
+                            continue;
+                        LogFinal(this->cAgent->cycle(), Append("  ")
+                            .NextWidth(5).Right().Append(i * 10).Append(" - ").NextWidth(5).Right().Append(i * 10 + 9).Append(": ")
+                            .Left().Append(iterLatencyMap->second)
+                            .EndLine());
+                    }
+                }
+
+                LogFinal(this->cAgent->cycle(), Append("================================================================").EndLine());
             }
         )
     );
@@ -276,6 +300,12 @@ void CFuzzer::caseTest() {
 }
 
 void CFuzzer::tick() {
+
+    if (this->startupInterval < cAgent->config().startupCycle)
+    {
+        this->startupInterval++;
+        return;
+    }
 
     if (this->mode == TLSequenceMode::FUZZ_ARI)
     {
