@@ -5,8 +5,12 @@
 #include "../Base/TLEnum.hpp"
 
 #include "../Events/TLSystemEvent.hpp"
+#include "Fuzzer.h"
 
 #include <algorithm>
+
+
+#define     BWPROF_STRIDE_ELEMENT       64
 
 
 static std::vector<CFuzzRange> FUZZ_ARI_RANGES = {
@@ -52,6 +56,24 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
     this->fuzzStreamStart               = cAgent->config().fuzzStreamStart;
     this->fuzzStreamEnd                 = cAgent->config().fuzzStreamEnd;
 
+    this->bwprof.step                   = cAgent->config().fuzzStreamStep / BWPROF_STRIDE_ELEMENT;
+    this->bwprof.addr                   = cAgent->config().fuzzStreamStart;
+    this->bwprof.cycle                  = 0;
+    this->bwprof.count                  = 0;
+
+    if (!this->bwprof.step)
+    {
+        LogWarn(this->cAgent->cycle(), 
+            Append("[Bandwidth Profiler] step was set to 0 below ", BWPROF_STRIDE_ELEMENT, ", overrided as 1 cache block")
+            .EndLine());
+
+        this->bwprof.step = 1;
+    }
+
+    this->bwprof.distributionSplit      = (4 * 1024) / (BWPROF_STRIDE_ELEMENT * this->bwprof.step);
+    this->bwprof.distributionCycle      = 0;
+    this->bwprof.distributionCount      = 0;
+
     decltype(cAgent->config().sequenceModes.end()) modeInMap;
     if ((modeInMap = cAgent->config().sequenceModes.find(cAgent->sysId()))
             != cAgent->config().sequenceModes.end())
@@ -89,6 +111,65 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
         LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] stream ends at ")
             .Hex().ShowBase().Append(this->fuzzStreamEnd).EndLine());
     }
+    else if (this->mode == TLSequenceMode::BWPROF_STREAM_STRIDE_READ)
+    {
+        LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] in BWPROF_STREAM_STRIDE_READ mode").EndLine());
+        LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] stream stride steps ")
+            .Hex().ShowBase().Append(this->fuzzStreamStep).EndLine());
+        LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] stream starts at ")
+            .Hex().ShowBase().Append(this->fuzzStreamStart).EndLine());
+        LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] stream ends at ")
+            .Hex().ShowBase().Append(this->fuzzStreamEnd).EndLine());
+         LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] had Bandwidth Profiler enabled, "
+            "test would be ended automatically by range").EndLine());
+    }
+
+    this->flagDone = false;
+
+    //
+    Gravity::RegisterListener(
+        Gravity::MakeListener<TLSystemFinishEvent>(
+            Gravity::StringAppender("tltest.cfuzzer.bwprof.finish", uint64_t(this)).ToString(),
+            0,
+            [this] (TLSystemFinishEvent& event) -> void {
+
+                if (this->mode == TLSequenceMode::BWPROF_STREAM_STRIDE_READ)
+                {
+                    this->bwprof.distributions.push_back({
+                        .cycle = this->bwprof.distributionCycle,
+                        .count = this->bwprof.distributionCount
+                    });
+
+                    LogFinal(this->cAgent->cycle(), Append("----------------------------------------------------------------").EndLine());
+                    LogFinal(this->cAgent->cycle(), Append("Bandwidth Profiler of CFuzzer [", this->cAgent->sysId(), "]").EndLine());
+                    LogFinal(this->cAgent->cycle(), Append("Address start    : ").Hex().ShowBase().Append(this->fuzzStreamStart).EndLine());
+                    LogFinal(this->cAgent->cycle(), Append("Address stopped  : ").Hex().ShowBase().Append(this->bwprof.addr).EndLine());
+                    LogFinal(this->cAgent->cycle(), Append("Mode             : Read-only").EndLine());
+                    LogFinal(this->cAgent->cycle(), Append("Stride           : ", this->fuzzStreamStep).EndLine());
+
+                    uint64_t totalCount = 0;
+                    LogFinal(this->cAgent->cycle(), Append("Bandwidth distribution >>").EndLine());
+                    for (auto& distribution : this->bwprof.distributions)
+                    {
+                        if (!distribution.cycle)
+                            break;
+
+                        totalCount += distribution.count;
+
+                        double bytePerCycle = double(distribution.count) * BWPROF_STRIDE_ELEMENT / distribution.cycle;
+
+                        LogFinal(this->cAgent->cycle(), Append()
+                            .Append("    ", GetBase1024B(totalCount * BWPROF_STRIDE_ELEMENT))
+                            .Append(" => ")
+                            .Append(Gravity::StringAppender().NextWidth(6).Precision(3).Right().Append(bytePerCycle).Append("B/cycle").ToString())
+                            .Append(" (", GetBase1024B(bytePerCycle * 1000 * 1000 * 1000) ,"/s per GHz)").EndLine());
+                    }
+
+                    LogFinal(this->cAgent->cycle(), Append("----------------------------------------------------------------").EndLine());
+                }
+            }
+        )
+    );
 }
 
 void CFuzzer::randomTest(bool do_alias) {
@@ -243,4 +324,42 @@ void CFuzzer::tick() {
             TLSystemFinishEvent().Fire();
         }
     }
+    else if (this->mode == TLSequenceMode::BWPROF_STREAM_STRIDE_READ)
+    {
+        this->bwprof.cycle++;
+        this->bwprof.distributionCycle++;
+
+        if (this->cAgent->do_acquireBlock(this->bwprof.addr, TLParamAcquire::NtoB, 0))
+        {
+            this->bwprof.addr += BWPROF_STRIDE_ELEMENT * this->bwprof.step;
+            this->bwprof.count++;
+
+            this->bwprof.distributionCount++;
+        }
+
+        if (this->bwprof.count == this->bwprof.distributionSplit)
+        {
+            this->bwprof.distributions.push_back({
+                .cycle = this->bwprof.distributionCycle,
+                .count = this->bwprof.distributionCount
+            });
+
+            this->bwprof.distributionSplit *= 2;
+            this->bwprof.distributionCycle = 0;
+            this->bwprof.distributionCount = 0;
+        }
+
+        if (this->bwprof.addr >= this->fuzzStreamEnd)
+            flagDone = true;
+    }
+
+    if (flagDone)
+    {
+        TLSystemFinishEvent().Fire();
+    }
+}
+
+bool CFuzzer::done() const noexcept
+{
+    return flagDone;
 }

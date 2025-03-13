@@ -172,6 +172,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
                     tlcfg.sequenceModes[i] = TLSequenceMode::STREAM_COPY2;
                 else if (mode.compare("stream_multi") == 0)
                     tlcfg.sequenceModes[i] = TLSequenceMode::STREAM_MULTI;
+                else if (mode.compare("bwprof_stream_stride_read") == 0)
+                    tlcfg.sequenceModes[i] = TLSequenceMode::BWPROF_STREAM_STRIDE_READ;
                 else
                 {
                     LogInfo("INI", 

@@ -15,7 +15,8 @@ enum class TLSequenceMode {
     FUZZ_COUNTER,
     FUZZ_COUNTER_SYNC,
     STREAM_COPY2,
-    STREAM_MULTI
+    STREAM_MULTI,
+    BWPROF_STREAM_STRIDE_READ
 };
 
 struct TLLocalConfig {
