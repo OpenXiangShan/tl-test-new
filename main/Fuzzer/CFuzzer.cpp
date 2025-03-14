@@ -173,10 +173,10 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
                 if (1) // switch off latency map profiler
                 {
                     #define LogFinalLatencyMap(cat, op) \
-                        if (!this->cAgent->latencyMapA[int(TLOpcode##cat::op)].empty()) \
+                        if (!this->cAgent->latencyMap##cat[int(TLOpcode##cat::op)].empty()) \
                         { \
                             LogFinal(this->cAgent->cycle(), Append(#op " >>").EndLine()); \
-                            LogFinal(this->cAgent->cycle(), Append("(", this->cAgent->latencyMapA[int(TLOpcode##cat::op)].size(), " entires of distribution in total)").EndLine()); \
+                            LogFinal(this->cAgent->cycle(), Append("(", this->cAgent->latencyMap##cat[int(TLOpcode##cat::op)].size(), " entires of distribution in total)").EndLine()); \
                             for (int i = 0; i < 1000; i++) \
                             { \
                                 auto iterLatencyMap = this->cAgent->latencyMap##cat[int(TLOpcode##cat::op)].find(i); \
