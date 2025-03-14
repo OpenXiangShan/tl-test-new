@@ -320,7 +320,7 @@ namespace tl_agent {
 
         void onGrant(GrantEvent& event);
 
-        void map_latency(paddr_t address);
+        uint64_t map_latency(paddr_t address);
 
         bool do_acquireBlock(paddr_t address, TLParamAcquire param, int alias);
         bool do_acquirePerm(paddr_t address, TLParamAcquire param, int alias);
