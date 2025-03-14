@@ -149,7 +149,7 @@ namespace tl_agent {
 
         if (iterTimeA != inflightTimeStampsA.end())
         {
-            uint64_t latency = cycle() - iterTimeA->second.time;
+            uint64_t latency = (cycle() - iterTimeA->second.time) / cfg->profileCycleUnit;
             auto iterLatencyMap = latencyMapA[int(iterTimeA->second.opcode)].find(latency / 10);
             if (iterLatencyMap == latencyMapA[int(iterTimeA->second.opcode)].end())
                 latencyMapA[int(iterTimeA->second.opcode)][latency / 10] = 1;

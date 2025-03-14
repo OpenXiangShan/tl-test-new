@@ -91,4 +91,9 @@
 #endif
 
 
+#ifndef TLTEST_DEFAULT_PROFILE_CYCLE_UNIT
+#   define TLTEST_DEFAULT_PROFILE_CYCLE_UNIT            2
+#endif
+
+
 #endif // TLTEST_DEFAULT_H

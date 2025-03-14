@@ -59,6 +59,8 @@ public:
     uint64_t            fuzzStreamStart;                        // Fuzz Stream start address
     uint64_t            fuzzStreamEnd;                          // Fuzz Stream end address
 
+    uint64_t            profileCycleUnit;                       // Profiler cycle unit
+
 public:
     size_t                          GetAgentCount() const noexcept;
     size_t                          GetCAgentCount() const noexcept;

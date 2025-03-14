@@ -144,6 +144,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.fuzzer", "stream.start",               tlcfg.fuzzStreamStart);
     INI_OVERRIDE_INT("tltest.fuzzer", "stream.end",                 tlcfg.fuzzStreamEnd);
 
+    INI_OVERRIDE_INT("tltest.profile", "cycle_unit",                tlcfg.profileCycleUnit);
+
 #   undef INI_OVERRIDE_INT
 
     // read sequence mode configurations
