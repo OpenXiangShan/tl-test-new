@@ -257,6 +257,17 @@ namespace tl_agent {
         using IDMapScoreBoard       = ScoreBoard<paddr_t, C_IDEntry, ScoreBoardUpdateCallbackCIDEntry<paddr_t>>;
         using AcquirePermScoreBoard = ScoreBoard<paddr_t, C_AcquirePermEntry>;
 
+    public:
+        struct InflightTimeStampA {
+            uint64_t    time;
+            TLOpcodeA   opcode;
+        };
+
+        struct InflightTimeStampC {
+            uint64_t    time;
+            TLOpcodeC   opcode;
+        };
+
     private:
         uint64_t *cycles;
         PendingTrans<BundleChannelA<ReqField, EchoField, DATASIZE>> pendingA;
@@ -284,6 +295,12 @@ namespace tl_agent {
         void timeout_check() override;
 
     public:
+        std::unordered_map<paddr_t, InflightTimeStampA> inflightTimeStampsA;
+        std::unordered_map<paddr_t, InflightTimeStampC> inflightTimeStampsC;
+        std::unordered_map<uint64_t, uint64_t> latencyMapA[16];
+        std::unordered_map<uint64_t, uint64_t> latencyMapC[16];
+
+    public:
         CAgent(TLLocalConfig* cfg, MemoryBackend* mem, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ub, int sys, int id, unsigned int seed, uint64_t* cycles) noexcept;
         virtual ~CAgent() noexcept;
 
@@ -302,6 +319,8 @@ namespace tl_agent {
         void update_signal() override;
 
         void onGrant(GrantEvent& event);
+
+        uint64_t map_latency(paddr_t address);
 
         bool do_acquireBlock(paddr_t address, TLParamAcquire param, int alias);
         bool do_acquirePerm(paddr_t address, TLParamAcquire param, int alias);

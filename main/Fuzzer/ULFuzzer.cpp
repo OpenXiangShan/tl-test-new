@@ -155,6 +155,12 @@ void ULFuzzer::caseTest2() {
 
 void ULFuzzer::tick() {
 
+    if (this->startupInterval < ulAgent->config().startupCycle)
+    {
+        this->startupInterval++;
+        return;
+    }
+
     if (this->mode == TLSequenceMode::FUZZ_ARI)
     {
         this->randomTest(false);

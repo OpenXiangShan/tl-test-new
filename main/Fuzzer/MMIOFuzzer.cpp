@@ -62,5 +62,11 @@ void MMIOFuzzer::randomTest(bool put)
 
 void MMIOFuzzer::tick()
 {
+    if (this->startupInterval < mmioAgent->config().startupCycle)
+    {
+        this->startupInterval++;
+        return;
+    }
+
     this->randomTest(true);
 }

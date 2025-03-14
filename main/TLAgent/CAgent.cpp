@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <memory>
+#include <unordered_map>
 
 #include "BaseAgent.h"
 #include "Bundle.h"
@@ -140,6 +141,47 @@ namespace tl_agent {
     uint64_t CAgent::cycle() const noexcept
     {
         return *cycles;
+    }
+
+    uint64_t CAgent::map_latency(paddr_t addr)
+    {
+        auto iterTimeA = inflightTimeStampsA.find(addr);
+
+        if (iterTimeA != inflightTimeStampsA.end())
+        {
+            uint64_t latency = (cycle() - iterTimeA->second.time) / cfg->profileCycleUnit;
+            auto iterLatencyMap = latencyMapA[int(iterTimeA->second.opcode)].find(latency / 10);
+            if (iterLatencyMap == latencyMapA[int(iterTimeA->second.opcode)].end())
+                latencyMapA[int(iterTimeA->second.opcode)][latency / 10] = 1;
+            else
+                iterLatencyMap->second++;
+
+            inflightTimeStampsA.erase(iterTimeA);
+
+            return latency;
+        }
+        else
+        {
+            auto iterTimeC = inflightTimeStampsC.find(addr);
+
+            if (iterTimeC != inflightTimeStampsC.end())
+            {
+                uint64_t latency = cycle() - iterTimeC->second.time;
+                auto iterLatencyMap = latencyMapA[int(iterTimeC->second.opcode)].find(latency / 10);
+                if (iterLatencyMap == latencyMapA[int(iterTimeC->second.opcode)].end())
+                    latencyMapA[int(iterTimeC->second.opcode)][latency / 10] = 1;
+                else
+                    iterLatencyMap->second++;
+
+                inflightTimeStampsC.erase(iterTimeC);
+
+                return latency;
+            }
+            else
+                tlc_assert(false, this, "in-accurate inflight time count");
+        }
+
+        return 0;
     }
 
     Resp CAgent::send_a(std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>> &a) {
@@ -711,6 +753,7 @@ namespace tl_agent {
                             .Append(", alias: ",    uint64_t(chnA.alias))
                             .EndLine());
                     }
+                    inflightTimeStampsA[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::AcquireBlock };
                     break;
 
                 case TLOpcodeA::AcquirePerm:
@@ -724,6 +767,7 @@ namespace tl_agent {
                             .Append(", alias: ",    uint64_t(chnA.alias))
                             .EndLine());
                     }
+                    inflightTimeStampsA[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::AcquirePerm };
                     break;
 
                 case TLOpcodeA::CBOClean:
@@ -737,6 +781,7 @@ namespace tl_agent {
                             .EndLine());
                     }
                     localCMOStatus->setFired(this, chnA.address);
+                    inflightTimeStampsA[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::CBOClean };
                     break;
 
                 case TLOpcodeA::CBOFlush:
@@ -750,6 +795,7 @@ namespace tl_agent {
                             .EndLine());
                     }
                     localCMOStatus->setFired(this, chnA.address);
+                    inflightTimeStampsA[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::CBOFlush };
                     break;
 
                 case TLOpcodeA::CBOInval:
@@ -763,6 +809,7 @@ namespace tl_agent {
                             .EndLine());
                     }
                     localCMOStatus->setFired(this, chnA.address);
+                    inflightTimeStampsA[chnA.address] = { .time = cycle(), .opcode = TLOpcodeA::CBOInval };
 
                     if (!cfg->memorySyncStrict)
                         globalBoard->grant_memory_alt(this, chnA.address);
@@ -908,6 +955,7 @@ namespace tl_agent {
                             .Append(", alias: ",    uint64_t(chnC.alias))
                             .EndLine());
                     }
+                    inflightTimeStampsC[chnC.address] = { .time = cycle(), .opcode = TLOpcodeC::Release };
                     break;
 
                 case TLOpcodeC::ReleaseData:
@@ -924,6 +972,7 @@ namespace tl_agent {
                         LogEx(data_dump_embedded<BEATSIZE>(chnC.data->data));
                         LogEx(std::cout << std::endl);
                     }
+                    inflightTimeStampsC[chnC.address] = { .time = cycle(), .opcode = TLOpcodeC::ReleaseData };
                     break;
 
                 case TLOpcodeC::ProbeAck:
@@ -1098,6 +1147,8 @@ namespace tl_agent {
             auto addr = idMap->query(this, chnD.source)->address;
             auto alias = idMap->query(this, chnD.source)->alias;
 
+            uint64_t latency;
+
             if (TLEnumEquals(chnD.opcode, TLOpcodeD::Grant))
             {
                 if (glbl.cfg.verbose_xact_fired)
@@ -1186,6 +1237,7 @@ namespace tl_agent {
                 switch (status.opcode)
                 {
                     case TLOpcodeA::CBOClean:
+                        latency = map_latency(addr);
                         for (int i = 0; i < 4; i++)
                         {
                             int          status = entry->status[i];
@@ -1196,8 +1248,13 @@ namespace tl_agent {
                             {
                                 if (glbl.cfg.verbose)
                                 {
-                                    Log(this, Append("[CMOAck] [cbo.clean] checked CMO final state on system #", sysId(), ": ")
+                                    Log(this, Append("[CBOAck] [cbo.clean]")
+                                        .Append(" checked CMO final state on system #", sysId(), ": ")
                                         .Append(PrivilegeToString(perm)).EndLine());
+
+                                    Log(this, Append("[CBOAck] [cbo.clean] A -> D latency: ")
+                                        .Append(latency)
+                                        .EndLine());
                                 }
 
                                 if (TLEnumEquals(perm, TLPermission::TIP))
@@ -1230,6 +1287,7 @@ namespace tl_agent {
                         break;
 
                     case TLOpcodeA::CBOFlush:
+                        latency = map_latency(addr);
                         for (int i = 0; i < 4; i++)
                         {
                             int          status = entry->status[i];
@@ -1238,8 +1296,12 @@ namespace tl_agent {
                             {
                                 if (glbl.cfg.verbose)
                                 {
-                                    Log(this, Append("[CMOAck] [cbo.flush] checked CMO final state on system #", sysId(), ": ")
+                                    Log(this, Append("[CBOAck] [cbo.flush] checked CMO final state on system #", sysId(), ": ")
                                         .Append(PrivilegeToString(perm)).EndLine());
+
+                                    Log(this, Append("[CBOAck] [cbo.flush] A -> D latency: ")
+                                        .Append(latency)
+                                        .EndLine());
                                 }
 
                                 if (status == S_CBO_A_WAITING_D_NESTED_SENDING_C)
@@ -1260,6 +1322,7 @@ namespace tl_agent {
                         break;
 
                     case TLOpcodeA::CBOInval:
+                        latency = map_latency(addr);
                         for (int i = 0; i < 4; i++)
                         {
                             int          status = entry->status[i];
@@ -1268,8 +1331,12 @@ namespace tl_agent {
                             {
                                 if (glbl.cfg.verbose)
                                 {
-                                    Log(this, Append("[CMOAck] [cbo.inval] checked CMO final state on system #", sysId(), ": ")
+                                    Log(this, Append("[CBOAck] [cbo.inval] checked CMO final state on system #", sysId(), ": ")
                                         .Append(PrivilegeToString(perm)).EndLine());
+
+                                    Log(this, Append("[CBOAck] [cbo.inval] A -> D latency: ")
+                                        .Append(latency)
+                                        .EndLine());
                                 }
 
                                 if (status == S_CBO_A_WAITING_D_NESTED_SENDING_C)
@@ -1402,6 +1469,8 @@ namespace tl_agent {
                                     .Append("GrantData not expected on ", StatusToString(exact_status))
                                     .Append(" at ", addr)
                                     .ToString());
+
+                            latency = map_latency(addr);
                             
                             if (glbl.cfg.verbose_xact_data_complete)
                             {
@@ -1410,6 +1479,11 @@ namespace tl_agent {
                                     .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias, ", data: "));
                                 LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
                                 LogEx(std::cout << std::endl);
+
+                                Log(this, Append("[data complete D] [GrantData ",
+                                        GrantDataParamToString(TLParamGrantData(chnD.param)), "] ")
+                                    .Append("A -> D latency: ", latency)
+                                    .EndLine());
                             }
                             
                             bool memoryAlted = false;
@@ -1438,6 +1512,13 @@ namespace tl_agent {
                                     .ToString());
                             // Always set dirty in AcquirePerm toT txns
                             info->update_dirty(this, true, alias);
+
+                            latency = map_latency(addr);
+                            Log(this, Append("[fire D] [Grant ", 
+                                    GrantParamToString(TLParamGrant(chnD.param)), "] ")
+                                .Append("A -> D latency: ", latency)
+                                .EndLine());
+
                             break;
                         }
                         case TLOpcodeD::ReleaseAck: {
@@ -1457,6 +1538,12 @@ namespace tl_agent {
                             }
                             if (this->globalBoard->haskey(addr))
                                 this->globalBoard->unpending(this, addr); // ReleaseData
+
+                            latency = map_latency(addr);
+                            Log(this, Append("[fire D] [ReleaseAck] ")
+                                .Append("C -> D latency: ", latency)
+                                .EndLine());
+
                             break;
                         }
                         default:
@@ -2077,6 +2164,7 @@ namespace tl_agent {
     }
 
     void CAgent::timeout_check() {
+        return;
         if (localBoard->get().empty()) {
             return;
         }

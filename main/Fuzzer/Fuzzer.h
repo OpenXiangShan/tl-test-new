@@ -56,6 +56,8 @@ class Fuzzer {
 protected:
     uint64_t *cycles;
 public:
+    size_t              startupInterval;
+
     TLSequenceMode      mode;
 
     size_t              memoryStart;
