@@ -156,9 +156,6 @@ namespace tl_agent {
             else
                 iterLatencyMap->second++;
 
-            if (latency > 1000)
-                LogWarn(this->cycle(), Append("A -> D latency over 1000 cycles/ticks").EndLine());
-
             inflightTimeStampsA.erase(iterTimeA);
         }
         else
@@ -173,9 +170,6 @@ namespace tl_agent {
                     latencyMapA[int(iterTimeC->second.opcode)][latency / 10] = 1;
                 else
                     iterLatencyMap->second++;
-
-                if (latency > 1000)
-                    LogWarn(this->cycle(), Append("A -> D latency over 1000 cycles/ticks").EndLine());
 
                 inflightTimeStampsC.erase(iterTimeC);
             }
