@@ -173,6 +173,7 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
                 if (1) // switch off latency map profiler
                 {
                     #define LogFinalLatencyMap(cat, op) \
+                        LogFinal(this->cAgent->cycle(), Append("----------------------------------------------------------------").EndLine()); \
                         if (!this->cAgent->latencyMap##cat[int(TLOpcode##cat::op)].empty()) \
                         { \
                             LogFinal(this->cAgent->cycle(), Append(#op " >>").EndLine()); \
@@ -193,7 +194,6 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
 
                     LogFinal(this->cAgent->cycle(), Append("================================================================").EndLine());
                     LogFinal(this->cAgent->cycle(), Append("Latency Map Profiler of CFuzzer [", this->cAgent->sysId(), "]").EndLine());
-                    LogFinal(this->cAgent->cycle(), Append("----------------------------------------------------------------").EndLine());
                     LogFinalLatencyMap(A, AcquirePerm);
                     LogFinalLatencyMap(A, AcquireBlock);
                     LogFinalLatencyMap(A, CBOClean);
