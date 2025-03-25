@@ -36,6 +36,11 @@ public:
     uint64_t            memoryEnd;                              // Memory (cacheable) region end address
 
     uint64_t            memoryOOOR;                             // Memory (cacheable) backend out-of-order read
+    uint64_t            memoryReadDepth;                        // Memory (cacheable) backend read tracker depth
+    uint64_t            memoryReadLatency;                      // Memory (cacheable) backend read latency
+    uint64_t            memoryWriteDepth;                       // Memory (cacheable) backend write tracker depth
+    uint64_t            memoryWriteLatency;                     // Memory (cacheable) backend write latency
+    uint64_t            memoryCycleUnit;                        // Memory (cacheable) backend cycle unit
 
     uint64_t            memorySyncStrict;                       // Memory (cacheable) strict sync mode (must be disabled on multi-core for cbo.inval)
 

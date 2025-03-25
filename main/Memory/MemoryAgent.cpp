@@ -106,15 +106,27 @@ namespace axi_agent {
     {
         this->cfg = cfg;
         this->pmem = new uint8_t[size()];
+        this->pmemExternal = false;
         this->cycles = cycles;
         this->port = nullptr;
 
         std::memset(pmem, 0, size());
     }
 
+    MemoryAgent::MemoryAgent(TLLocalConfig* cfg, unsigned int seed, uint64_t* cycles, uint8_t* pmem) noexcept
+        : seed  (seed)
+    {
+        this->cfg = cfg;
+        this->pmem = pmem;
+        this->pmemExternal = true;
+        this->cycles = cycles;
+        this->port = nullptr;
+    }
+
     MemoryAgent::~MemoryAgent() noexcept
     {
-        delete[] pmem;
+        if (!this->pmemExternal)
+            delete[] this->pmem;
     }
 
     size_t MemoryAgent::cycle() const noexcept
@@ -202,12 +214,16 @@ namespace axi_agent {
 
     void MemoryAgent::handle_aw()
     {
-        port->aw.ready = true;
+        if (cfg->memoryWriteDepth && 
+            cfg->memoryWriteDepth <= (activeWrites.size() + finishedWrites.size()))
+            port->aw.ready = false;
+        else
+            port->aw.ready = true;
     }
 
     void MemoryAgent::handle_w()
     {
-        port->w.ready = true;
+        port->w.ready = port->aw.ready || !activeWrites.empty();
     }
 
     void MemoryAgent::send_b()
@@ -218,6 +234,12 @@ namespace axi_agent {
         {
             auto finishedWrite = finishedWrites.front();
 
+            if ((cfg->memoryWriteLatency * cfg->memoryCycleUnit) > (cycle() - finishedWrite->data.back().time))
+            {
+                port->b.valid = false;
+                return;
+            }
+
             port->b.valid = true;
             port->b.id    = finishedWrite->response.bundle.id;
             port->b.resp  = finishedWrite->response.bundle.resp;
@@ -226,7 +248,11 @@ namespace axi_agent {
 
     void MemoryAgent::handle_ar()
     {
-        port->ar.ready = true;
+        if (cfg->memoryReadDepth && 
+            cfg->memoryReadDepth <= (activeReads.size() + pendingReadRequests.size() + pendingReadResponses.size()))
+            port->ar.ready = false;
+        else
+            port->ar.ready = true;
     }
 
     void MemoryAgent::send_r()
@@ -248,6 +274,9 @@ namespace axi_agent {
                 if (randPicked->dataPending == randPicked->data.size())
                     return false;
 
+                if ((cfg->memoryReadLatency * cfg->memoryCycleUnit) > (cycle() - randPicked->request.time))
+                    return false;
+
                 picked = randPicked;
             }
             else
@@ -255,6 +284,9 @@ namespace axi_agent {
                 for (auto seqPicked : activeReads)
                 {
                     if (seqPicked->dataPending == seqPicked->data.size())
+                        continue;
+
+                    if ((cfg->memoryReadLatency * cfg->memoryCycleUnit) > (cycle() - seqPicked->request.time))
                         continue;
 
                     picked = seqPicked;
@@ -489,6 +521,8 @@ namespace axi_agent {
 
                 pendingReadRequests.push_back(FiredBundleAR {
                     .time = cycle(), .bundle = chnAr });
+
+                tlc_assert(false, this, "overlapped pending ARID not supported yet");
             }
             else
             {
