@@ -23,6 +23,11 @@
 #endif
 
 
+#ifndef TLTEST_DEFAULT_STARTUP_CYCLE
+#   define TLTEST_DEFAULT_STARTUP_CYCLE                 100
+#endif
+
+
 #ifndef TLTEST_DEFAULT_MEMORY_ENABLE
 #   define TLTEST_DEFAULT_MEMORY_ENABLE                 1
 #endif
@@ -83,6 +88,11 @@
 
 #ifndef TLTEST_DEFAULT_CMO_PARALLEL_DEPTH
 #   define TLTEST_DEFAULT_CMO_PARALLEL_DEPTH            0
+#endif
+
+
+#ifndef TLTEST_DEFAULT_PROFILE_CYCLE_UNIT
+#   define TLTEST_DEFAULT_PROFILE_CYCLE_UNIT            2
 #endif
 
 

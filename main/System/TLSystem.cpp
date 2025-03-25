@@ -50,6 +50,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.masterCountPerCoreTLC         = TLTEST_DEFAULT_MASTER_COUNT_PER_CORE_TLC;
     tlcfg.masterCountPerCoreTLUL        = TLTEST_DEFAULT_MASTER_COUNT_PER_CORE_TLUL;
 
+    tlcfg.startupCycle                  = TLTEST_DEFAULT_STARTUP_CYCLE;
+
     tlcfg.memoryEnable                  = TLTEST_DEFAULT_MEMORY_ENABLE;
     tlcfg.memoryStart                   = TLTEST_DEFAULT_MEMORY_START;
     tlcfg.memoryEnd                     = TLTEST_DEFAULT_MEMORY_END;
@@ -114,6 +116,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.config", "core.tl_c",                  tlcfg.masterCountPerCoreTLC);
     INI_OVERRIDE_INT("tltest.config", "core.tl_ul",                 tlcfg.masterCountPerCoreTLUL);
 
+    INI_OVERRIDE_INT("tltest.config", "startup.cycle",              tlcfg.startupCycle);
+
     INI_OVERRIDE_INT("tltest.config", "memory.enable",              tlcfg.memoryEnable);
     INI_OVERRIDE_INT("tltest.config", "memory.start",               tlcfg.memoryStart);
     INI_OVERRIDE_INT("tltest.config", "memory.end",                 tlcfg.memoryEnd);
@@ -139,6 +143,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.fuzzer", "stream.step",                tlcfg.fuzzStreamStep);
     INI_OVERRIDE_INT("tltest.fuzzer", "stream.start",               tlcfg.fuzzStreamStart);
     INI_OVERRIDE_INT("tltest.fuzzer", "stream.end",                 tlcfg.fuzzStreamEnd);
+
+    INI_OVERRIDE_INT("tltest.profile", "cycle_unit",                tlcfg.profileCycleUnit);
 
 #   undef INI_OVERRIDE_INT
 

@@ -23,11 +23,13 @@ struct TLLocalConfig {
 public:
     uint64_t            seed;
 
-    unsigned int        coreCount;                          // L1-L2 system count
-    unsigned int        masterCountPerCoreTLC;              // TL-C master count per core
-    unsigned int        masterCountPerCoreTLUL;             // TL-UL master count per core
+    unsigned int        coreCount;                              // L1-L2 system count
+    unsigned int        masterCountPerCoreTLC;                  // TL-C master count per core
+    unsigned int        masterCountPerCoreTLUL;                 // TL-UL master count per core
 
-    std::unordered_map<int, TLSequenceMode> sequenceModes;  // Agent sequence modes
+    std::unordered_map<int, TLSequenceMode> sequenceModes;      // Agent sequence modes
+
+    uint64_t            startupCycle;                           // Start-up interval cycle count
 
     uint64_t            memoryEnable;                           // Memory (cacheable) region enable
     uint64_t            memoryStart;                            // Memory (cacheable) region start address
@@ -56,6 +58,8 @@ public:
     uint64_t            fuzzStreamStep;                         // Fuzz Stream step
     uint64_t            fuzzStreamStart;                        // Fuzz Stream start address
     uint64_t            fuzzStreamEnd;                          // Fuzz Stream end address
+
+    uint64_t            profileCycleUnit;                       // Profiler cycle unit
 
 public:
     size_t                          GetAgentCount() const noexcept;
