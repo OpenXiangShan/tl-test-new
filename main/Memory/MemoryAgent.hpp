@@ -79,6 +79,7 @@ namespace axi_agent {
         TLLocalConfig*      cfg;
 
         uint8_t*            pmem;
+        bool                pmemExternal;
 
         uint64_t*           cycles;
         axi_port*           port;
@@ -101,6 +102,7 @@ namespace axi_agent {
 
     public:
         MemoryAgent(TLLocalConfig* cfg, unsigned int seed, uint64_t* cycles) noexcept;
+        MemoryAgent(TLLocalConfig* cfg, unsigned int seed, uint64_t* cycles, uint8_t* pmem) noexcept;
         virtual ~MemoryAgent() noexcept;
 
     public:
