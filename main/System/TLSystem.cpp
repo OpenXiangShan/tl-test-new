@@ -75,6 +75,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.cmoEnd                        = TLTEST_DEFAULT_CMO_END;
     tlcfg.cmoParallelDepth              = TLTEST_DEFAULT_CMO_PARALLEL_DEPTH;
 
+    tlcfg.profileCycleUnit              = TLTEST_DEFAULT_PROFILE_CYCLE_UNIT;
+
     tlcfg.fuzzARIInterval               = CFUZZER_RANGE_ITERATE_INTERVAL;
     tlcfg.fuzzARITarget                 = CFUZZER_RANGE_ITERATE_TARGET;
 
