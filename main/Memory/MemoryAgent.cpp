@@ -326,8 +326,8 @@ namespace axi_agent {
         {
             if (glbl.cfg.verbose_memory_axi_write)
             {
-                Log(this, Hex().ShowBase()
-                    .Append("[memory.axi] [#", sysId(), "] [fire AW] ")
+                Log(this, Append("[memory.axi] [#", sysId(), "] [fire AW] ")
+                    .Hex().ShowBase()
                     .Append("id: ",         uint64_t(chnAw.id))
                     .Append(", addr: ",     uint64_t(chnAw.addr))
                     .Append(", size: ",     uint64_t(chnAw.size))
@@ -367,16 +367,17 @@ namespace axi_agent {
         if (chnW.fire())
         {
             if (activeWrites.empty())
-                tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                tlc_assert(false, this, Gravity::StringAppender()
                     .Append("[memory.axi] [#", sysId(), "] unexpected W fire before AW")
+                    .Hex().ShowBase()
                     .ToString());
 
             auto trans = activeWrites.front();
 
             if (glbl.cfg.verbose_memory_axi_write)
             {
-                Log(this, Hex().ShowBase()
-                    .Append("[memory.axi] [#", sysId(), "] [fire W] ")
+                Log(this, Append("[memory.axi] [#", sysId(), "] [fire W] ")
+                    .Hex().ShowBase()
                     .Append("(id: ",        uint64_t(trans->request.bundle.id))
                     .Append(", addr: ",     uint64_t(trans->request.bundle.addr), ")")
                     .Append(", last: ",     uint64_t(chnW.last))
@@ -487,8 +488,9 @@ namespace axi_agent {
         if (chnB.fire())
         {
             if (finishedWrites.empty())
-                tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                tlc_assert(false, this, Gravity::StringAppender()
                     .Append("[memory.axi] [#", sysId(), "] unexpected B fire before write finish")
+                    .Hex().ShowBase()
                     .ToString());
             
             auto finishedWrite = finishedWrites.front();
@@ -511,8 +513,8 @@ namespace axi_agent {
             {
                 if (glbl.cfg.verbose_memory_axi_read)
                 {
-                    Log(this, Hex().ShowBase()
-                        .Append("[memory.axi] [#", sysId(), "] [fire AR] pending read with same active RID")
+                    Log(this, Append("[memory.axi] [#", sysId(), "] [fire AR] pending read with same active RID")
+                        .Hex().ShowBase()
                         .Append(", id: ",       uint64_t(chnAr.id))
                         .Append(", addr: ",     uint64_t(chnAr.addr))
                         .Append(", burst: ",    uint64_t(chnAr.burst))
@@ -530,8 +532,8 @@ namespace axi_agent {
             {
                 if (glbl.cfg.verbose_memory_axi_read)
                 {
-                    Log(this, Hex().ShowBase()
-                        .Append("[memory.axi] [#", sysId(), "] [fire AR] ")
+                    Log(this, Append("[memory.axi] [#", sysId(), "] [fire AR] ")
+                        .Hex().ShowBase()
                         .Append("id: ",         uint64_t(chnAr.id))
                         .Append(", addr: ",     uint64_t(chnAr.addr))
                         .Append(", burst: ",    uint64_t(chnAr.burst))
@@ -640,8 +642,9 @@ namespace axi_agent {
         if (chnR.fire())
         {
             if (pendingReadResponses.empty())
-                tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
+                tlc_assert(false, this, Gravity::StringAppender()
                     .Append("[memory.axi] [#", sysId(), "] unexpected R fire with no pending read responses")
+                    .Hex().ShowBase()
                     .ToString());
 
             // call event here for record purpose
@@ -659,8 +662,8 @@ namespace axi_agent {
 
             if (glbl.cfg.verbose_memory_axi_read)
             {
-                Log(this, Hex().ShowBase()
-                    .Append("[memory.axi] [#", sysId(), "] [fire R] ")
+                Log(this, Append("[memory.axi] [#", sysId(), "] [fire R] ")
+                    .Hex().ShowBase()
                     .Append("id: ",         uint64_t(chnR.id))
                     .Append(", (addr: ",    uint64_t(trans->request.bundle.addr), ")")
                     .Append(", resp: ",     uint64_t(chnR.resp))
