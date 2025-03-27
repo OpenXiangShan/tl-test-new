@@ -101,8 +101,9 @@ namespace axi_agent {
 // Implementation of: class MemoryAgent
 namespace axi_agent {
 
-    MemoryAgent::MemoryAgent(TLLocalConfig* cfg, unsigned int seed, uint64_t* cycles) noexcept
+    MemoryAgent::MemoryAgent(TLLocalConfig* cfg, unsigned int seed, uint64_t* cycles, int id) noexcept
         : seed  (seed)
+        , id    (id)
     {
         this->cfg = cfg;
         this->pmem = new uint8_t[size()];
@@ -113,8 +114,9 @@ namespace axi_agent {
         std::memset(pmem, 0, size());
     }
 
-    MemoryAgent::MemoryAgent(TLLocalConfig* cfg, unsigned int seed, uint64_t* cycles, uint8_t* pmem) noexcept
+    MemoryAgent::MemoryAgent(TLLocalConfig* cfg, unsigned int seed, uint64_t* cycles, int id, uint8_t* pmem) noexcept
         : seed  (seed)
+        , id    (id)
     {
         this->cfg = cfg;
         this->pmem = pmem;
@@ -136,12 +138,12 @@ namespace axi_agent {
 
     int MemoryAgent::sys() const noexcept
     {
-        return 0;
+        return id;
     }
 
     int MemoryAgent::sysId() const noexcept
     {
-        return 0;
+        return id;
     }
 
     unsigned int MemoryAgent::sysSeed() const noexcept
@@ -325,7 +327,7 @@ namespace axi_agent {
             if (glbl.cfg.verbose_memory_axi_write)
             {
                 Log(this, Hex().ShowBase()
-                    .Append("[memory.axi] [fire AW] ")
+                    .Append("[memory.axi] [#", sysId(), "] [fire AW] ")
                     .Append("id: ",         uint64_t(chnAw.id))
                     .Append(", addr: ",     uint64_t(chnAw.addr))
                     .Append(", size: ",     uint64_t(chnAw.size))
@@ -366,7 +368,7 @@ namespace axi_agent {
         {
             if (activeWrites.empty())
                 tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
-                    .Append("[memory.axi] unexpected W fire before AW")
+                    .Append("[memory.axi] [#", sysId(), "] unexpected W fire before AW")
                     .ToString());
 
             auto trans = activeWrites.front();
@@ -374,7 +376,7 @@ namespace axi_agent {
             if (glbl.cfg.verbose_memory_axi_write)
             {
                 Log(this, Hex().ShowBase()
-                    .Append("[memory.axi] [fire W] ")
+                    .Append("[memory.axi] [#", sysId(), "] [fire W] ")
                     .Append("(id: ",        uint64_t(trans->request.bundle.id))
                     .Append(", addr: ",     uint64_t(trans->request.bundle.addr), ")")
                     .Append(", last: ",     uint64_t(chnW.last))
@@ -486,7 +488,7 @@ namespace axi_agent {
         {
             if (finishedWrites.empty())
                 tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
-                    .Append("[memory.axi] unexpected B fire before write finish")
+                    .Append("[memory.axi] [#", sysId(), "] unexpected B fire before write finish")
                     .ToString());
             
             auto finishedWrite = finishedWrites.front();
@@ -510,7 +512,7 @@ namespace axi_agent {
                 if (glbl.cfg.verbose_memory_axi_read)
                 {
                     Log(this, Hex().ShowBase()
-                        .Append("[memory.axi] [fire AR] pending read with same active RID")
+                        .Append("[memory.axi] [#", sysId(), "] [fire AR] pending read with same active RID")
                         .Append(", id: ",       uint64_t(chnAr.id))
                         .Append(", addr: ",     uint64_t(chnAr.addr))
                         .Append(", burst: ",    uint64_t(chnAr.burst))
@@ -529,7 +531,7 @@ namespace axi_agent {
                 if (glbl.cfg.verbose_memory_axi_read)
                 {
                     Log(this, Hex().ShowBase()
-                        .Append("[memory.axi] [fire AR] ")
+                        .Append("[memory.axi] [#", sysId(), "] [fire AR] ")
                         .Append("id: ",         uint64_t(chnAr.id))
                         .Append(", addr: ",     uint64_t(chnAr.addr))
                         .Append(", burst: ",    uint64_t(chnAr.burst))
@@ -639,7 +641,7 @@ namespace axi_agent {
         {
             if (pendingReadResponses.empty())
                 tlc_assert(false, this, Gravity::StringAppender().Hex().ShowBase()
-                    .Append("[memory.axi] unexpected R fire with no pending read responses")
+                    .Append("[memory.axi] [#", sysId(), "] unexpected R fire with no pending read responses")
                     .ToString());
 
             // call event here for record purpose
@@ -658,7 +660,7 @@ namespace axi_agent {
             if (glbl.cfg.verbose_memory_axi_read)
             {
                 Log(this, Hex().ShowBase()
-                    .Append("[memory.axi] [fire R] ")
+                    .Append("[memory.axi] [#", sysId(), "] [fire R] ")
                     .Append("id: ",         uint64_t(chnR.id))
                     .Append(", (addr: ",    uint64_t(trans->request.bundle.addr), ")")
                     .Append(", resp: ",     uint64_t(chnR.resp))

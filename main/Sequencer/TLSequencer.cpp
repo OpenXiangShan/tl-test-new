@@ -17,6 +17,7 @@
 
 TLSequencer::TLSequencer() noexcept
     : state             (State::NOT_INITIALIZED)
+    , pmem              (nullptr)
     , globalBoard       (nullptr)
     , uncachedBoard     (nullptr)
     , config            ()
@@ -34,6 +35,7 @@ TLSequencer::TLSequencer() noexcept
 
 TLSequencer::~TLSequencer() noexcept
 {
+    delete[] pmem;
     delete[] fuzzers;
     delete[] agents;
     delete[] mmioFuzzers;
@@ -211,8 +213,9 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
         mmioFuzzers = new MMIOFuzzer*   [total_c_agents];
 
         //
-        memoryAXI   = new MemoryAXIPort*[1];
-        memories    = new MemoryAgent*  [1];
+        pmem        = new uint8_t       [cfg.memoryEnd - cfg.memoryStart];
+        memoryAXI   = new MemoryAXIPort*[cfg.memoryPortCount];
+        memories    = new MemoryAgent*  [cfg.memoryPortCount];
 
         // UL Scoreboard
         uncachedBoard   = new UncachedBoard<paddr_t>(total_n_agents);
@@ -253,10 +256,10 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
         */
 
         //
-        for (unsigned int i = 0; i < 1; i++)
+        for (int i = 0; i < cfg.memoryPortCount; i++)
         {
             memoryAXI   [i] = new MemoryAXIPort;
-            memories    [i] = new MemoryAgent(&this->config, cfg.seed, &cycles);
+            memories    [i] = new MemoryAgent(&this->config, cfg.seed, &cycles, i, pmem);
             memories    [i]->connect(memoryAXI[i]);
 
             LogInfo("INIT", Append("TLSequencer::Initialize: ")
@@ -328,7 +331,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             mmio[i]->d.data = make_shared_tldata<DATASIZE_MMIO>();
         }
 
-        for (size_t i = 0; i < 1; i++)
+        for (size_t i = 0; i < cfg.memoryPortCount; i++)
         {
             memoryAXI[i]->w.data = make_shared_tldata<BEATSIZE_MEMORY>();
             memoryAXI[i]->r.data = make_shared_tldata<BEATSIZE_MEMORY>();
@@ -371,7 +374,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             mmio[i]->e.valid = 0;
         }
 
-        for (size_t i = 0; i < 1; i++)
+        for (size_t i = 0; i < cfg.memoryPortCount; i++)
         {
             memoryAXI[i]->aw.ready  = 0;
             memoryAXI[i]->aw.valid  = 0;
@@ -458,7 +461,7 @@ void TLSequencer::Finalize() noexcept
             }
         }
 
-        for (size_t i = 0; i < 1; i++)
+        for (size_t i = 0; i < config.memoryPortCount; i++)
         {
             if (memories[i])
             {
@@ -542,10 +545,10 @@ void TLSequencer::Tock() noexcept
             mmioAgents[i]->update_signal();
 
         //
-        for (size_t i = 0; i < 1; i++)
+        for (size_t i = 0; i < config.memoryPortCount; i++)
             memories[i]->handle_channel();
 
-        for (size_t i = 0; i < 1; i++)
+        for (size_t i = 0; i < config.memoryPortCount; i++)
             memories[i]->update_signal();
     }
     catch (const TLAssertFailureException& e) 
