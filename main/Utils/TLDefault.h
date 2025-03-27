@@ -64,6 +64,10 @@
 #   define TLTEST_DEFAULT_MEMORY_CYCLE_UNIT             2
 #endif
 
+#ifndef TLTEST_DEFAULT_MEMORY_PORT_COUNT
+#   define TLTEST_DEFAULT_MEMORY_PORT_COUNT             1
+#endif
+
 #ifndef TLTEST_DEFAULT_MEMORY_SYNC_STRICT
 #   define TLTEST_DEFAULT_MEMORY_SYNC_STRICT            0
 #endif

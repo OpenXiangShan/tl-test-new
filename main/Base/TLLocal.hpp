@@ -42,6 +42,8 @@ public:
     uint64_t            memoryWriteLatency;                     // Memory (cacheable) backend write latency
     uint64_t            memoryCycleUnit;                        // Memory (cacheable) backend cycle unit
 
+    uint64_t            memoryPortCount;                        // Memory (cacheable) backend port count
+
     uint64_t            memorySyncStrict;                       // Memory (cacheable) strict sync mode (must be disabled on multi-core for cbo.inval)
 
     uint64_t            mmioEnable;                             // MMIO region enable

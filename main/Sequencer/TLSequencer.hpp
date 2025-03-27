@@ -63,6 +63,8 @@ public:
 private:
     State                   state;
 
+    uint8_t*                pmem;
+
     GlobalBoard<paddr_t>*   globalBoard;
     UncachedBoard<paddr_t>* uncachedBoard;
 

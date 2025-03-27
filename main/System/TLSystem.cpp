@@ -61,6 +61,7 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.memoryWriteDepth              = TLTEST_DEFAULT_MEMORY_WRITE_DEPTH;
     tlcfg.memoryWriteLatency            = TLTEST_DEFAULT_MEMORY_WRITE_LATENCY;
     tlcfg.memoryCycleUnit               = TLTEST_DEFAULT_MEMORY_CYCLE_UNIT;
+    tlcfg.memoryPortCount               = TLTEST_DEFAULT_MEMORY_PORT_COUNT;
     tlcfg.memorySyncStrict              = TLTEST_DEFAULT_MEMORY_SYNC_STRICT;
 
     tlcfg.mmioEnable                    = TLTEST_DEFAULT_MMIO_ENABLE;
@@ -134,6 +135,7 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.config", "memory.backend.wr.depth",    tlcfg.memoryWriteDepth);
     INI_OVERRIDE_INT("tltest.config", "memory.backend.wr.latency",  tlcfg.memoryWriteLatency);
     INI_OVERRIDE_INT("tltest.config", "memory.backend.cycle_unit",  tlcfg.memoryCycleUnit);
+    INI_OVERRIDE_INT("tltest.config", "memory.backend.port.count",  tlcfg.memoryPortCount)
     INI_OVERRIDE_INT("tltest.config", "memory.sync.strict",         tlcfg.memorySyncStrict);
 
     INI_OVERRIDE_INT("tltest.config", "mmio.enable",                tlcfg.mmioEnable);
