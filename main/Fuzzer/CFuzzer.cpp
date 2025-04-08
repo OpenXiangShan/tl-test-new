@@ -189,7 +189,7 @@ void CFuzzer::caseTest() {
   alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % FUZZ_STREAM_RANGE.maxAlias) : 0;
   // Read And NtoT
   // Write 
-  if (state == bwTestState::aquire) {
+  if (state == bwTestState::acquire) {
     // this->fuzzStreamOffset   += this->fuzzStreamStep;
     // addr =  this->fuzzStreamStart + 0x100 * blkProcessed + this->fuzzStreamStep;//0x040, 0x140, 0x240...
     addr =  this->fuzzStreamStart + blkProcessed * this->fuzzStreamStep;            //0x00, 0x40, 0x80, 0xC0...
@@ -205,12 +205,12 @@ void CFuzzer::caseTest() {
         // Chan A
 
     if (blkProcessed == blkCountLimit) {
-      state = bwTestState::wait_aquire;
+      state = bwTestState::wait_acquire;
       blkProcessed = 0;
     }
   }
 
-  if (state == bwTestState::wait_aquire || state == bwTestState::aquire) {
+  if (state == bwTestState::wait_acquire || state == bwTestState::acquire) {
     // wait channel A to fire
     if (cAgent->is_d_fired()) {
       // How many cycle will D channel hold the data?
@@ -255,7 +255,7 @@ void CFuzzer::caseTest() {
       blkFired++;//0x180
     }
     if (blkFired == blkCountLimit+1) {
-      state = bwTestState::aquire2;
+      state = bwTestState::acquire2;
       perfCycleStart=this->cAgent->cycle();
       blkFired = 0;
       printf("#################Test\n\n");
@@ -263,7 +263,7 @@ void CFuzzer::caseTest() {
   }
 
     // Read 2 0x00,0x40,0x80,0xc0
-  if (state == bwTestState::aquire2) {
+  if (state == bwTestState::acquire2) {
     addr = filledAddrs.front();
     
     if(cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias)){
@@ -271,19 +271,19 @@ void CFuzzer::caseTest() {
         filledAddrs.pop();
     };
     if (blkProcessed == blkCountLimit) {
-      state = bwTestState::wait_aquire2;
+      state = bwTestState::wait_acquire2;
       blkProcessed = 0;
     }
   }
 
-  if (state == bwTestState::aquire2||state == bwTestState::wait_aquire2) {
+  if (state == bwTestState::acquire2||state == bwTestState::wait_acquire2) {
     // wait channel A to fire
     if (cAgent->is_d_fired()) {
       // How many cycle will D channel hold the data?
       blkFired++;
     }
     if (blkFired == blkCountLimit*2) {
-      state = bwTestState::aquire;
+      state = bwTestState::acquire;
       blkFired = 0;
       filledAddrs.pop();
       perfCycleEnd=(this->cAgent->cycle()-perfCycleStart)/2;

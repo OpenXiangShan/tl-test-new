@@ -165,7 +165,7 @@ void MFuzzer::caseTest3() {
   alias = (do_alias) ? (CAGENT_RAND64(mAgent, "MFuzzer") % FUZZ_STREAM_RANGE.maxAlias) : 0;
   // Read And NtoT
   // Write 
-  if (state == bwTestState::aquire) {
+  if (state == bwTestState::acquire) {
     // this->fuzzStreamOffset   += this->fuzzStreamStep;
     // addr =  this->fuzzStreamStart + 0x100 * blkProcessed + this->fuzzStreamStep;//0x040, 0x140, 0x240...
     addr =  this->fuzzStreamStart + (blkProcessed*8+index) * this->fuzzStreamStep;            //0x00, 0x40, 0x80, 0xC0...
@@ -184,12 +184,12 @@ void MFuzzer::caseTest3() {
         // Chan A
 
     if (blkProcessed == blkCountLimit) {
-      state = bwTestState::wait_aquire;
+      state = bwTestState::wait_acquire;
       blkProcessed = 0;
     }
   }
 
-  if (state == bwTestState::wait_aquire || state == bwTestState::aquire) {
+  if (state == bwTestState::wait_acquire || state == bwTestState::acquire) {
     // wait channel A to fire
     if (mAgent->is_m_fired()) {
       // How many cycle will D channel hold the data?
@@ -231,7 +231,7 @@ void MFuzzer::caseTest3() {
     }
     // is AccessAck
     if (blkFired == blkCountLimit) {
-      state = bwTestState::aquire2;
+      state = bwTestState::acquire2;
       perfCycleStart=this->mAgent->cycle();
       blkFired = 0;
       printf("#################Test\n\n");
@@ -239,7 +239,7 @@ void MFuzzer::caseTest3() {
   }
 
     // Read 2 0x00,0x40,0x80,0xc0
-  if (state == bwTestState::aquire2) {
+  if (state == bwTestState::acquire2) {
     addr = filledAddrs.front();
 
     if(mAgent->do_getAuto(addr)){
@@ -247,12 +247,12 @@ void MFuzzer::caseTest3() {
         filledAddrs.pop();
     };
     if (blkProcessed == blkCountLimit) {
-      state = bwTestState::wait_aquire2;
+      state = bwTestState::wait_acquire2;
       blkProcessed = 0;
     }
   }
 
-  if (state == bwTestState::aquire2||state == bwTestState::wait_aquire2) {
+  if (state == bwTestState::acquire2||state == bwTestState::wait_acquire2) {
     // wait channel A to fire
     if (mAgent->is_m_fired()) {
       // How many cycle will D channel hold the data?
