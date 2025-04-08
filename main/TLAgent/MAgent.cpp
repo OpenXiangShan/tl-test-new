@@ -186,7 +186,6 @@ namespace tl_agent {
                 }
 
                 this->localBoard->query(this, pendingA.info->source)->update_status(this, S_A_WAITING_D);
-                // printf("[ERROR]: %p #######\n",(void *)pendingA.info->address);
                 if (hasData) {
                     auto global_SBEntry = std::make_shared<Global_SBEntry>();
                     global_SBEntry->pending_data = pendingA.info->data;
@@ -196,7 +195,6 @@ namespace tl_agent {
                         global_SBEntry->data = this->globalBoard->get()[pendingA.info->address]->data;
                     }
                     global_SBEntry->status = Global_SBEntry::SB_PENDING;
-                    printf("[ERROR]: %p sid: %ld ++++\n",(void *)pendingA.info->address, pendingA.info->source);
                     this->globalBoard->update(this, pendingA.info->address, global_SBEntry);
                     // uncachedBoards->allocate(this, id, chnA.address, chnA.source,
                     //             global_SBEntry->pending_data);
@@ -206,9 +204,9 @@ namespace tl_agent {
 
                 if (recvData) {
                     if (!globalBoard->haskey(chnA.address)){
-                        #ifdef SB_DEBUG
-                        printf("uncachedBoards->allocateZero(this, id(%d), chnA.address(0x%lx), chnA.source(%lu));\n",id, chnA.address, chnA.source);
-                        #endif
+#                       if SB_DEBUG == 1
+                            printf("uncachedBoards->allocateZero(this, id(%d), chnA.address(0x%lx), chnA.source(%lu));\n", id, chnA.address, chnA.source);
+#                       endif
                         uncachedBoards->allocateZero(this, id, chnA.address, chnA.source);
                     }
                     else
@@ -220,9 +218,9 @@ namespace tl_agent {
                                 global_SBEntry->data);
 
                         if (global_SBEntry->status == Global_SBEntry::SB_PENDING){
-                            #ifdef SB_DEBUG
-                            printf("uncachedBoards->allocate(this, id(%d), chnA.address(0x%lx), chnA.source(%lu));########\n",id, chnA.address, chnA.source);
-                            #endif
+#                           if SB_DEBUG == 1
+                                printf("uncachedBoards->allocate(this, id(%d), chnA.address(0x%lx), chnA.source(%lu));########\n", id, chnA.address, chnA.source);
+#                           endif
                             uncachedBoards->allocate(this, id, chnA.address, chnA.source,
                                 global_SBEntry->pending_data);
                         }
@@ -434,7 +432,6 @@ namespace tl_agent {
         // do timeout check lazily
         if (*this->cycles % (TIMEOUT_INTERVAL/5) == 0) {
             this->timeout_check();
-            printf("###########TIME OUT\n");
         }
         idpool.update(this);
         // probeIDpool.update(this);
@@ -591,9 +588,6 @@ namespace tl_agent {
         for (auto it = this->localBoard->get().begin(); it != this->localBoard->get().end(); it++) {
             auto value = it->second;
             if (value->status != S_INVALID && value->status != S_VALID) {
-                // 10000
-                printf("*this->cycles(%lu) > 2*TIMEOUT_INTERVAL(%d) \nvalue->status(%d)\n",*this->cycles,TIMEOUT_INTERVAL,value->status);
-                // if (*this->cycles > 2*TIMEOUT_INTERVAL) {
                 if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
 
                     std::cout << Gravity::StringAppender()
