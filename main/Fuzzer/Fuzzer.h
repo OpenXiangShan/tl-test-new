@@ -86,16 +86,16 @@ public:
     size_t              fuzzStreamEnd;
     // FIXME add
     enum bwTestState {
-        aquire = 0,
-        wait_aquire,
+        acquire = 0,
+        wait_acquire,
         releasing,
         wait_release,
-        aquire2,
-        wait_aquire2,
+        acquire2,
+        wait_acquire2,
         exit_fuzzer
     };
 
-    int state = bwTestState::aquire;
+    int state = bwTestState::acquire;
 
     uint32_t writeResponsedCount = 0;
 
