@@ -2,16 +2,19 @@
 * AXI Channel AW
 */
 import "DPI-C" function void MemoryAXIPullChannelAW (
+    input   int                 portId,
     output  byte                ready
 );
 
 function void SvMemoryAXIPullChannelAW (
+    input   int                 portId,
     output  logic               ready
 );
 
     if (1) begin
         
         MemoryAXIPullChannelAW(
+            portId,
             ready
         );
     end
@@ -19,6 +22,7 @@ function void SvMemoryAXIPullChannelAW (
 endfunction
 
 import "DPI-C" function void MemoryAXIPushChannelAW (
+    input   int                 portId,
     input   byte                valid,
     input   int                 id,
     input   longint             addr,
@@ -28,6 +32,7 @@ import "DPI-C" function void MemoryAXIPushChannelAW (
 );
 
 function void SvMemoryAXIPushChannelAW (
+    input   int                 portId,
     input   logic               resetn,
     input   logic               valid,
     input   logic [10:0]        id,
@@ -48,6 +53,7 @@ function void SvMemoryAXIPushChannelAW (
     if (resetn) begin
 
         MemoryAXIPushChannelAW (
+            portId,
             valid,
             id,
             addr,
@@ -64,16 +70,19 @@ endfunction
 * AXI Channel W
 */
 import "DPI-C" function void MemoryAXIPullChannelW (
+    input   int                 portId,
     output  byte                ready
 );
 
 function void SvMemoryAXIPullChannelW (
+    input   int                 portId,
     output  logic               ready
 );
 
     if (1) begin
 
         MemoryAXIPullChannelW (
+            portId,
             ready
         );
     end
@@ -81,6 +90,7 @@ function void SvMemoryAXIPullChannelW (
 endfunction
 
 import "DPI-C" function void MemoryAXIPushChannelW (
+    input   int                 portId,
     input   byte                valid,
     input   longint             strb,
     input   byte                last,
@@ -91,6 +101,7 @@ import "DPI-C" function void MemoryAXIPushChannelW (
 );
 
 function void SvMemoryAXIPushChannelW (
+    input   int                 portId,
     input   logic               resetn,
     input   logic               valid,
     input   logic [31:0]        strb,
@@ -106,6 +117,7 @@ function void SvMemoryAXIPushChannelW (
     if (resetn) begin
 
         MemoryAXIPushChannelW ( 
+            portId,
             valid,
             strb,
             last,
@@ -123,12 +135,14 @@ endfunction
 * AXI Channel B
 */
 import "DPI-C" function void MemoryAXIPullChannelB (
+    input   int                 portId,
     output  byte                valid,
     output  int                 id,
     output  byte                resp
 );
 
 function void SvMemoryAXIPullChannelB (
+    input   int                 portId,
     output  logic               valid,
     output  logic [10:0]        id,
     output  logic [1:0]         resp
@@ -137,6 +151,7 @@ function void SvMemoryAXIPullChannelB (
     if (1) begin
 
         MemoryAXIPullChannelB (
+            portId,
             valid,
             id,
             resp
@@ -146,10 +161,12 @@ function void SvMemoryAXIPullChannelB (
 endfunction
 
 import "DPI-C" function void MemoryAXIPushChannelB (
+    input   int                 portId,
     input   byte                ready
 );
 
 function void SvMemoryAXIPushChannelB (
+    input   int                 portId,
     input   logic               resetn,
     input   logic               ready
 );
@@ -159,6 +176,7 @@ function void SvMemoryAXIPushChannelB (
     if (resetn) begin
 
         MemoryAXIPushChannelB (
+            portId,
             ready
         );
     end
@@ -170,16 +188,19 @@ endfunction
 * AXI Channel AR
 */
 import "DPI-C" function void MemoryAXIPullChannelAR (
+    input   int                 portId,
     output  byte                ready
 );
 
 function void SvMemoryAXIPullChannelAR (
+    input   int                 portId,
     output  logic               ready
 );
 
     if (1) begin
 
         MemoryAXIPullChannelAR (
+            portId,
             ready
         );
     end
@@ -187,6 +208,7 @@ function void SvMemoryAXIPullChannelAR (
 endfunction
 
 import "DPI-C" function void MemoryAXIPushChannelAR (
+    input   int                 portId,
     input   byte                valid,
     input   int                 id,
     input   longint             addr,
@@ -196,6 +218,7 @@ import "DPI-C" function void MemoryAXIPushChannelAR (
 );
 
 function void SvMemoryAXIPushChannelAR (
+    input   int                 portId,
     input   logic               resetn,
     input   logic               valid,
     input   logic [10:0]        id,
@@ -216,6 +239,7 @@ function void SvMemoryAXIPushChannelAR (
     if (resetn) begin
 
         MemoryAXIPushChannelAR (
+            portId,
             valid,
             id,
             addr,
@@ -232,6 +256,7 @@ endfunction
 * AXI Channel R
 */
 import "DPI-C" function void MemoryAXIPullChannelR (
+    input   int                 portId,
     output  byte                valid,
     output  int                 id,
     output  byte                resp,
@@ -243,6 +268,7 @@ import "DPI-C" function void MemoryAXIPullChannelR (
 );
 
 function void SvMemoryAXIPullChannelR (
+    input   int                 portId,
     output  logic               valid,
     output  logic [10:0]        id,
     output  logic [1:0]         resp,
@@ -253,6 +279,7 @@ function void SvMemoryAXIPullChannelR (
     if (1) begin
 
         MemoryAXIPullChannelR (
+            portId,
             valid,
             id,
             resp,
@@ -267,10 +294,12 @@ function void SvMemoryAXIPullChannelR (
 endfunction
 
 import "DPI-C" function void MemoryAXIPushChannelR (
+    input   int                 portId,
     input   byte                ready
 );
 
 function void SvMemoryAXIPushChannelR (
+    input   int                 portId,
     input   logic               resetn,
     input   logic               ready
 );
@@ -280,6 +309,7 @@ function void SvMemoryAXIPushChannelR (
     if (resetn) begin
 
         MemoryAXIPushChannelR (
+            portId,
             ready
         );
     end

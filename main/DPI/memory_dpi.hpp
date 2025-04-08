@@ -7,9 +7,11 @@
 * DPI functions to connect AXI Channel AW
 */
 extern "C" void MemoryAXIPullChannelAW(
+    const int           portId,
     uint8_t*            ready);
 
 extern "C" void MemoryAXIPushChannelAW(
+    const int           portId,
     const uint8_t       valid,
     const uint32_t      id,
     const uint64_t      addr,
@@ -21,9 +23,11 @@ extern "C" void MemoryAXIPushChannelAW(
 * DPI functions to connect AXI Channel W
 */
 extern "C" void MemoryAXIPullChannelW(
+    const int           portId,
     uint8_t*            ready);
 
 extern "C" void MemoryAXIPushChannelW(
+    const int           portId,
     const uint8_t       valid,
     const uint64_t      strb,
     const uint8_t       last,
@@ -36,20 +40,24 @@ extern "C" void MemoryAXIPushChannelW(
 * DPI functions to connect AXI Channel B
 */
 extern "C" void MemoryAXIPullChannelB(
+    const int           portId,
     uint8_t*            valid,
     uint32_t*           id,
     uint8_t*            resp);
 
 extern "C" void MemoryAXIPushChannelB(
+    const int           portId,
     const uint8_t       ready);
 
 /*
 * DPI functions to connect AXI Channel AR
 */
 extern "C" void MemoryAXIPullChannelAR(
+    const int           portId,
     uint8_t*            ready);
 
 extern "C" void MemoryAXIPushChannelAR(
+    const int           portId,
     const uint8_t       valid,
     const uint32_t      id,
     const uint64_t      addr,
@@ -61,6 +69,7 @@ extern "C" void MemoryAXIPushChannelAR(
 * DPI functions to connect AXI Channel R
 */
 extern "C" void MemoryAXIPullChannelR(
+    const int           portId,
     uint8_t*            valid,
     uint32_t*           id,
     uint8_t*            resp,
@@ -71,4 +80,5 @@ extern "C" void MemoryAXIPullChannelR(
     uint64_t*           data3);
 
 extern "C" void MemoryAXIPushChannelR(
+    const int           portId,
     const uint8_t       ready);

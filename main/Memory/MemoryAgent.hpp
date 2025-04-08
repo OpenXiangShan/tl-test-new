@@ -85,6 +85,7 @@ namespace axi_agent {
         axi_port*           port;
 
         const unsigned int  seed;
+        const int           id;
 
     private:
         std::mt19937_64     rand;
@@ -101,8 +102,8 @@ namespace axi_agent {
         std::list<std::shared_ptr<AXIWriteTransaction<BEATSIZE_MEMORY>>>    finishedWrites;
 
     public:
-        MemoryAgent(TLLocalConfig* cfg, unsigned int seed, uint64_t* cycles) noexcept;
-        MemoryAgent(TLLocalConfig* cfg, unsigned int seed, uint64_t* cycles, uint8_t* pmem) noexcept;
+        MemoryAgent(TLLocalConfig* cfg, unsigned int seed, uint64_t* cycles, int id) noexcept;
+        MemoryAgent(TLLocalConfig* cfg, unsigned int seed, uint64_t* cycles, int id, uint8_t* pmem) noexcept;
         virtual ~MemoryAgent() noexcept;
 
     public:
