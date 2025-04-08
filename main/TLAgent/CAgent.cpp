@@ -2179,7 +2179,7 @@ namespace tl_agent {
                         .Hex().Append("Address:     ", addr).EndLine()
                         .Dec().Append("Now time:    ", *this->cycles).EndLine()
                         .Dec().Append("Last stamp:  ", value->time_stamp).EndLine()
-                        .Dec().Append("Status[0]:   ", StatusToString(value->status[0])).EndLine()
+                        .Dec().Append("Status[%d]:   ", StatusToString(value->status[i])).EndLine()
                     .ToString();
 
                     tlc_assert(false, this, "Transaction time out");
