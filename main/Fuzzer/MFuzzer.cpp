@@ -184,6 +184,7 @@ void MFuzzer::caseTest3() {
         // Chan A
 
     if (blkProcessed == blkCountLimit) {
+      printf("#### MAgent %d state: wait_acquire\n", index);
       state = bwTestState::wait_acquire;
       blkProcessed = 0;
     }
@@ -196,6 +197,7 @@ void MFuzzer::caseTest3() {
       blkFired++;
     }
     if (blkFired == blkCountLimit) {// Notice! 64B need 2 fired.
+      printf("#### MAgent %d state: releasing\n", index);
       state = bwTestState::releasing;
       blkFired = 0;
     }
@@ -211,13 +213,14 @@ void MFuzzer::caseTest3() {
     // printf("will do_putfulldata(%lx)\n",addr);
     if(mAgent->do_putfulldata(addr, putdata)){
         blkProcessed++;
-        filledAddrs.push(addr);
+        filledAddrs.push(addr); // push equals push_back
         filledAddrs.pop();
         // printf("size2 %lu\n",filledAddrs.size());
         // printf("fine do_putfulldata(%lx)\n",addr);
     }
 
     if (blkProcessed == blkCountLimit) {
+      printf("#### MAgent %d state: wait_release\n", index);
       state = bwTestState::wait_release;
       blkProcessed = 0;
     }
@@ -231,10 +234,10 @@ void MFuzzer::caseTest3() {
     }
     // is AccessAck
     if (blkFired == blkCountLimit) {
+      printf("#### MAgent %d state: acquire2\n", index);
       state = bwTestState::acquire2;
       perfCycleStart=this->mAgent->cycle();
       blkFired = 0;
-      printf("#################Test\n\n");
     }
   }
 
@@ -247,6 +250,7 @@ void MFuzzer::caseTest3() {
         filledAddrs.pop();
     };
     if (blkProcessed == blkCountLimit) {
+      printf("#### MAgent %d state: wait_acquire2\n", index);
       state = bwTestState::wait_acquire2;
       blkProcessed = 0;
     }
