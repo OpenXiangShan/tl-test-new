@@ -65,9 +65,9 @@ endif ()
 
 
 #
-SET(CMAKE_CXX_STANDARD 17)
-SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -std=c++17 -O0 -Wall -g2 -ggdb")
-SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -std=c++17 -O3 -Wall")
+SET(CMAKE_CXX_STANDARD 20)
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -std=c++20 -O0 -Wall -g2 -ggdb")
+SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -std=c++20 -O3 -Wall")
 
 ADD_COMPILE_OPTIONS(-fPIC)
 
@@ -79,6 +79,7 @@ ADD_SUBDIRECTORY(TLAgent)
 ADD_SUBDIRECTORY(Fuzzer)
 ADD_SUBDIRECTORY(Events)
 ADD_SUBDIRECTORY(System)
+ADD_SUBDIRECTORY(CHIron)
 ADD_SUBDIRECTORY(Plugins)
 
 FIND_PACKAGE(SQLite3 REQUIRED)
@@ -91,7 +92,7 @@ if (BUILD_DPI)
 
     ADD_SUBDIRECTORY(DPI)
 
-    ADD_LIBRARY(tltest_dpi SHARED Base Sequencer Memory TLAgent Fuzzer Events System Plugins DPI)
+    ADD_LIBRARY(tltest_dpi SHARED Base Sequencer Memory TLAgent Fuzzer Events System CHIron Plugins DPI)
     TARGET_LINK_LIBRARIES(tltest_dpi PUBLIC
         Base DPI Sequencer Memory TLAgent Fuzzer Events System Plugins sqlite3)
 endif ()
@@ -105,11 +106,11 @@ if (BUILD_V3)
     ADD_SUBDIRECTORY(V3)
     ADD_SUBDIRECTORY(PortGen)
 
-    ADD_EXECUTABLE(tltest_v3lt Base Sequencer Memory TLAgent Fuzzer Events System Plugins PortGen V3)
+    ADD_EXECUTABLE(tltest_v3lt Base Sequencer Memory TLAgent Fuzzer Events System CHIron Plugins PortGen V3)
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         TARGET_LINK_LIBRARIES(tltest_v3lt 
-            Base Sequencer Memory TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3
+            Base Sequencer Memory TLAgent Fuzzer Events System CHIron Plugins PortGen V3 sqlite3
             "-lz"
 	    "-Wl,--whole-archive"
             ${VERILATED_PATH}/libvltdut.a
@@ -119,7 +120,7 @@ if (BUILD_V3)
             ${CMAKE_DL_LIBS})
     else ()
         TARGET_LINK_LIBRARIES(tltest_v3lt 
-            Base Sequencer Memory TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3
+            Base Sequencer Memory TLAgent Fuzzer Events System CHIron Plugins PortGen V3 sqlite3
 	    "-Wl,--whole-archive"
             ${VERILATED_PATH}/libvltdut.a
             "-Wl,--no-whole-archive"
