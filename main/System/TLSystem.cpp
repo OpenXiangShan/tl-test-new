@@ -6,6 +6,7 @@
 #include "../Utils/inicpp.hpp"
 
 #include "../Plugins/ChiselDB.hpp"
+#include "../Plugins/CHIronCLogB.hpp"
 
 
 void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<void(TLLocalConfig&)> tlcfgInit)
@@ -216,6 +217,7 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
 
     (*plugins) = new PluginManager;
     (*plugins)->EnablePlugin(new ChiselDB::PluginInstance);
+    (*plugins)->EnablePlugin(new CHIron::CLogB::PluginInstance);
 }
 
 void TLFinalize(TLSequencer** tltest, PluginManager** plugins)
