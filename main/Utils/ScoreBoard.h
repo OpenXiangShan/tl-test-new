@@ -20,7 +20,7 @@
 const int ERR_NOTFOUND = 1;
 const int ERR_MISMATCH = 2;
 
-#define SB_DEBUG        1
+// #define SB_DEBUG        1
 
 
 #ifndef SB_DEBUG
