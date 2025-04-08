@@ -98,12 +98,10 @@ jobs:
   setup-verilator:
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04]
+        os: [ubuntu-22.04]
         compiler:
           - { cc: clang-16, cxx: clang++-16 }
           - { cc: gcc,      cxx: g++        }
-        exclude:
-          - { os: ubuntu-20.04, compiler: { cc: gcc, cxx: g++ } }
     runs-on: ${{ matrix.os }}
     name: Verilator | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
     env:
@@ -159,15 +157,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04]
+        os: [ubuntu-22.04]
         case:
           - { id: l2l3,   name: L2-L3    }
           - { id: l2l3l2, name: L2-L3-L2 }
         compiler:
           - { cc: clang-16, cxx: clang++-16 }
           - { cc: gcc,      cxx: g++        }
-        exclude:
-          - { os: ubuntu-20.04, compiler: { cc: gcc, cxx: g++ } }
     runs-on: ${{ matrix.os }}
     name: Build | ${{ matrix.case.name }} | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
     env:
@@ -263,7 +259,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04]
+        os: [ubuntu-22.04]
         case:
           - { id: l2l3,   name: L2-L3   , mode: FUZZ_ARI }
           - { id: l2l3l2, name: L2-L3-L2, mode: FUZZ_ARI }
@@ -274,8 +270,6 @@ jobs:
         compiler:
           - { cc: clang-16, cxx: clang++-16 }
           - { cc: gcc,      cxx: g++        }
-        exclude:
-          - { os: ubuntu-20.04, compiler: { cc: gcc, cxx: g++ } }
     runs-on: ${{ matrix.os }}
     name: Run | ${{ matrix.case.name }} | ${{ matrix.case.mode }} | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
     env:
