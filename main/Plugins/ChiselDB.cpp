@@ -4,6 +4,7 @@
 #include "../Utils/Common.h"
 
 #include AUTOINCLUDE_CHISELDB(chisel_db.cpp)
+#include AUTOINCLUDE_CHISELDB(perfCCT.cpp)
 
 
 //
