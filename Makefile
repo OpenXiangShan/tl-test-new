@@ -26,15 +26,15 @@ tltest-prepare-v3:
 
 tltest-prepare-all-coupledL2:
 	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/CoupledL2"
+		-DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0
 
 tltest-prepare-dpi-coupledL2:
 	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/CoupledL2"
+		-DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0
 
 tltest-prepare-v3-coupledL2:
 	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/CoupledL2"
+		-DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0
 
 
 tltest-prepare-all-openLLC:
