@@ -12,7 +12,9 @@
 #include <iomanip>
 #include <verilated_fst_c.h>
 
+#if TLTEST_MEMORY == 1
 #include "v3_memaxi.hpp"
+#endif
 
 
 static bool wave_enable     = true;
@@ -167,9 +169,11 @@ int main(int argc, char **argv)
         V3::PortGen::PushChannelB(top, tltest);
         V3::PortGen::PushChannelD(top, tltest);
 
+#if TLTEST_MEMORY == 1
         V3::Memory::PushChannelAW(top, tltest);
         V3::Memory::PushChannelW(top, tltest);
         V3::Memory::PushChannelAR(top, tltest);
+#endif
 
         // Tock
         tltest->Tock();
@@ -179,8 +183,10 @@ int main(int argc, char **argv)
         V3::PortGen::PullChannelC(top, tltest);
         V3::PortGen::PullChannelE(top, tltest);
 
+#if TLTEST_MEMORY == 1
         V3::Memory::PullChannelB(top, tltest);
         V3::Memory::PullChannelR(top, tltest);
+#endif
 
         //
         V3EvalNegedge(time, top);
@@ -189,17 +195,21 @@ int main(int argc, char **argv)
         V3::PortGen::PullChannelB(top, tltest);
         V3::PortGen::PullChannelD(top, tltest);
 
+#if TLTEST_MEMORY == 1
         V3::Memory::PullChannelAW(top, tltest);
         V3::Memory::PullChannelW(top, tltest);
         V3::Memory::PullChannelAR(top, tltest);
+#endif
 
         // Push 'ready's
         V3::PortGen::PushChannelA(top, tltest);
         V3::PortGen::PushChannelC(top, tltest);
         V3::PortGen::PushChannelE(top, tltest);
 
+#if TLTEST_MEMORY == 1
         V3::Memory::PushChannelB(top, tltest);
         V3::Memory::PushChannelR(top, tltest);
+#endif
 
         //
         V3EvalPosedge(time, top);
