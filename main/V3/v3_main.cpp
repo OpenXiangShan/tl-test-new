@@ -17,9 +17,6 @@
 
 #if TLTEST_MEMORY == 1
 #include "v3_memaxi.hpp"
-#pragma message ("[V3Main] TL-Test-New AXI Memory Backend compiled in")
-#else
-#pragma message ("[V3Main] TL-Test-New AXI Memory Backend not compiled in")
 #endif
 
 
@@ -134,6 +131,12 @@ int main(int argc, char **argv)
 
     uint64_t time       = 0;
     //
+
+#if TLTEST_MEMORY == 1
+    std::cout << "[V3Main] \033[1;32mAXI Memory Backend compiled in\033[0m." << std::endl;
+#else
+    std::cout << "[V3Main] \033[31mAXI Memory Backend not compiled in\033[0m." << std::endl;
+#endif
 
     //
     Verilated::commandArgs(argc, argv);
