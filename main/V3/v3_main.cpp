@@ -10,6 +10,7 @@
 #include "../PortGen/portgen_dynamic.hpp"
 
 #include <iomanip>
+#include <cstdlib>
 #include <verilated_fst_c.h>
 
 #if TLTEST_MEMORY == 1
@@ -23,6 +24,12 @@ static uint64_t wave_end    = 0;
 
 static VerilatedFstC*   fst;
 static VTestTop*        top;
+
+static bool initialized = false;
+static bool finalized = false;
+
+TLSequencer*    tltest  = nullptr;
+PluginManager*  plugins = nullptr;
 
 
 inline static bool IsInWaveTime(uint64_t time)
@@ -94,8 +101,24 @@ inline static void V3EvalPosedge(uint64_t& time, VTestTop* top)
 }
 
 
+void OnExit()
+{
+    if (!initialized)
+        return;
+
+    if (!finalized)
+    {
+        TLFinalize(&tltest, &plugins);
+        finalized = true;
+    }
+}
+
+
 int main(int argc, char **argv)
 {
+    atexit(OnExit);
+    //
+
     uint64_t time       = 0;
     //
 
@@ -103,10 +126,8 @@ int main(int argc, char **argv)
     Verilated::commandArgs(argc, argv);
 
     // initialize TL-Test subsystem
-    TLSequencer*    tltest;
-    PluginManager*  plugins;
-
     TLInitialize(&tltest, &plugins, [](TLLocalConfig&) -> void {});
+    initialized = true;
 
     // load PortGen component
 #   ifdef TLTEST_PORTGEN_DYNAMIC
@@ -250,7 +271,7 @@ int main(int argc, char **argv)
         fst->close();
 
     //
-    TLFinalize(&tltest, &plugins);
+    OnExit();
 
     return error;
 }
