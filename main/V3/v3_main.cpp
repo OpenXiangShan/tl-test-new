@@ -1,5 +1,9 @@
 #include <cstdint>
 #include <chrono>
+#include <iomanip>
+#include <cstdlib>
+
+#include <signal.h>
 
 #include "../Utils/autoinclude.h"
 #include AUTOINCLUDE_VERILATED(VTestTop.h)
@@ -9,8 +13,6 @@
 #include "../System/TLSystem.hpp"
 #include "../PortGen/portgen_dynamic.hpp"
 
-#include <iomanip>
-#include <cstdlib>
 #include <verilated_fst_c.h>
 
 #if TLTEST_MEMORY == 1
@@ -101,7 +103,7 @@ inline static void V3EvalPosedge(uint64_t& time, VTestTop* top)
 }
 
 
-void OnExit()
+void V3Finalize()
 {
     if (!initialized)
         return;
@@ -113,10 +115,18 @@ void OnExit()
     }
 }
 
+void V3SignalHandler(int signum)
+{
+    V3Finalize();
+}
+
 
 int main(int argc, char **argv)
 {
-    atexit(OnExit);
+    atexit(V3Finalize);
+    signal(SIGINT, V3SignalHandler);
+    signal(SIGTERM, V3SignalHandler);
+    signal(SIGABRT, V3SignalHandler);
     //
 
     uint64_t time       = 0;
@@ -271,7 +281,7 @@ int main(int argc, char **argv)
         fst->close();
 
     //
-    OnExit();
+    V3Finalize();
 
     return error;
 }
