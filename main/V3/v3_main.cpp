@@ -17,6 +17,9 @@
 
 #if TLTEST_MEMORY == 1
 #include "v3_memaxi.hpp"
+#pragma message ("[V3Main] TL-Test-New AXI Memory Backend compiled in")
+#else
+#pragma message ("[V3Main] TL-Test-New AXI Memory Backend not compiled in")
 #endif
 
 
