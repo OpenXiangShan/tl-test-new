@@ -1,5 +1,9 @@
 #include <cstdint>
 #include <chrono>
+#include <iomanip>
+#include <cstdlib>
+
+#include <signal.h>
 
 #include "../Utils/autoinclude.h"
 #include AUTOINCLUDE_VERILATED(VTestTop.h)
@@ -9,7 +13,6 @@
 #include "../System/TLSystem.hpp"
 #include "../PortGen/portgen_dynamic.hpp"
 
-#include <iomanip>
 #include <verilated_fst_c.h>
 
 #if TLTEST_MEMORY == 1
@@ -23,6 +26,12 @@ static uint64_t wave_end    = 0;
 
 static VerilatedFstC*   fst;
 static VTestTop*        top;
+
+static bool initialized = false;
+static bool finalized = false;
+
+TLSequencer*    tltest  = nullptr;
+PluginManager*  plugins = nullptr;
 
 
 inline static bool IsInWaveTime(uint64_t time)
@@ -94,19 +103,47 @@ inline static void V3EvalPosedge(uint64_t& time, VTestTop* top)
 }
 
 
+void V3Finalize()
+{
+    if (!initialized)
+        return;
+
+    if (!finalized)
+    {
+        TLFinalize(&tltest, &plugins);
+        finalized = true;
+    }
+}
+
+void V3SignalHandler(int signum)
+{
+    V3Finalize();
+}
+
+
 int main(int argc, char **argv)
 {
+    atexit(V3Finalize);
+    signal(SIGINT, V3SignalHandler);
+    signal(SIGTERM, V3SignalHandler);
+    signal(SIGABRT, V3SignalHandler);
+    //
+
     uint64_t time       = 0;
     //
+
+#if TLTEST_MEMORY == 1
+    std::cout << "[V3Main] \033[1;32mAXI Memory Backend compiled in\033[0m." << std::endl;
+#else
+    std::cout << "[V3Main] \033[31mAXI Memory Backend not compiled in\033[0m." << std::endl;
+#endif
 
     //
     Verilated::commandArgs(argc, argv);
 
     // initialize TL-Test subsystem
-    TLSequencer*    tltest;
-    PluginManager*  plugins;
-
     TLInitialize(&tltest, &plugins, [](TLLocalConfig&) -> void {});
+    initialized = true;
 
     // load PortGen component
 #   ifdef TLTEST_PORTGEN_DYNAMIC
@@ -250,7 +287,7 @@ int main(int argc, char **argv)
         fst->close();
 
     //
-    TLFinalize(&tltest, &plugins);
+    V3Finalize();
 
     return error;
 }
