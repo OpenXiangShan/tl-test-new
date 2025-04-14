@@ -7,3 +7,4 @@ run
 .metals
 .scala-build
 .cache
+compile_commands.json
