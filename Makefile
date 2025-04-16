@@ -280,4 +280,6 @@ run-with-portgen: FORCE tltest-config-postbuild tltest-portgen
 	@bash ./scripts/run_v3lt.sh
 
 
-clean: coupledL2-verilate-clean coupledL2-verilog-clean openLLC-verilate-clean openLLC-verilog-clean tltest-clean
+clean: coupledL2-verilate-clean coupledL2-verilog-clean openLLC-verilate-clean openLLC-verilog-clean
+	rm -rf ./main/build
+	mkdir ./main/build
