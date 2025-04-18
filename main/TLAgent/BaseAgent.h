@@ -8,6 +8,7 @@
 #include <set>
 #include <random>
 #include <array>
+#include <queue>
 #include "Bundle.h"
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
@@ -128,7 +129,7 @@ namespace tl_agent {
     private:
         std::set<int> *idle_ids;
         std::set<int> *used_ids;
-        int pending_freeid;
+        std::queue<int> pending_freeids;
     public:
         IDPool(int start, int end) {
             idle_ids = new std::set<int>();
@@ -137,7 +138,6 @@ namespace tl_agent {
                 idle_ids->insert(i);
             }
             used_ids->clear();
-            pending_freeid = -1;
         }
         ~IDPool() {
             delete idle_ids;
@@ -152,14 +152,15 @@ namespace tl_agent {
             return ret;
         }
         void freeid(int id) {
-            this->pending_freeid = id;
+            pending_freeids.push(id);
         }
         void update(TLLocalContext* ctx) {
-            if (pending_freeid != -1) {
-                tlc_assert(used_ids->count(pending_freeid) > 0, ctx, "Try to free unused SourceID!");
-                used_ids->erase(pending_freeid);
-                idle_ids->insert(pending_freeid);
-                pending_freeid = -1;
+            while (!pending_freeids.empty()) {
+                int id = pending_freeids.front();
+                pending_freeids.pop();
+                tlc_assert(used_ids->count(id) > 0, ctx, "Try to free unused SourceID!");
+                used_ids->erase(id);
+                idle_ids->insert(id);
             }
         }
         bool full() {
