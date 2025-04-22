@@ -2,6 +2,7 @@
 #include <chrono>
 #include <iomanip>
 #include <cstdlib>
+#include <type_traits>
 
 #include <signal.h>
 
@@ -121,6 +122,23 @@ void V3SignalHandler(int signum)
 }
 
 
+template<typename, typename = void>
+struct has_port_time : std::false_type {};
+
+template<typename T>
+struct has_port_time<T, std::void_t<decltype(std::declval<T>().time)>> : std::true_type {};
+
+template<typename T>
+typename std::enable_if<has_port_time<T>::value>::type V3PushTime(T* top, uint64_t time)
+{
+    top->time = time;
+}
+
+template<typename T>
+typename std::enable_if<!has_port_time<T>::value>::type V3PushTime(T* top, uint64_t time)
+{ }
+
+
 int main(int argc, char **argv)
 {
     atexit(V3Finalize);
@@ -137,6 +155,11 @@ int main(int argc, char **argv)
 #else
     std::cout << "[V3Main] \033[31mAXI Memory Backend not compiled in\033[0m." << std::endl;
 #endif
+
+    if constexpr (has_port_time<VTestTop>::value)
+        std::cout << "[V3Main] \033[1;32mPassing ticking time to verilated TestTop\033[0m." << std::endl;
+    else
+        std::cout << "[V3Main] \033[31mNot passing ticking time to verilated TestTop\033[0m." << std::endl;
 
     //
     Verilated::commandArgs(argc, argv);
@@ -196,9 +219,11 @@ int main(int argc, char **argv)
     }
 
     V3Reset(time, top, 10);
+    V3PushTime(top, time);
 
     while (tltest->IsAlive())
     {
+
         // Tick
         tltest->Tick(time);
 
@@ -226,6 +251,7 @@ int main(int argc, char **argv)
 #endif
 
         //
+        V3PushTime(top, time);
         V3EvalNegedge(time, top);
 
         // Pull 'ready's
@@ -249,6 +275,7 @@ int main(int argc, char **argv)
 #endif
 
         //
+        V3PushTime(top, time);
         V3EvalPosedge(time, top);
 
         //
