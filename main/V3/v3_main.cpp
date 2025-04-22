@@ -126,12 +126,12 @@ template<typename, typename = void>
 struct has_port_time : std::false_type {};
 
 template<typename T>
-struct has_port_time<T, std::void_t<decltype(std::declval<T>().time)>> : std::true_type {};
+struct has_port_time<T, std::void_t<decltype(std::declval<T>().time_sim)>> : std::true_type {};
 
 template<typename T>
 typename std::enable_if<has_port_time<T>::value>::type V3PushTime(T* top, uint64_t time)
 {
-    top->time = time;
+    top->time_sim = time;
 }
 
 template<typename T>
