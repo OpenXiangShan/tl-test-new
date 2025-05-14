@@ -30,6 +30,7 @@ public:
     std::unordered_map<int, TLSequenceMode> sequenceModes;      // Agent sequence modes
 
     uint64_t            startupCycle;                           // Start-up interval cycle count
+    uint64_t            maximumCycle;                           // Maximum cycle count
 
     uint64_t            memoryEnable;                           // Memory (cacheable) region enable
     uint64_t            memoryStart;                            // Memory (cacheable) region start address

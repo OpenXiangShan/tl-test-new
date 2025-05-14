@@ -402,6 +402,12 @@ void CFuzzer::tick() {
     {
         TLSystemFinishEvent().Fire();
     }
+
+    if (this->cAgent->config().maximumCycle && (*cycles > this->cAgent->config().maximumCycle))
+    {
+        LogInfo(this->cAgent->cycle(), Append("Maximum cycle count exceeded").EndLine());
+        TLSystemFinishEvent().Fire();
+    }
 }
 
 bool CFuzzer::done() const noexcept
