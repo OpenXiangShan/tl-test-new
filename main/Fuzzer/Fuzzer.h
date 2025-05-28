@@ -15,6 +15,9 @@
 #include <vector>
 #include <queue>
 
+#include <fstream>
+#include <sstream>
+#include <string>
 
 #ifndef CFUZZER_RAND_RANGE_TAG
 #   define CFUZZER_RAND_RANGE_TAG           0x80
@@ -92,6 +95,7 @@ public:
         releasing,
         wait_release,
         acquire2,
+        wait_fence,
         wait_acquire2,
         exit_fuzzer
     };
@@ -100,12 +104,26 @@ public:
 
     uint32_t writeResponsedCount = 0;
 
-    uint32_t blkProcessed = 0;
-    uint32_t blkFired = 0;
-    uint32_t blkCountLimit = 1024;//512; // 2k*64B
-    uint64_t perfCycleStart=0;
-    uint64_t perfCycleEnd=0;
+    uint32_t blkProcessed = 0;  // r/w requests fired
+    uint32_t blkFired = 0;  //IVYTODO:FIXME: this should be renamed as blkReceived
+    uint32_t blkCountLimit = 1024; // for bandwidth test (used for prefill in trace test)
+    uint32_t blkCountLimitTrace = 1024; // for trace test
+    uint32_t blkProcessedFence = 0;   // reqs fired, for fence
+    uint32_t blkReceivedFence = 0;    // reqs received, for fence
+
+    uint64_t perfCycleStart = 0;
+    uint64_t perfCycleEnd = 0;
+
+    enum traceOp {
+        READ = 0,
+        WRITE = 1,
+        FENCE = 2
+    };
+    // preload data into L2 Cache
     std::queue<uint64_t> filledAddrs;
+    // actual trace r/w
+    std::queue<std::pair<uint8_t, uint64_t>> traceAddrs;
+
 public:
     Fuzzer() noexcept = default;
     virtual ~Fuzzer() noexcept = default;
@@ -125,6 +143,66 @@ public:
     inline paddr_t remap_cmo_address(paddr_t addr) {
         return ((addr % (cmoEnd - cmoStart)) + cmoStart);
     }
+
+    void read_trace(const std::string& tracefile_path) {
+        blkCountLimit = 0;
+        blkCountLimitTrace = 0;
+
+        std::ifstream tracefile(tracefile_path);
+        if (!tracefile.is_open()) {
+            throw std::runtime_error("Failed to open tracefile: " + tracefile_path);
+        }
+
+        printf("Agent %d: Reading tracefile %s\n", index, tracefile_path.c_str());
+
+        // std::string line;
+        // while (std::getline(tracefile, line)) {
+        for (std::string line; std::getline(tracefile, line); ) {
+            std::istringstream iss(line);
+            char operation;
+            uint64_t address;
+            int bank_idx;
+
+            // trace format: <operation> <address> <agent>
+            if (!(iss >> operation >> std::hex >> address >> bank_idx)) {
+                continue; // Skip malformed lines
+            }
+
+            // printf("Operation: %c, Address: 0x%lx, Agent: %d\n", operation, address, agent);
+
+            if ((bank_idx + 2) == index) { // 0: cAgent, 1: ulAgent, 2~: mAgent
+                switch (operation) {
+                    case 'r':
+                        traceAddrs.push(std::make_pair(traceOp::READ, address));
+                        blkCountLimitTrace ++;
+                        break;
+                    case 'w':
+                        traceAddrs.push(std::make_pair(traceOp::WRITE, address));
+                        blkCountLimitTrace ++;
+                        break;
+                    case 'f':
+                        traceAddrs.push(std::make_pair(traceOp::FENCE, address));
+                        break;
+                    case 'p':
+                        filledAddrs.push(address);
+                        blkCountLimit ++;
+                        break;
+                    default:
+                        printf("Unknown operation: %c\n", operation);
+                        continue; // Skip unknown operations
+                }
+            }
+        }
+
+        printf("Fuzzer %d: filledAddrs size: %d, traceAddrs size: %d\n", index, blkCountLimit, blkCountLimitTrace);
+        tracefile.close();
+
+        // no preload address, directly start acquire2 process
+        if (blkCountLimit == 0) {
+            state = bwTestState::acquire2;
+        }
+    }
+
 };
 
 class ULFuzzer: public Fuzzer {
@@ -136,7 +214,6 @@ public:
     void randomTest(bool put);
     void caseTest();
     void caseTest2();
-    void caseTest3();
     void tick();
 };
 
@@ -159,7 +236,9 @@ public:
     void randomTest(bool put);
     void caseTest();
     void caseTest2();
-    void caseTest3();
+    void bandwidthTest();
+    void traceBandwidthTest();
+    void traceTestWithFence();
     void tick();
 };
 
