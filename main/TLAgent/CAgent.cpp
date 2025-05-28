@@ -10,8 +10,6 @@
 #include "Bundle.h"
 #include "CAgent.h"
 
-#include "../Events/TLAgentEvent.hpp"
-
 
 /*
 * 0 = Non-inclusive System
