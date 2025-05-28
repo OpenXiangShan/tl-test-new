@@ -310,6 +310,12 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 fuzzers [i]->set_cycles(&cycles);
                 fuzzers [i]->set_index(i);
 
+                printf("#### Fuzzer %d mode: %d\n", i, fuzzers[i]->mode);
+
+                fuzzers [i]->read_trace("/nfs/home/chenxi/Matrix/NEMU-Matrix/line_trace.txt");
+
+                printf("#### MFuzzer %d state: %d\n", i, fuzzers[i]->state);
+
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-M Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
 
@@ -463,7 +469,7 @@ void TLSequencer::Finalize() noexcept
         for (size_t i = total_n_agents-total_m_agents; i < total_n_agents; i++){
             StartCycle = StartCycle < fuzzers[i]->perfCycleStart? StartCycle:fuzzers[i]->perfCycleStart;
             EndCycle = StartCycle > fuzzers[i]->perfCycleEnd? StartCycle:fuzzers[i]->perfCycleEnd;
-            total_data_size+=fuzzers[i]->blkCountLimit*64;
+            total_data_size+=fuzzers[i]->blkCountLimitTrace*64;
         }
         total_cycles=(EndCycle-StartCycle)/2;
         if(total_cycles!=0) std::cout<<"perf debug : "<<total_data_size<<" / "<<total_cycles<<" = "<<total_data_size/total_cycles<<"B/Cycle"<<std::endl;
