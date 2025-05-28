@@ -30,7 +30,7 @@ namespace tl_agent {
         void timeout_check() override;
 
     public:
-        MAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ub, int sys, int id, unsigned int seed, uint64_t* cycles) noexcept;
+        MAgent(TLLocalConfig* cfg, MemoryBackend* mem, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ub, int sys, int id, unsigned int seed, uint64_t* cycles) noexcept;
         virtual ~MAgent() noexcept;
 
         uint64_t    cycle() const noexcept override;

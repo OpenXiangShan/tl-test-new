@@ -317,7 +317,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             {
                 //
                 io      [i] = new IOPort;
-                agents  [i] = new MAgent(&this->config, globalBoard, uncachedBoard, j, i, cfg.seed, &cycles);
+                agents  [i] = new MAgent(&this->config, memories[0], globalBoard, uncachedBoard, j, i, cfg.seed, &cycles);
                 agents  [i]->connect(io[i]);
 
                 fuzzers [i] = new MFuzzer(static_cast<MAgent*>(agents[i]));
