@@ -334,7 +334,7 @@ jobs:
         sed -i 's/mode.5.*/mode.5 = BWPROF_STREAM_STRIDE_READ/g' ./configs/user.tltest.ini
         cat ./configs/user.tltest.ini
 
-      - name: Setup mode configuration UNIFIED_ANVIL
+    - name: Setup mode configuration UNIFIED_ANVIL
       if: matrix.case.mode == 'UNIFIED_ANVIL'
       run: |
         pwd
