@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 
 
@@ -209,6 +210,8 @@ protected:
     std::vector<FuzzedAddress>*         fuzzedLocally;
     std::vector<ExclusiveFuzzedAddress> fuzzedExclusively;
 
+    std::unordered_set<paddr_t>*        monitoredGrant;
+
     struct {
         size_t              counterU;
         size_t              counterR;
@@ -227,6 +230,9 @@ public:
                   size_t                mmioAgentCount);
 
     virtual ~UnifiedFuzzer() noexcept;
+
+public:
+    void OnGrant(tl_agent::GrantEvent& event) noexcept;
 
 public:
     bool IsMode(TLUnifiedSequenceMode mode) const noexcept;

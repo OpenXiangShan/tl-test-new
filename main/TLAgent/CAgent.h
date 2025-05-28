@@ -19,13 +19,15 @@ namespace tl_agent {
 
     class GrantEvent : public Gravity::Event<GrantEvent> {
     public:
+        uint64_t        coreId;
         uint64_t        sysId;
         paddr_t         address;
         TLPermission    finalPerm;
 
     public:
-        inline GrantEvent(uint64_t sysId, paddr_t address, TLPermission finalPerm) noexcept
-            : sysId     (sysId)
+        inline GrantEvent(uint64_t coreId, uint64_t sysId, paddr_t address, TLPermission finalPerm) noexcept
+            : coreId    (coreId)
+            , sysId     (sysId)
             , address   (address)
             , finalPerm (finalPerm)
         { }

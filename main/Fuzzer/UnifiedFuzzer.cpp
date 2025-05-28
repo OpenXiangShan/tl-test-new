@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "../Utils/gravity_utility.hpp"
+#include "../Utils/gravity_eventbus.hpp"
 
 #include "../Base/TLEnum.hpp"
 
@@ -40,17 +41,31 @@ UnifiedFuzzer::UnifiedFuzzer(TLLocalConfig*         cfg,
     , mmioAgentCount    (mmioAgentCount)
     , fuzzedLocally     (new std::vector<FuzzedAddress>[cAgentCount])
     , fuzzedExclusively ()
+    , monitoredGrant    (new std::unordered_set<paddr_t>[cAgentCount])
 {
     this->startupInterval = 0;
 
     // Initialize and check context of Anvil mode
     if (IsMode(TLUnifiedSequenceMode::ANVIL))
         InitAnvil();
+
+    // register global event listener
+    Gravity::RegisterListener(Gravity::MakeListener(
+        "UnifiedFuzzer::OnGrant",0,&UnifiedFuzzer::OnGrant,this
+    ));
 }
 
 UnifiedFuzzer::~UnifiedFuzzer() noexcept
 {
+    Gravity::UnregisterListener("UnifiedFuzzer::OnGrant", &UnifiedFuzzer::OnGrant);
+
     delete[] fuzzedLocally;
+    delete[] monitoredGrant;
+}
+
+void UnifiedFuzzer::OnGrant(tl_agent::GrantEvent& event) noexcept
+{
+    monitoredGrant[event.coreId].erase(event.address);
 }
 
 bool UnifiedFuzzer::IsMode(TLUnifiedSequenceMode mode) const noexcept
@@ -108,8 +123,11 @@ void UnifiedFuzzer::TickAnvil()
 
     if (contextAnvil.counterU < cfgAnvil.size)
     {
-        auto denial = cAgents[contextAnvil.ordinal[0]]->do_acquirePerm(
-            cfg->memoryStart + contextAnvil.counterU * DATASIZE, TLParamAcquire::NtoT, 0);
+        paddr_t address = cfg->memoryStart + contextAnvil.counterU * DATASIZE;
+        size_t agentIndex = contextAnvil.ordinal[0];
+
+        auto denial = cAgents[agentIndex]->do_acquirePerm(
+            address, TLParamAcquire::NtoT, 0);
         
         if (denial == tl_agent::ActionDenial::CHANNEL_CONGESTION            // A not ready
          || denial == tl_agent::ActionDenial::CHANNEL_RESOURCE              // A ID not available
@@ -117,18 +135,25 @@ void UnifiedFuzzer::TickAnvil()
             ;
         else
             contextAnvil.counterU++;
+
+        if (denial)
+            monitoredGrant[agentIndex].insert(address);
     }
     else
         stageUComplete = true;
 
     if (contextAnvil.counterR < cfgAnvil.size)
     {
+        paddr_t address = cfg->memoryStart + contextAnvil.counterR * DATASIZE;
+        size_t agentIndex = contextAnvil.ordinal[0];
+
         if (contextAnvil.counterR >= contextAnvil.counterU)
             ; // don't skip and retry on running ahead
-        else if (contextAnvil.counterU >= cfgAnvil.thresholdR)
+        else if (contextAnvil.counterU >= cfgAnvil.thresholdR && 
+            monitoredGrant[agentIndex].find(address) == monitoredGrant[agentIndex].end())
         {
-            auto denial = cAgents[contextAnvil.ordinal[0]]->do_releaseDataAuto(
-                cfg->memoryStart + contextAnvil.counterR * DATASIZE, 0, true, false);
+            auto denial = cAgents[agentIndex]->do_releaseDataAuto(
+                address, 0, true, false);
 
             if (denial == tl_agent::ActionDenial::CHANNEL_CONGESTION        // C not ready
              || denial == tl_agent::ActionDenial::CHANNEL_RESOURCE          // C ID not available

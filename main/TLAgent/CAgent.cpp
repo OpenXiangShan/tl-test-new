@@ -10,6 +10,8 @@
 #include "Bundle.h"
 #include "CAgent.h"
 
+#include "../Events/TLAgentEvent.hpp"
+
 
 /*
 * 0 = Non-inclusive System
@@ -1570,7 +1572,7 @@ namespace tl_agent {
                                 capGenPrivByGrant(this, TLParamGrant(chnD.param)),
                                 alias);
 
-                            GrantEvent(sysId(), addr, info->privilege[alias]).Fire();
+                            GrantEvent(sys(), sysId(), addr, info->privilege[alias]).Fire();
                         }
                         else if (TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData))
                         {
@@ -1579,7 +1581,7 @@ namespace tl_agent {
                                 capGenPrivByGrantData(this, TLParamGrantData(chnD.param)),
                                 alias);
 
-                            GrantEvent(sysId(), addr, info->privilege[alias]).Fire();
+                            GrantEvent(sys(), sysId(), addr, info->privilege[alias]).Fire();
                         }
                     }
 
