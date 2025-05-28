@@ -93,8 +93,6 @@ size_t TLSequencer::GetAgentCount() const noexcept
     return config.GetAgentCount();
 }
 
-int MFuzzer::index = 0;
-
 void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 {
     if (state != State::NOT_INITIALIZED)
@@ -288,6 +286,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
                 fuzzers [i] = new CFuzzer(static_cast<CAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
+                fuzzers [i]->set_index(i);
 
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-C Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
@@ -305,6 +304,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
                 fuzzers [i] = new ULFuzzer(static_cast<ULAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
+                fuzzers [i]->set_index(i);
 
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-UL Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
@@ -322,6 +322,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
                 fuzzers [i] = new MFuzzer(static_cast<MAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
+                fuzzers [i]->set_index(i);
 
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-M Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
@@ -595,7 +596,6 @@ void TLSequencer::Tock() noexcept
         }
         // TL-M fuzzers
         for (size_t i = total_n_agents-total_m_agents; i < total_n_agents; i++){
-            MFuzzer::setIndex(i);
             fuzzers[i]->tick();
             endTLM = endTLM && fuzzers[i]->perfCycleEnd;
         }

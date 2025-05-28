@@ -58,6 +58,7 @@
 class Fuzzer {
 protected:
     uint64_t *cycles;
+    int index;
 public:
     size_t              startupInterval;
 
@@ -109,8 +110,11 @@ public:
     Fuzzer() noexcept = default;
     virtual ~Fuzzer() noexcept = default;
     virtual void tick() = 0;
-    inline void set_cycles(uint64_t *cycles) {
+    inline void set_cycles(uint64_t *cycles) { // set_cycles_ptr, actually
         this->cycles = cycles;
+    }
+    inline void set_index(int idx) {
+        this->index = idx;
     }
     inline paddr_t remap_memory_address(paddr_t addr) {
         return ((addr % (memoryEnd - memoryStart)) + memoryStart);
@@ -149,14 +153,9 @@ public:
 class MFuzzer: public Fuzzer {
 private:
     tl_agent::MAgent *mAgent;
-
-    static int index;  // 静态成员变量，所有实例共享
 public:
     MFuzzer(tl_agent::MAgent *mAgent) noexcept;
     virtual ~MFuzzer() noexcept = default;
-    static void setIndex(int idx) {
-        index = idx;
-    }
     void randomTest(bool put);
     void caseTest();
     void caseTest2();

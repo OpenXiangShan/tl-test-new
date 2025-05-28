@@ -2105,10 +2105,10 @@ namespace tl_agent {
                     if (iter.second->status[i] == S_VALID)
                         hitTable[iter.first] = iter.second;
 
-            size_t index = CAGENT_RAND64(this, "CAgent") % hitTable.size();
+            size_t idx = CAGENT_RAND64(this, "CAgent") % hitTable.size();
 
             auto iter = hitTable.begin();
-            for (size_t i = 0; i < index; i++)
+            for (size_t i = 0; i < idx; i++)
                 iter++;
 
             address = iter->first;
