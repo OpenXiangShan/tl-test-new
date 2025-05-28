@@ -11,6 +11,9 @@
 #include "../TLAgent/MMIOAgent.h"
 
 #include <vector>
+#include <unordered_map>
+#include <unordered_set>
+#include <string>
 
 
 #ifndef CFUZZER_RAND_RANGE_TAG
@@ -176,6 +179,69 @@ public:
     void caseTest();
     void tick();
     bool done() const noexcept;
+};
+
+
+class UnifiedFuzzer : public Fuzzer {
+private:
+    TLLocalConfig*              cfg;
+
+    tl_agent::CAgent**          cAgents;
+    tl_agent::ULAgent**         ulAgents;
+    tl_agent::MMIOAgent**       mmioAgents;
+
+    size_t                      cAgentCount;
+    size_t                      ulAgentCountPerC;
+    size_t                      mmioAgentCount;
+
+protected:
+    struct FuzzedAddress {
+        paddr_t base;
+        size_t  size;
+
+        bool IsInRange(paddr_t addr) noexcept;
+        bool IsOverlappedRange(paddr_t base, size_t size) noexcept;
+    };
+
+    struct ExclusiveFuzzedAddress : public FuzzedAddress {
+        size_t  agentIndex;
+    };
+
+    std::vector<FuzzedAddress>*         fuzzedLocally;
+    std::vector<ExclusiveFuzzedAddress> fuzzedExclusively;
+
+    std::unordered_set<paddr_t>*        monitoredGrant;
+
+    struct {
+        size_t              counterU;
+        size_t              counterR;
+        size_t              counterB;
+        size_t              epoch;
+        std::vector<int>    ordinal;
+    } contextAnvil;
+
+public:
+    UnifiedFuzzer(TLLocalConfig*        cfg,
+                  tl_agent::CAgent**    cAgents, 
+                  size_t                cAgentCount,
+                  tl_agent::ULAgent**   ulAgents,
+                  size_t                ulAgentCountPerC,
+                  tl_agent::MMIOAgent** mmioAgents,
+                  size_t                mmioAgentCount);
+
+    virtual ~UnifiedFuzzer() noexcept;
+
+public:
+    void OnGrant(tl_agent::GrantEvent& event) noexcept;
+
+public:
+    bool IsMode(TLUnifiedSequenceMode mode) const noexcept;
+
+    void InitAnvil();
+    void TickAnvil();
+
+public:
+    void tick();
 };
 
 

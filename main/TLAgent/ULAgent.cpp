@@ -381,10 +381,14 @@ namespace tl_agent {
         idpool.update(this);
     }
     
-    bool ULAgent::do_getAuto(paddr_t address)
+    ActionDenialEnum ULAgent::do_getAuto(paddr_t address)
     {
-        if (pendingA.is_pending() || idpool.full())
-            return false;
+        if (pendingA.is_pending())
+            return ActionDenial::CHANNEL_CONGESTION;
+
+        if (idpool.full())
+            return ActionDenial::CHANNEL_RESOURCE;
+
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
         req_a->opcode   = uint8_t(TLOpcodeA::Get);
         req_a->address  = address;
@@ -408,13 +412,17 @@ namespace tl_agent {
                 .EndLine());
         }
 
-        return true;
+        return ActionDenial::ACCEPTED;
     }
 
-    bool ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask)
+    ActionDenialEnum ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask)
     {
-        if (pendingA.is_pending() || idpool.full())
-            return false;
+        if (pendingA.is_pending())
+            return ActionDenial::CHANNEL_CONGESTION;
+
+        if (idpool.full())
+            return ActionDenial::CHANNEL_RESOURCE;
+
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
         req_a->opcode   = uint8_t(TLOpcodeA::Get);
         req_a->address  = address;
@@ -438,16 +446,20 @@ namespace tl_agent {
                 .EndLine());
         }
 
-        return true;
+        return ActionDenial::ACCEPTED;
     }
     
-    bool ULAgent::do_putfulldata(paddr_t address, shared_tldata_t<DATASIZE> data)
+    ActionDenialEnum ULAgent::do_putfulldata(paddr_t address, shared_tldata_t<DATASIZE> data)
     {
-        if (pendingA.is_pending() || idpool.full())
-            return false;
-        if (this->globalBoard->haskey(address) && this->globalBoard->query(this, address)->status == Global_SBEntry::SB_PENDING) {
-            return false;
-        }
+        if (pendingA.is_pending())
+            return ActionDenial::CHANNEL_CONGESTION;
+
+        if (idpool.full())
+            return ActionDenial::CHANNEL_RESOURCE;
+
+        if (this->globalBoard->haskey(address) && this->globalBoard->query(this, address)->status == Global_SBEntry::SB_PENDING)
+            return ActionDenial::REJECTED_BY_INFLIGHT;
+
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
         req_a->opcode   = uint8_t(TLOpcodeA::PutFullData);
         req_a->address  = address;
@@ -473,15 +485,20 @@ namespace tl_agent {
             LogEx(std::cout << std::endl);
         }
 
-        return true;
+        return ActionDenial::ACCEPTED;
     }
 
-    bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data)
+    ActionDenialEnum ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data)
     {
-        if (pendingA.is_pending() || idpool.full())
-            return false;
+        if (pendingA.is_pending())
+            return ActionDenial::CHANNEL_CONGESTION;
+
+        if (idpool.full())
+            return ActionDenial::CHANNEL_RESOURCE;
+
         if (this->globalBoard->haskey(address) && this->globalBoard->query(this, address)->status == Global_SBEntry::SB_PENDING)
-            return false;
+            return ActionDenial::REJECTED_BY_INFLIGHT;
+
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
         req_a->opcode   = uint8_t(TLOpcodeA::PutPartialData);
         req_a->address  = address;
@@ -518,7 +535,8 @@ namespace tl_agent {
             Dump(Hex().NextWidth(2).Fill('0').Append(data->data[i]));
         }
         Dump(EndLine());
-        return true;
+
+        return ActionDenial::ACCEPTED;
     }
     
     void ULAgent::timeout_check() {

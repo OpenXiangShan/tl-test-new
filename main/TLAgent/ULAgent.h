@@ -81,10 +81,10 @@ namespace tl_agent {
         void fire_e() override;
         void handle_channel() override;
         void update_signal() override;
-        bool do_getAuto         (paddr_t address);
-        bool do_get             (paddr_t address, uint8_t size, uint32_t mask);
-        bool do_putfulldata     (paddr_t address, shared_tldata_t<DATASIZE> data);
-        bool do_putpartialdata  (paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data);
+        ActionDenialEnum do_getAuto         (paddr_t address);
+        ActionDenialEnum do_get             (paddr_t address, uint8_t size, uint32_t mask);
+        ActionDenialEnum do_putfulldata     (paddr_t address, shared_tldata_t<DATASIZE> data);
+        ActionDenialEnum do_putpartialdata  (paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data);
     };
 
 }
