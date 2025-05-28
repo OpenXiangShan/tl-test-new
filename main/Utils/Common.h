@@ -145,6 +145,16 @@ inline std::string GetBase1024B(_TIntegral val, int width = 6, const char** base
     return str.ToString();
 }
 
+// FIXME: TMP use for trace debug
+#define LogXEnable 0
+#define LogX(...) \
+    do { \
+        if (LogXEnable) { \
+            printf(__VA_ARGS__); \
+            fflush(stdout); \
+            fflush(stderr); \
+        } \
+    } while(0)
 
 #define Log(ctx, str_app) \
     do { \
