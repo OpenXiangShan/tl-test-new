@@ -481,7 +481,7 @@ namespace tl_agent {
                     .Append("unknown Probe param: ", uint64_t(b->param), " at ", b->address).ToString());
             }
 
-            if (localCMOStatus->isInflight(this, b->address))
+            if (localCMOStatus->isInflight(b->address))
             {
                 if (glbl.cfg.verbose)
                     Log(this, Append("CMO nested probe detected and marked at ")
@@ -1667,9 +1667,17 @@ namespace tl_agent {
         }
     }
 
-    bool CAgent::do_acquireBlock(paddr_t address, TLParamAcquire param, int alias) {
-        if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
-            return false;
+    ActionDenialEnum CAgent::do_acquireBlock(paddr_t address, TLParamAcquire param, int alias) {
+
+        if (pendingA.is_pending())
+            return ActionDenial::CHANNEL_CONGESTION;
+
+        if (pendingB.is_pending())
+            return ActionDenial::REJECTED_BY_PENDING_B;
+
+        if (idpool.full())
+            return ActionDenial::CHANNEL_RESOURCE;
+
         if (localBoard->haskey(address)) { // check whether this transaction is legal
             auto entry = localBoard->query(this, address);
 
@@ -1681,7 +1689,7 @@ namespace tl_agent {
                         continue;
 
                     if (entry->status[i] != S_VALID && entry->status[i] != S_INVALID)
-                        return false;
+                        return ActionDenial::REJECTED_BY_INFLIGHT;
                 }
             }
 #           endif
@@ -1690,16 +1698,16 @@ namespace tl_agent {
             auto status = entry->status[alias];
             
             if (status != S_VALID && status != S_INVALID)
-                return false;
+                return ActionDenial::REJECTED_BY_INFLIGHT;
 
             if (status == S_VALID)
             {
                 if (TLEnumEquals(perm, TLPermission::TIP))
-                    return false;
+                    return ActionDenial::PERMISSION;
                 if (TLEnumEquals(perm, TLPermission::BRANCH) && !TLEnumEquals(param, TLParamAcquire::BtoT))
-                    return false;
+                    return ActionDenial::PERMISSION;
                 if (TLEnumEquals(perm, TLPermission::INVALID) && TLEnumEquals(param, TLParamAcquire::BtoT))
-                    return false;
+                    return ActionDenial::PERMISSION;
             }
         }
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
@@ -1729,17 +1737,24 @@ namespace tl_agent {
                 .Append(", alias: ",    uint64_t(alias)).EndLine());
         }
 
-        return true;
+        return ActionDenial::ACCEPTED;
     }
 
-    bool CAgent::do_acquirePerm(paddr_t address, TLParamAcquire param, int alias) {
+    ActionDenialEnum CAgent::do_acquirePerm(paddr_t address, TLParamAcquire param, int alias) {
         /*
         * *NOTICE: Only AcquirePerm NtoT & BtoT were possible to be issued,
         *          currently NtoB not utilized in L1.
         */
 
-        if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
-            return false;
+        if (pendingA.is_pending())
+            return ActionDenial::CHANNEL_CONGESTION;
+
+        if (pendingB.is_pending())
+            return ActionDenial::REJECTED_BY_PENDING_B;
+
+        if (idpool.full())
+            return ActionDenial::CHANNEL_RESOURCE;
+
         if (localBoard->haskey(address)) {
             auto entry = localBoard->query(this, address);
 
@@ -1751,7 +1766,7 @@ namespace tl_agent {
                         continue;
 
                     if (entry->status[i] != S_VALID && entry->status[i] != S_INVALID)
-                        return false;
+                        return ActionDenial::REJECTED_BY_INFLIGHT;
                 }
             }
 #           endif
@@ -1760,16 +1775,16 @@ namespace tl_agent {
             auto status = entry->status[alias];
 
             if (status != S_VALID && status != S_INVALID)
-                return false;
+                return ActionDenial::REJECTED_BY_INFLIGHT;
 
             if (status == S_VALID)
             {
                 if (TLEnumEquals(perm, TLPermission::TIP))
-                    return false;
+                    return ActionDenial::PERMISSION;
                 if (TLEnumEquals(perm, TLPermission::BRANCH) && !TLEnumEquals(param, TLParamAcquire::BtoT))
                     param = TLParamAcquire::BtoT;
                 if (TLEnumEquals(perm, TLPermission::INVALID) && TLEnumEquals(param, TLParamAcquire::BtoT))
-                    return false;
+                    return ActionDenial::PERMISSION;
             }
         }
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
@@ -1800,25 +1815,41 @@ namespace tl_agent {
                 .EndLine());
         }
         
-        return true;
+        return ActionDenial::ACCEPTED;
     }
 
-    bool CAgent::do_releaseData(paddr_t address, TLParamRelease param, shared_tldata_t<DATASIZE> data, int alias) {
-        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
-            return false;
+    ActionDenialEnum CAgent::do_releaseData(paddr_t address, TLParamRelease param, shared_tldata_t<DATASIZE> data, int alias) {
+        
+        if (pendingC.is_pending())
+            return ActionDenial::CHANNEL_CONGESTION;
+
+        if (pendingB.is_pending())
+            return ActionDenial::REJECTED_BY_PENDING_B;
+
+        if (idpool.full())
+            return ActionDenial::CHANNEL_RESOURCE;
+
+        if (!localBoard->haskey(address))
+            return ActionDenial::MISS;
+        
         // ** DEPRECATED **
         // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(this, address);
         auto perm = entry->privilege[alias];
         auto status = entry->status[alias];
-        if (status != S_VALID) {
-            return false;
+
+        if (status != S_VALID) 
+        {
+            if (status == S_INVALID)
+                return ActionDenial::MISS;
+            else
+                return ActionDenial::REJECTED_BY_INFLIGHT;
         }
 
-        if (TLEnumEquals(perm, TLPermission::INVALID)) return false;
-        if (TLEnumEquals(perm, TLPermission::BRANCH) && !TLEnumEquals(param, TLParamRelease::BtoN)) return false;
-        if (TLEnumEquals(perm, TLPermission::TIP) && TLEnumEquals(perm, TLParamRelease::BtoN)) return false;
+        if (TLEnumEquals(perm, TLPermission::INVALID)) return ActionDenial::MISS;
+        if (TLEnumEquals(perm, TLPermission::BRANCH) && !TLEnumEquals(param, TLParamRelease::BtoN)) return ActionDenial::PERMISSION;
+        if (TLEnumEquals(perm, TLPermission::TIP) && TLEnumEquals(perm, TLParamRelease::BtoN)) return ActionDenial::PERMISSION;
 
         auto req_c = std::make_shared<BundleChannelC<ReqField, EchoField, DATASIZE>>();
         req_c->opcode   = uint8_t(TLOpcodeC::ReleaseData);
@@ -1851,16 +1882,16 @@ namespace tl_agent {
             LogEx(std::cout << std::endl);
         }
         
-        return true;
+        return ActionDenial::PERMISSION;
     }
 
-    bool CAgent::do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced)
+    ActionDenialEnum CAgent::do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced)
     {
         if (forced)
         {
             auto& localMap = localBoard->get();
             if (localMap.empty())
-                return false;
+                return ActionDenial::MISS;
 
             size_t picked = CAGENT_RAND64(this, "CAgent") % localMap.size();
 
@@ -1870,8 +1901,18 @@ namespace tl_agent {
             address = iter->first;
         }
 
-        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
-            return false;
+        if (pendingC.is_pending())
+            return ActionDenial::CHANNEL_CONGESTION;
+
+        if (pendingB.is_pending())
+            return ActionDenial::REJECTED_BY_PENDING_B;
+
+        if (idpool.full())
+            return ActionDenial::CHANNEL_RESOURCE;
+
+        if (!localBoard->haskey(address))
+            return ActionDenial::MISS;
+
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(this, address);
         auto perm = entry->privilege[alias];
@@ -1880,7 +1921,7 @@ namespace tl_agent {
         switch (perm) 
         {
             case TLPermission::INVALID:
-                return false;
+                return ActionDenial::MISS;
 
             case TLPermission::BRANCH:
                 param = TLPermDemotion::BtoN;
@@ -1896,7 +1937,13 @@ namespace tl_agent {
 
         auto status = entry->status;
         if (status[alias] != S_VALID) 
-            return false;
+        {
+            if (status[alias] == S_INVALID)
+                return ActionDenial::MISS;
+            else
+                return ActionDenial::REJECTED_BY_INFLIGHT;
+        }
+
 #if     CAGENT_NO_ALIAS_RELEASE == 1
         for (int i = 0; i < 4; i++) {
 #else
@@ -1904,7 +1951,7 @@ namespace tl_agent {
 #endif
             // never send Release/ReleaseData when there is an pending Acquire with same address
             if (status[i] == S_A_WAITING_D || status[i] == S_A_WAITING_D_INTR)
-                return false;
+                return ActionDenial::REJECTED_BY_INFLIGHT;
         }
 
         auto req_c = std::make_shared<BundleChannelC<ReqField, EchoField, DATASIZE>>();
@@ -2074,26 +2121,29 @@ namespace tl_agent {
             }
         }
 
-        return true;
+        return ActionDenial::ACCEPTED;
     }
 
-    bool CAgent::do_cbo(TLOpcodeA opcode, paddr_t address, bool alwaysHit)
+    ActionDenialEnum CAgent::do_cbo(TLOpcodeA opcode, paddr_t address, bool alwaysHit)
     {
-        if (localCMOStatus->isInflight(this, address))
-            return false;
+        if (localCMOStatus->isInflight(address))
+            return ActionDenial::REJECTED_BY_INFLIGHT;
 
         if (cfg->cmoParallelDepth && localCMOStatus->inflightCount() >= cfg->cmoParallelDepth)
-            return false;
+            return ActionDenial::LIMITED_OUTSTANDING;
 
-        if (pendingA.is_pending() || idpool.full())
-            return false;
+        if (pendingA.is_pending())
+            return ActionDenial::CHANNEL_CONGESTION;
+
+        if (idpool.full())
+            return ActionDenial::CHANNEL_RESOURCE;
 
         if (alwaysHit)
         {
             std::unordered_map<paddr_t, std::shared_ptr<C_SBEntry>> hitTable;
 
             if (hitTable.empty())
-                return false;
+                return ActionDenial::MISS;
 
             for (auto& iter : localBoard->get())
                 for (int i = 0; i < 4; i++)
@@ -2119,7 +2169,7 @@ namespace tl_agent {
                  && entry->status[i] != S_INVALID
                  && entry->status[i] != S_SENDING_C
                  && entry->status[i] != S_C_WAITING_D)
-                    return false;
+                    return ActionDenial::REJECTED_BY_INFLIGHT;
         }
 
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
@@ -2145,20 +2195,20 @@ namespace tl_agent {
 
         localCMOStatus->setInflight(this, address, opcode);
 
-        return true;
+        return ActionDenial::ACCEPTED;
     }
 
-    bool CAgent::do_cbo_clean(paddr_t address, bool alwaysHit)
+    ActionDenialEnum CAgent::do_cbo_clean(paddr_t address, bool alwaysHit)
     {
         return do_cbo(TLOpcodeA::CBOClean, address, alwaysHit);
     }
 
-    bool CAgent::do_cbo_flush(paddr_t address, bool alwaysHit)
+    ActionDenialEnum CAgent::do_cbo_flush(paddr_t address, bool alwaysHit)
     {
         return do_cbo(TLOpcodeA::CBOFlush, address, alwaysHit);
     }
 
-    bool CAgent::do_cbo_inval(paddr_t address, bool alwaysHit)
+    ActionDenialEnum CAgent::do_cbo_inval(paddr_t address, bool alwaysHit)
     {
         return do_cbo(TLOpcodeA::CBOInval, address, alwaysHit);
     }
@@ -2187,6 +2237,11 @@ namespace tl_agent {
               }
             }
         }
+    }
+
+    bool CAgent::is_cmo_inflight(paddr_t address) const noexcept
+    {
+        return localCMOStatus->isInflight(address);
     }
 
     CAgent::LocalScoreBoard* CAgent::local() noexcept
@@ -2262,7 +2317,7 @@ namespace tl_agent {
         inflight.erase(iter);
     }
 
-    bool CMOLocalStatus::isInflight(const TLLocalContext* ctx, paddr_t address) const noexcept
+    bool CMOLocalStatus::isInflight(paddr_t address) const noexcept
     {
         return inflight.count(address) != 0;
     }

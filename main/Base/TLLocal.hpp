@@ -19,6 +19,30 @@ enum class TLSequenceMode {
     BWPROF_STREAM_STRIDE_READ
 };
 
+enum class TLUnifiedSequenceMode {
+    PASSIVE         = 0,
+    /*
+    Pattern Anvil:
+      | S p a t i a l
+    --+------------------>
+    T | U                    U = C0 AcquirePerm toT (MakeUnique)
+    e |   U                  R = C0 ReleaseData toN
+    m |     U                B = C1 Get / AcquireBlock toB (ReadNotSharedDirty)
+    p |       U              C = C2 Get / AcquireBlock toB (ReadNotSharedDirty)
+    o | R       U
+    r |   R       U
+    a |     R       U
+    l |       R       U
+      |         R
+      |           R
+      | B C         R
+      |     B C       R
+      |         B C
+      |             B C
+      v
+    */ ANVIL,
+};
+
 struct TLLocalConfig {
 public:
     uint64_t            seed;
@@ -68,6 +92,17 @@ public:
     uint64_t            fuzzStreamEnd;                          // Fuzz Stream end address
 
     uint64_t            profileCycleUnit;                       // Profiler cycle unit
+
+    bool                    unifiedSequenceEnable;
+    TLUnifiedSequenceMode   unifiedSequenceMode;
+    struct {
+        uint64_t                size;
+        uint64_t                epoch;
+        uint64_t                widthB;
+        uint64_t                thresholdR;
+        uint64_t                thresholdB;
+        uint64_t                noise;
+    }                       unifiedSequenceModeAnvil;
 
 public:
     size_t                          GetAgentCount() const noexcept;

@@ -236,7 +236,7 @@ namespace tl_agent {
     public:
         void            setInflight(const TLLocalContext* ctx, paddr_t address, TLOpcodeA opcode);
         void            freeInflight(const TLLocalContext* ctx, paddr_t address);
-        bool            isInflight(const TLLocalContext* ctx, paddr_t address) const noexcept;
+        bool            isInflight(paddr_t address) const noexcept;
         bool            hasInflight() const noexcept;
         InflightCMO     firstInflight() const noexcept;
 
@@ -322,15 +322,17 @@ namespace tl_agent {
 
         uint64_t map_latency(paddr_t address);
 
-        bool do_acquireBlock(paddr_t address, TLParamAcquire param, int alias);
-        bool do_acquirePerm(paddr_t address, TLParamAcquire param, int alias);
-        bool do_releaseData(paddr_t address, TLParamRelease param, shared_tldata_t<DATASIZE> data, int alias);
-        bool do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced);
+        ActionDenialEnum do_acquireBlock(paddr_t address, TLParamAcquire param, int alias);
+        ActionDenialEnum do_acquirePerm(paddr_t address, TLParamAcquire param, int alias);
+        ActionDenialEnum do_releaseData(paddr_t address, TLParamRelease param, shared_tldata_t<DATASIZE> data, int alias);
+        ActionDenialEnum do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced);
 
-        bool do_cbo(TLOpcodeA opcode, paddr_t address, bool alwaysHit);
-        bool do_cbo_clean(paddr_t address, bool alwaysHit);
-        bool do_cbo_flush(paddr_t address, bool alwaysHit);
-        bool do_cbo_inval(paddr_t address, bool alwaysHit);
+        ActionDenialEnum do_cbo(TLOpcodeA opcode, paddr_t address, bool alwaysHit);
+        ActionDenialEnum do_cbo_clean(paddr_t address, bool alwaysHit);
+        ActionDenialEnum do_cbo_flush(paddr_t address, bool alwaysHit);
+        ActionDenialEnum do_cbo_inval(paddr_t address, bool alwaysHit);
+
+        bool is_cmo_inflight(paddr_t address) const noexcept;
 
         LocalScoreBoard*        local() noexcept;
         const LocalScoreBoard*  local() const noexcept;

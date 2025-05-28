@@ -267,6 +267,7 @@ jobs:
           - { id: l2l3l2, name: L2-L3-L2, mode: FUZZ_STREAM }
           - { id: l2l3,   name: L2-L3   , mode: BWPROF_STREAM_STRIDE_READ }
           - { id: l2l3l2, name: L2-L3-L2, mode: BWPROF_STREAM_STRIDE_READ }
+          - { id: l2l3l2, name: L2-L3-L2, mode: UNIFIED_ANVIL }
         compiler:
           - { cc: clang-16, cxx: clang++-16 }
           - { cc: gcc,      cxx: g++        }
@@ -316,6 +317,18 @@ jobs:
         ls
         sed -i 's/mode.0.*/mode.0 = BWPROF_STREAM_STRIDE_READ/g' ./configs/user.tltest.ini
         sed -i 's/mode.1.*/mode.1 = BWPROF_STREAM_STRIDE_READ/g' ./configs/user.tltest.ini
+        cat ./configs/user.tltest.ini
+
+    - name: Setup mode configuration UNIFIED_ANVIL
+      if: matrix.case.mode == 'UNIFIED_ANVIL'
+      run: |
+        pwd
+        ls
+        sed -i 's/unified.enable.*/unified.enable = 1/g' ./configs/user.tltest.ini
+        sed -i 's/unified.mode.*/unified.mode = ANVIL/g' ./configs/user.tltest.ini
+        sed -i 's/unified.anvil.size.*/unified.anvil.size = 256/g' ./configs/user.tltest.ini
+        sed -i 's/unified.anvil.epoch.*/unified.anvil.epoch = 64/g' ./configs/user.tltest.ini
+        sed -i 's/unified.anvil.width.b.*/unified.anvil.width.b = 1/g' ./configs/user.tltest.ini
         cat ./configs/user.tltest.ini
 
     - name: Run TL-Test-New for CoupledL2

@@ -22,7 +22,10 @@ TLSequencer::TLSequencer() noexcept
     , uncachedBoard     (nullptr)
     , config            ()
     , agents            (nullptr)
+    , cAgents           (nullptr)
+    , ulAgents          (nullptr)
     , fuzzers           (nullptr)
+    , unifiedFuzzer     (nullptr)
     , mmioGlobalStatus  (nullptr)
     , mmioAgents        (nullptr)
     , mmioFuzzers       (nullptr)
@@ -38,6 +41,8 @@ TLSequencer::~TLSequencer() noexcept
     delete[] pmem;
     delete[] fuzzers;
     delete[] agents;
+    delete[] cAgents;
+    delete[] ulAgents;
     delete[] mmioFuzzers;
     delete[] mmioAgents;
     delete[] memories;
@@ -206,6 +211,9 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
         io          = new IOPort*       [total_n_agents];
         agents      = new BaseAgent*    [total_n_agents];
         fuzzers     = new Fuzzer*       [total_n_agents];
+        
+        cAgents     = new CAgent*       [GetCAgentCount()];
+        ulAgents    = new ULAgent*      [GetULAgentCount()];
 
         //
         mmio        = new MMIOPort*     [total_c_agents];
@@ -280,6 +288,9 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 fuzzers [i] = new CFuzzer(static_cast<CAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
 
+                //
+                cAgents[j * cfg.masterCountPerCoreTLC + k] = static_cast<CAgent*>(agents[i]);
+
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-C Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
 
@@ -296,6 +307,9 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
                 fuzzers [i] = new ULFuzzer(static_cast<ULAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
+
+                //
+                ulAgents[j * cfg.masterCountPerCoreTLUL + k] = static_cast<ULAgent*>(agents[i]);
 
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-UL Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
@@ -315,6 +329,14 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             LogInfo("INIT", Append("TLSequencer::Initialize: ")
                 .Append("Instantiated MMIO Agent #", j, " with deviceId=", j, " for Core #", j).EndLine());
         }
+
+        // Unified Fuzzer
+        unifiedFuzzer = new UnifiedFuzzer(&this->config,
+            cAgents, this->config.coreCount * this->config.masterCountPerCoreTLC,
+            ulAgents, this->config.masterCountPerCoreTLUL,
+            mmioAgents, this->config.coreCount);
+
+        unifiedFuzzer->set_cycles(&cycles);
 
         // IO data field pre-allocation
         for (size_t i = 0; i < total_n_agents; i++)
@@ -476,6 +498,12 @@ void TLSequencer::Finalize() noexcept
             }
         }
 
+        if (unifiedFuzzer)
+        {
+            delete unifiedFuzzer;
+            unifiedFuzzer = nullptr;
+        }
+
         delete globalBoard;
         globalBoard = nullptr;
 
@@ -528,18 +556,25 @@ void TLSequencer::Tock() noexcept
         for (size_t i = 0; i < total_n_agents; i++)
             agents[i]->handle_channel();
 
-        for (size_t i = 0; i < total_n_agents; i++)
-            fuzzers[i]->tick();
-
-        for (size_t i = 0; i < total_n_agents; i++)
-            agents[i]->update_signal();
-
-        //
         for (size_t i = 0; i < total_c_agents; i++)
             mmioAgents[i]->handle_channel();
 
-        for (size_t i = 0; i < total_c_agents; i++)
-            mmioFuzzers[i]->tick();
+        if (!config.unifiedSequenceEnable)
+        {
+            for (size_t i = 0; i < total_n_agents; i++)
+                fuzzers[i]->tick();
+
+            for (size_t i = 0; i < total_c_agents; i++)
+                mmioFuzzers[i]->tick();
+        }
+        else
+        {
+            // unified fuzzer
+            unifiedFuzzer->tick();
+        }
+
+        for (size_t i = 0; i < total_n_agents; i++)
+            agents[i]->update_signal();
 
         for (size_t i = 0; i < total_c_agents; i++)
             mmioAgents[i]->update_signal();

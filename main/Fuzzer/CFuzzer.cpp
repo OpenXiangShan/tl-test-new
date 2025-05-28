@@ -193,7 +193,7 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
                         }
 
                     LogFinal(this->cAgent->cycle(), Append("================================================================").EndLine());
-                    LogFinal(this->cAgent->cycle(), Append("Latency Map Profiler of CFuzzer [", this->cAgent->sysId(), "]").EndLine());
+                    LogFinal(this->cAgent->cycle(), Append("Latency Map Profiler of CAgent [", this->cAgent->sysId(), "]").EndLine());
                     LogFinalLatencyMap(A, AcquirePerm);
                     LogFinalLatencyMap(A, AcquireBlock);
                     LogFinalLatencyMap(A, CBOClean);

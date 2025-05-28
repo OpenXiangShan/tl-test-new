@@ -17,6 +17,35 @@
 
 namespace tl_agent {
 
+    class ActionDenialEnumBack {
+    public:
+        const bool  accepted;
+        const int   ordinal;
+
+    public:
+        inline constexpr ActionDenialEnumBack(bool accepted, int ordinal) noexcept : accepted(accepted), ordinal(ordinal) {}
+        inline constexpr operator bool() const noexcept { return accepted; }
+        inline constexpr operator const ActionDenialEnumBack*() const noexcept { return this; }
+        inline constexpr bool operator==(const ActionDenialEnumBack& obj) const noexcept { return (this->ordinal == obj.ordinal); }
+        inline constexpr bool operator!=(const ActionDenialEnumBack& obj) const noexcept { return !(*this == obj); }
+    };
+
+    using ActionDenialEnum = ActionDenialEnumBack;
+
+    namespace ActionDenial {
+        inline constexpr ActionDenialEnumBack ACCEPTED                  (true   , 0);
+        inline constexpr ActionDenialEnumBack MISS                      (false  , 1);
+        inline constexpr ActionDenialEnumBack CHANNEL_CONGESTION        (false  , 2);
+        inline constexpr ActionDenialEnumBack CHANNEL_RESOURCE          (false  , 3);
+        inline constexpr ActionDenialEnumBack DENIED                    (false  , 4);
+        inline constexpr ActionDenialEnumBack REJECTED_BY_PENDING_A     (false  , 5);
+        inline constexpr ActionDenialEnumBack REJECTED_BY_PENDING_B     (false  , 6);
+        inline constexpr ActionDenialEnumBack REJECTED_BY_PENDING_C     (false  , 7);
+        inline constexpr ActionDenialEnumBack LIMITED_OUTSTANDING       (false  , 8);
+        inline constexpr ActionDenialEnumBack PERMISSION                (false  , 9);
+        inline constexpr ActionDenialEnumBack REJECTED_BY_INFLIGHT      (false  , 10);
+    }
+
     enum Resp {OK, FAIL};
 
     enum {

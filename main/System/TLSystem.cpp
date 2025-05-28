@@ -88,6 +88,16 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.fuzzStreamStart               = CFUZZER_FUZZ_STREAM_START;
     tlcfg.fuzzStreamEnd                 = CFUZZER_FUZZ_STREAM_END;
 
+    tlcfg.unifiedSequenceEnable         = false;
+    tlcfg.unifiedSequenceMode           = TLUnifiedSequenceMode::PASSIVE;
+
+    tlcfg.unifiedSequenceModeAnvil.size         = 0;
+    tlcfg.unifiedSequenceModeAnvil.epoch        = 0;
+    tlcfg.unifiedSequenceModeAnvil.widthB       = 0;
+    tlcfg.unifiedSequenceModeAnvil.thresholdB   = 0;
+    tlcfg.unifiedSequenceModeAnvil.thresholdR   = 0;
+    tlcfg.unifiedSequenceModeAnvil.noise        = false;
+
     tlcfgInit(tlcfg);
 
     glbl.cfg.verbose                    = false;
@@ -164,6 +174,15 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
 
     INI_OVERRIDE_INT("tltest.profile", "cycle_unit",                tlcfg.profileCycleUnit);
 
+    INI_OVERRIDE_INT("tltest.fuzzer", "unified.enable",             tlcfg.unifiedSequenceEnable);
+
+    INI_OVERRIDE_INT("tltest.fuzzer", "unified.anvil.size",         tlcfg.unifiedSequenceModeAnvil.size);
+    INI_OVERRIDE_INT("tltest.fuzzer", "unified.anvil.epoch",        tlcfg.unifiedSequenceModeAnvil.epoch);
+    INI_OVERRIDE_INT("tltest.fuzzer", "unified.anvil.width.b",      tlcfg.unifiedSequenceModeAnvil.widthB);
+    INI_OVERRIDE_INT("tltest.fuzzer", "unified.anvil.threshold.r",  tlcfg.unifiedSequenceModeAnvil.thresholdR);
+    INI_OVERRIDE_INT("tltest.fuzzer", "unified.anvil.threshold.b",  tlcfg.unifiedSequenceModeAnvil.thresholdB);
+    INI_OVERRIDE_INT("tltest.fuzzer", "unified.anvil.noise",        tlcfg.unifiedSequenceModeAnvil.noise);
+
 #   undef INI_OVERRIDE_INT
 
     // read sequence mode configurations
@@ -209,6 +228,42 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
 
                 LogInfo("INI",
                     Append("Overrided sequence mode: ", key, " = ", mode)
+                    .EndLine());
+            }
+        }
+    }
+
+    // read unified sequence mode configuration
+    {
+        auto section = ini["tltest.fuzzer"];
+
+        std::string key = "unified.mode";
+        if (section.isKeyExist(key))
+        {
+            std::string mode = section.toString(key);
+
+            std::transform(mode.begin(), mode.end(), mode.begin(),
+                [](unsigned char c) { return std::tolower(c); });
+
+            bool ignored = false;
+
+            if (mode.compare("passive") == 0)
+                tlcfg.unifiedSequenceMode = TLUnifiedSequenceMode::PASSIVE;
+            else if (mode.compare("anvil") == 0)
+                tlcfg.unifiedSequenceMode = TLUnifiedSequenceMode::ANVIL;
+            else
+            {
+                LogInfo("INI", 
+                    Append("Unknown unified sequence mode \"", mode, "\" for ", key, ", ignored.")
+                    .EndLine());
+
+                ignored = true;
+            }
+
+            if (!ignored)
+            {
+                LogInfo("INI",
+                    Append("Overrided unified sequence mode: ", key, " = ", mode)
                     .EndLine());
             }
         }

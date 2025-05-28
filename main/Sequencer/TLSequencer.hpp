@@ -69,7 +69,11 @@ private:
     UncachedBoard<paddr_t>* uncachedBoard;
 
     BaseAgent**             agents;
+    CAgent**                cAgents;
+    ULAgent**               ulAgents;
+
     Fuzzer**                fuzzers;
+    UnifiedFuzzer*          unifiedFuzzer;
 
     MMIOGlobalStatus*       mmioGlobalStatus;
 
