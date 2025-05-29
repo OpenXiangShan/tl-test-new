@@ -104,12 +104,12 @@ public:
 
     uint32_t writeResponsedCount = 0;
 
-    uint32_t blkProcessed = 0;  // r/w requests fired
-    uint32_t blkFired = 0;  //IVYTODO:FIXME: this should be renamed as blkReceived
+    uint32_t blkSent = 0;  // r/w requests in Addrs that has been fired to cache
+    uint32_t blkReceived = 0;  // responses that have received from cache
     uint32_t blkCountLimit = 1024; // for bandwidth test (used for prefill in trace test)
     uint32_t blkCountLimitTrace = 1024; // for trace test
-    uint32_t blkProcessedFence = 0;   // reqs fired, for fence
-    uint32_t blkReceivedFence = 0;    // reqs received, for fence
+    uint32_t blkSentFence = 0;   // reqs fired, for fence
+    uint32_t blkReceivedFence = 0;    // resps received, for fence
 
     uint64_t perfCycleStart = 0;
     uint64_t perfCycleEnd = 0;

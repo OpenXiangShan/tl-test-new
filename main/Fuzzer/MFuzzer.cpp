@@ -167,27 +167,27 @@ void MFuzzer::bandwidthTest() {
   // Write
   if (state == bwTestState::acquire) {
     // this->fuzzStreamOffset   += this->fuzzStreamStep;
-    // addr =  this->fuzzStreamStart + 0x100 * blkProcessed + this->fuzzStreamStep;//0x040, 0x140, 0x240...
-    addr =  this->fuzzStreamStart + (blkProcessed*8+index-2) * this->fuzzStreamStep;            //0x00, 0x40, 0x80, 0xC0...
+    // addr =  this->fuzzStreamStart + 0x100 * blkSent + this->fuzzStreamStep;//0x040, 0x140, 0x240...
+    addr =  this->fuzzStreamStart + (blkSent*8+index-2) * this->fuzzStreamStep;            //0x00, 0x40, 0x80, 0xC0...
     // MFuzzer index starting from 2!
     #if DEBUG_ADDR_ERROR
-    addr = (addr+0x40*(16)-1) & ~(0x40*(16)-1)+blkProcessed%8;//FIXME BUG, key not find
+    addr = (addr+0x40*(16)-1) & ~(0x40*(16)-1)+blkSent%8;//FIXME BUG, key not find
     #endif
     if (!mAgent->config().memoryEnable)
       return;
 
     // addr = remap_memory_address(addr);
     if(mAgent->do_getAuto(addr)){
-        blkProcessed++;
+        blkSent++;
         filledAddrs.push(addr);
         // printf("size1 %lu\n",filledAddrs.size());
     };  // AcquireBlock NtoT
         // Chan A
 
-    if (blkProcessed == blkCountLimit) {
+    if (blkSent == blkCountLimit) {
       printf("#### MFuzzer %d state: wait_acquire\n", index);
       state = bwTestState::wait_acquire;
-      blkProcessed = 0;
+      blkSent = 0;
     }
   }
 
@@ -195,12 +195,12 @@ void MFuzzer::bandwidthTest() {
     // wait channel A to fire
     if (mAgent->is_m_fired()) {
       // How many cycle will D channel hold the data?
-      blkFired++;
+      blkReceived++;
     }
-    if (blkFired == blkCountLimit) {// Notice! 64B need 2 fired.
+    if (blkReceived == blkCountLimit) {// Notice! 64B need 2 fired.
       printf("#### MFuzzer %d state: releasing\n", index);
       state = bwTestState::releasing;
-      blkFired = 0;
+      blkReceived = 0;
     }
   }
 // FIXME 重地址冲突(M1和M3相邻时间对同一地址读写)
@@ -213,17 +213,17 @@ void MFuzzer::bandwidthTest() {
     }
     // printf("will do_putfulldata(%lx)\n",addr);
     if(mAgent->do_putfulldata(addr, putdata)){
-        blkProcessed++;
+        blkSent++;
         filledAddrs.push(addr); // push equals push_back
         filledAddrs.pop();
         // printf("size2 %lu\n",filledAddrs.size());
         // printf("fine do_putfulldata(%lx)\n",addr);
     }
 
-    if (blkProcessed == blkCountLimit) {
+    if (blkSent == blkCountLimit) {
       printf("#### MFuzzer %d state: wait_release\n", index);
       state = bwTestState::wait_release;
-      blkProcessed = 0;
+      blkSent = 0;
     }
   }
 
@@ -231,14 +231,14 @@ void MFuzzer::bandwidthTest() {
     // wait channel D to fire
     if (mAgent->is_d_fired()) {
       // How many cycle will A channel hold the data?
-      blkFired++;//0x180
+      blkReceived++;//0x180
     }
     // is AccessAck
-    if (blkFired == blkCountLimit) {
+    if (blkReceived == blkCountLimit) {
       printf("#### MFuzzer %d state: acquire2\n", index);
       state = bwTestState::acquire2;
       perfCycleStart=this->mAgent->cycle();
-      blkFired = 0;
+      blkReceived = 0;
     }
   }
 
@@ -247,13 +247,13 @@ void MFuzzer::bandwidthTest() {
     addr = filledAddrs.front();
 
     if(mAgent->do_getAuto(addr)){
-        blkProcessed++;
+        blkSent++;
         filledAddrs.pop();
     };
-    if (blkProcessed == blkCountLimit) {
+    if (blkSent == blkCountLimit) {
       printf("#### MFuzzer %d state: wait_acquire2\n", index);
       state = bwTestState::wait_acquire2;
-      blkProcessed = 0;
+      blkSent = 0;
     }
   }
 
@@ -261,11 +261,11 @@ void MFuzzer::bandwidthTest() {
     // wait channel A to fire
     if (mAgent->is_m_fired()) {
       // How many cycle will D channel hold the data?
-      blkFired++;
+      blkReceived++;
     }
-    if (blkFired == blkCountLimit) {
+    if (blkReceived == blkCountLimit) {
       state = exit_fuzzer;
-      blkFired = 0;
+      blkReceived = 0;
       filledAddrs.pop();
       perfCycleEnd=(this->mAgent->cycle()-perfCycleStart)/2;
       
@@ -295,27 +295,27 @@ void MFuzzer::traceBandwidthTest() {
     // addr = remap_memory_address(addr);
     if(mAgent->do_getAuto(addr)){
         LogX("%ld IIIIacq try do_getAuto(0x%lx) at agent %d\n", *cycles, addr, index);
-        blkProcessed++;
+        blkSent++;
         filledAddrs.push(addr); // push equals push_back
         filledAddrs.pop();
     };
 
-    if (blkProcessed == blkCountLimit) {
+    if (blkSent == blkCountLimit) {
       printf("#### MFuzzer %d state: wait_acquire\n", index);
       state = bwTestState::wait_acquire;
-      blkProcessed = 0;
+      blkSent = 0;
     }
   }
 
   if (state == bwTestState::wait_acquire || state == bwTestState::acquire) {
     // wait channel M to fire
     if (mAgent->is_m_fired()) {
-      blkFired++;
+      blkReceived++;
     }
-    if (blkFired == blkCountLimit) {
+    if (blkReceived == blkCountLimit) {
       printf("#### MFuzzer %d state: releasing\n", index);
       state = bwTestState::releasing;
-      blkFired = 0;
+      blkReceived = 0;
     }
   }
   // FIXME 重地址冲突(M1和M3相邻时间对同一地址读写)
@@ -330,27 +330,27 @@ void MFuzzer::traceBandwidthTest() {
 
     if(mAgent->do_putfulldata(addr, putdata)){
         LogX("%ld IIIIrel try do_putFull(0x%lx) at agent %d\n", *cycles, addr, index);
-        blkProcessed++;
+        blkSent++;
         filledAddrs.pop();
     }
 
-    if (blkProcessed == blkCountLimit) {
+    if (blkSent == blkCountLimit) {
       printf("#### MFuzzer %d state: wait_release\n", index);
       state = bwTestState::wait_release;
-      blkProcessed = 0;
+      blkSent = 0;
     }
   }
 
   if (state == bwTestState::releasing||state == bwTestState::wait_release) {
     // wait channel D to fire (AccessAck)
     if (mAgent->is_d_fired()) {
-      blkFired++;
+      blkReceived++;
     }
-    if (blkFired == blkCountLimit) {
+    if (blkReceived == blkCountLimit) {
       printf("#### MFuzzer %d state: acquire2\n", index);
       state = bwTestState::acquire2;
       perfCycleStart=this->mAgent->cycle();
-      blkFired = 0;
+      blkReceived = 0;
     }
   }
 
@@ -382,34 +382,34 @@ void MFuzzer::traceBandwidthTest() {
     }
 
     if (success) {
-      blkProcessed++;
+      blkSent++;
       traceAddrs.pop();
 
-      if (blkProcessed % 10000 == 0) {
-        printf("#### MFuzzer %d processed %d blocks\n", index, blkProcessed);
+      if (blkSent % 10000 == 0) {
+        printf("#### MFuzzer %d processed %d blocks\n", index, blkSent);
       }
     }
 
 
-    if (blkProcessed == blkCountLimitTrace) {
+    if (blkSent == blkCountLimitTrace) {
       printf("#### MFuzzer %d state: wait_acquire2\n", index);
       state = bwTestState::wait_acquire2;
-      blkProcessed = 0;
+      blkSent = 0;
     }
   }
 
   if (state == bwTestState::acquire2 || state == bwTestState::wait_acquire2) {
     // M_fire and D_fire might happen at the same cycle
     if (mAgent->is_m_fired()) {
-      blkFired++;
+      blkReceived++;
     }
     if (mAgent->is_d_fired()) {
-      blkFired++;
+      blkReceived++;
     }
 
-    if (blkFired == blkCountLimitTrace) {
+    if (blkReceived == blkCountLimitTrace) {
       state = exit_fuzzer;
-      blkFired = 0;
+      blkReceived = 0;
       perfCycleEnd = this->mAgent->cycle(); // maybe just *cycles
       // perfCycleEnd=(this->mAgent->cycle()-perfCycleStart)/2;
       // TLSystemFinishEvent().Fire();// stop
@@ -460,35 +460,35 @@ void MFuzzer::traceTestWithFence() {
     }
 
     if (rwsuccess) {
-      blkProcessedFence ++;
-      blkProcessed ++;
+      blkSentFence ++;
+      blkSent ++;
       traceAddrs.pop();
 
-      if (blkProcessed % 10000 == 0) {
-        printf("#### MFuzzer %d processed %d blocks\n", index, blkProcessed);
+      if (blkSent % 10000 == 0) {
+        printf("#### MFuzzer %d processed %d blocks\n", index, blkSent);
       }
     }
 
-    if (blkProcessed == blkCountLimitTrace) {
+    if (blkSent == blkCountLimitTrace) {
       printf("#### MFuzzer %d state: wait_acquire2\n", index);
       state = bwTestState::wait_acquire2;
-      blkProcessed = 0;
+      blkSent = 0;
     }
   }
 
   if (mAgent->is_m_fired()) {
-    blkFired ++;
+    blkReceived ++;
     blkReceivedFence ++;
   }
   if (mAgent->is_d_fired()) {
-    blkFired ++;
+    blkReceived ++;
     blkReceivedFence ++;
   }
 
 
   if (state == bwTestState::wait_fence) {
-    if (blkProcessedFence == blkReceivedFence) {
-      blkProcessedFence = 0;
+    if (blkSentFence == blkReceivedFence) {
+      blkSentFence = 0;
       blkReceivedFence = 0;
       state = bwTestState::acquire2;
       printf("#### MFuzzer %d state: acquire2\n", index);
@@ -497,9 +497,9 @@ void MFuzzer::traceTestWithFence() {
 
   // === count all responses to determine the end of test ===
   // M_fire and D_fire might happen at the same cycle
-  if (blkFired == blkCountLimitTrace) {
+  if (blkReceived == blkCountLimitTrace) {
     state = exit_fuzzer;
-    blkFired = 0;
+    blkReceived = 0;
     perfCycleEnd = this->mAgent->cycle(); // maybe just *cycles
     // perfCycleEnd=(this->mAgent->cycle()-perfCycleStart)/2;
     // TLSystemFinishEvent().Fire();// stop

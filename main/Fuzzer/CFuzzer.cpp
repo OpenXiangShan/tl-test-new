@@ -311,22 +311,22 @@ void CFuzzer::caseTest() {
   // Write 
   if (state == bwTestState::acquire) {
     // this->fuzzStreamOffset   += this->fuzzStreamStep;
-    // addr =  this->fuzzStreamStart + 0x100 * blkProcessed + this->fuzzStreamStep;//0x040, 0x140, 0x240...
-    addr =  this->fuzzStreamStart + blkProcessed * this->fuzzStreamStep;            //0x00, 0x40, 0x80, 0xC0...
+    // addr =  this->fuzzStreamStart + 0x100 * blkSent + this->fuzzStreamStep;//0x040, 0x140, 0x240...
+    addr =  this->fuzzStreamStart + blkSent * this->fuzzStreamStep;            //0x00, 0x40, 0x80, 0xC0...
     // addr = (addr+0x40*(16)-1) & ~(0x40*(16)-1); // BUG!
     if (!cAgent->config().memoryEnable)
       return;
 
     addr = remap_memory_address(addr);
     if(cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias)){
-        blkProcessed++;
+        blkSent++;
         filledAddrs.push(addr);
     };  // AcquireBlock NtoT
         // Chan A
 
-    if (blkProcessed == blkCountLimit) {
+    if (blkSent == blkCountLimit) {
       state = bwTestState::wait_acquire;
-      blkProcessed = 0;
+      blkSent = 0;
     }
   }
 
@@ -334,11 +334,11 @@ void CFuzzer::caseTest() {
     // wait channel A to fire
     if (cAgent->is_d_fired()) {
       // How many cycle will D channel hold the data?
-      blkFired++;
+      blkReceived++;
     }
-    if (blkFired == blkCountLimit*2) {// Notice! 64B need 2 fired.
+    if (blkReceived == blkCountLimit*2) {// Notice! 64B need 2 fired.
       state = bwTestState::releasing;
-      blkFired = 0;
+      blkReceived = 0;
     }
   }
 
@@ -353,7 +353,7 @@ void CFuzzer::caseTest() {
     }
     if(cAgent->do_releaseData(addr, TLParamRelease::TtoN, putdata,0)){
         // printf("test TTTTTTTTT\n");
-        blkProcessed++;
+        blkSent++;
         filledAddrs.push(addr);
         filledAddrs.pop();
     }
@@ -362,9 +362,9 @@ void CFuzzer::caseTest() {
     //     printf("HAVE RWRWRWRWRWRW\n");
     // }; // ReleaseData
     
-    if (blkProcessed == blkCountLimit) {
+    if (blkSent == blkCountLimit) {
       state = bwTestState::wait_release;
-      blkProcessed = 0;
+      blkSent = 0;
     }
   }
 
@@ -372,12 +372,12 @@ void CFuzzer::caseTest() {
     // wait channel D to fire
     if (cAgent->is_d_fired()) {
       // How many cycle will A channel hold the data?
-      blkFired++;//0x180
+      blkReceived++;//0x180
     }
-    if (blkFired == blkCountLimit+1) {
+    if (blkReceived == blkCountLimit+1) {
       state = bwTestState::acquire2;
       perfCycleStart=this->cAgent->cycle();
-      blkFired = 0;
+      blkReceived = 0;
       printf("#################Test\n\n");
     }
   }
@@ -387,12 +387,12 @@ void CFuzzer::caseTest() {
     addr = filledAddrs.front();
     
     if(cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias)){
-        blkProcessed++;
+        blkSent++;
         filledAddrs.pop();
     };
-    if (blkProcessed == blkCountLimit) {
+    if (blkSent == blkCountLimit) {
       state = bwTestState::wait_acquire2;
-      blkProcessed = 0;
+      blkSent = 0;
     }
   }
 
@@ -400,11 +400,11 @@ void CFuzzer::caseTest() {
     // wait channel A to fire
     if (cAgent->is_d_fired()) {
       // How many cycle will D channel hold the data?
-      blkFired++;
+      blkReceived++;
     }
-    if (blkFired == blkCountLimit*2) {
+    if (blkReceived == blkCountLimit*2) {
       state = bwTestState::acquire;
-      blkFired = 0;
+      blkReceived = 0;
       filledAddrs.pop();
       perfCycleEnd=(this->cAgent->cycle()-perfCycleStart)/2;
       TLSystemFinishEvent().Fire();// stop
