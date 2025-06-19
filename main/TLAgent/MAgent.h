@@ -1,7 +1,3 @@
-//
-// Created by ljw on 10/21/21.
-//
-
 #ifndef TLC_TEST_MAGENT_H
 #define TLC_TEST_MAGENT_H
 

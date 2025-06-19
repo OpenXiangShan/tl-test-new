@@ -1,9 +1,4 @@
 // Matrix Fuzzer
-
-//
-// Created by wkf on 2021/10/29.
-//
-
 // #include "MFuzzer.h"
 #include "../Events/TLSystemEvent.hpp"
 

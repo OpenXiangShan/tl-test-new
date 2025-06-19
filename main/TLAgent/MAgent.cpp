@@ -90,7 +90,7 @@ namespace tl_agent {
         this->port->a.mask     = a->mask;
         this->port->a.source   = a->source;
         this->port->a.valid    = true;
-        this->port->a.matrix   = a->matrix?1:0;
+        this->port->a.matrix   = a->matrix;
         return OK;
     }
 
@@ -444,6 +444,7 @@ namespace tl_agent {
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
         req_a->opcode   = uint8_t(TLOpcodeA::Get);
         req_a->address  = address;
+        req_a->param    = 0; // reserved
         req_a->size     = ceil(log2((double)DATASIZE));
         req_a->mask     = 0xffffffffUL;
         req_a->source   = this->idpool.getid();
@@ -475,6 +476,7 @@ namespace tl_agent {
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
         req_a->opcode   = uint8_t(TLOpcodeA::Get);
         req_a->address  = address;
+        req_a->param    = 0; // reserved
         req_a->size     = size;
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
@@ -509,6 +511,7 @@ namespace tl_agent {
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
         req_a->opcode   = uint8_t(TLOpcodeA::PutFullData);
         req_a->address  = address;
+        req_a->param    = 0; // reserved
         req_a->size     = ceil(log2((double)DATASIZE));
         req_a->mask     = 0xffffffffUL;
         req_a->source   = this->idpool.getid();
@@ -544,6 +547,7 @@ namespace tl_agent {
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
         req_a->opcode   = uint8_t(TLOpcodeA::PutPartialData);
         req_a->address  = address;
+        req_a->param    = 0; // reserved
         req_a->size     = size;
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
