@@ -12,8 +12,8 @@
 
 
 //
-#ifndef ULAGENT_TRAIN_PREFETCH
-#   define ULAGENT_TRAIN_PREFETCH        1
+#ifndef MAGENT_TRAIN_PREFETCH
+#   define MAGENT_TRAIN_PREFETCH        1
 #endif
 
 
@@ -449,8 +449,8 @@ namespace tl_agent {
         req_a->mask     = 0xffffffffUL;
         req_a->source   = this->idpool.getid();
         req_a->vaddr    = address;
-        req_a->matrix = 1;
-#ifdef ULAGENT_TRAIN_PREFETCH
+        req_a->matrix   = modify? 0b11 : 0b01;
+#ifdef MAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
         req_a->needHint = 0;
@@ -482,7 +482,7 @@ namespace tl_agent {
         req_a->source   = this->idpool.getid();
         req_a->vaddr    = address;
         req_a->matrix   = 1;
-#ifdef ULAGENT_TRAIN_PREFETCH
+#ifdef MAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
         req_a->needHint = 0;
@@ -518,7 +518,7 @@ namespace tl_agent {
         req_a->data     = data;
         req_a->vaddr    = address;
         req_a->matrix   = 1;
-#ifdef ULAGENT_TRAIN_PREFETCH
+#ifdef MAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
         req_a->needHint = 0;
@@ -553,7 +553,7 @@ namespace tl_agent {
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
         req_a->vaddr    = address;
-#ifdef ULAGENT_TRAIN_PREFETCH
+#ifdef MAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
         req_a->needHint = 0;
