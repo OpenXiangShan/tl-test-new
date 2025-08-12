@@ -1,7 +1,7 @@
 sed 's/|/ /g' | awk --bignum '
 
 func chnstr(chn) {
-  split("A B C D E", channels, " ");
+  split("A B C D E M", channels, " ");
   return channels[chn + 1]
 }
 
@@ -69,7 +69,7 @@ func paramstr(chn, param) {
 
   split("Grow NtoB_Grow NtoT_Grow BtoT", grow, "_")
 	split("Cap toT_Cap toB_Cap toN", cap, "_")
-	split("Shrink TtoB_Shrink TtoN_Shrink BtoN_Report TotT_Report BtoB_Report NtoN", report, "_")
+	split("Shrink TtoB_Shrink TtoN_Shrink BtoN_Shrink TotT_Report BtoB_Report NtoN", report, "_")
 
   ret = "Reserved"
   switch(chn){

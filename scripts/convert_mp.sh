@@ -118,20 +118,36 @@ func fulladdr_xs(tag, set, bank) {
 
 # TODO: add param
 {
-    METAWWAY = $2;
-    METAWVALID = $3;
-    MSHRID = $4;
-    ALLOCPTR = $5;
-    ALLOCVALID = $6;
-    DIRWAY= $7;
-    DIRHIT = $8;
-    SSET = $9;
-    TAG = $10;
-    OPCODE = $11;
-    CHANNEL = $12;
-    MSHRTASK = $13;
-    STAMP = $14;
-    SITE = $15;
+    # Reverse the order of fields, except for the first field 'ID'
+    # - because the newly added fields will occur at the front of the record (ChiselDB to blame)
+    # - so we reverse the record to make new fileds appear at the end, easier for parser script
+    num_fields = 1
+    for (i = 2; i <= NF; i++) {
+        if ($i != "") {
+            num_fields++
+            fields[num_fields] = $i
+        }
+    }
+    for (i = 2; i <= num_fields; i++) {
+        $i = fields[num_fields - i + 2]
+    }
+
+    ID = $1;
+    SITE = $2;
+    STAMP = $3;
+    MSHRTASK = $4;
+    CHANNEL = $5;
+    OPCODE = $6;
+    TAG = $7;
+    SSET = $8;
+    DIRHIT = $9;
+    DIRWAY = $10;
+    ALLOCVALID = $11;
+    ALLOCPTR = $12;
+    MSHRID = $13;
+    METAWVALID = $14;
+    METAWWAY = $15;
+    RMW = $16;
 
     match(SITE, /[0-9]+$/)
     BANK = substr(SITE, RSTART, RLENGTH)
@@ -142,18 +158,18 @@ func fulladdr_xs(tag, set, bank) {
     $3 = taskstr(MSHRTASK);
     $4 = chnstr(CHANNEL);
     $5 = sprintf("%14s |", opstr(CHANNEL, OPCODE, MSHRTASK));
-    $6 = sprintf("%lx(%d)", TAG, TAG);
-    $7 = sprintf("%lx(%d)\t", SSET, SSET);
-    $8 = sprintf("%lx(%d)\t", ADDR, ADDR);
+    $6 = sprintf("%6lx", TAG);
+    $7 = sprintf("%6lx", SSET);
+    $8 = sprintf("%12lx", ADDR);
 
     $9 = sprintf("|DIR %d %d", DIRHIT, DIRWAY);
     $10 = sprintf("|ALLOC %d %2d", ALLOCVALID, ALLOCPTR);
     $11 = sprintf("|MSHRID %2d", MSHRID);
     $12 = sprintf("|METAW %d %d", METAWVALID, METAWWAY);
-
-    $13 = "";
+    $13 = sprintf("|RMW %d", RMW);
     $14 = "";
     $15 = "";
+    $16 = "";
 }
 
 1                                   # print every line
