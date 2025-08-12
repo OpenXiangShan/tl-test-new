@@ -437,7 +437,7 @@ namespace tl_agent {
         // probeIDpool.update(this);
     }
     
-    bool MAgent::do_getAuto(paddr_t address)
+    bool MAgent::do_getAuto(paddr_t address, bool modify)
     {
         if (pendingA.is_pending() || idpool.full())
             return false;

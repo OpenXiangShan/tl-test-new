@@ -117,7 +117,8 @@ public:
     enum traceOp {
         READ = 0,
         WRITE = 1,
-        FENCE = 2
+        MODIFY = 2,
+        FENCE = 3
     };
     // preload data into L2 Cache
     std::queue<uint64_t> filledAddrs;
@@ -173,19 +174,20 @@ public:
             if ((bank_idx + 2) == index) { // 0: cAgent, 1: ulAgent, 2~: mAgent
                 switch (operation) {
                     case 'r':
-                        traceAddrs.push(std::make_pair(traceOp::READ, address));
-                        blkCountLimitTrace ++;
-                        break;
                     case 'w':
-                        traceAddrs.push(std::make_pair(traceOp::WRITE, address));
-                        blkCountLimitTrace ++;
+                    case 'm':
+                        traceAddrs.push(std::make_pair(
+                            operation == 'r' ? traceOp::READ :
+                            operation == 'w' ? traceOp::WRITE : traceOp::MODIFY,
+                            address));
+                        blkCountLimitTrace++;
                         break;
                     case 'f':
                         traceAddrs.push(std::make_pair(traceOp::FENCE, address));
                         break;
                     case 'p':
                         filledAddrs.push(address);
-                        blkCountLimit ++;
+                        blkCountLimit++;
                         break;
                     default:
                         printf("Unknown operation: %c\n", operation);

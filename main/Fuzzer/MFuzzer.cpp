@@ -436,7 +436,8 @@ void MFuzzer::traceTestWithFence() {
         break;
 
       case traceOp::READ:
-        if(mAgent->do_getAuto(addr2)){
+      case traceOp::MODIFY:
+        if (mAgent->do_getAuto(addr2, opcode2 == traceOp::MODIFY)) {
           rwsuccess = true;
           LogX("%ld IIIIacq2 try do_GetAuto(0x%lx) at agent %d\n", *cycles, addr2, index);
         };

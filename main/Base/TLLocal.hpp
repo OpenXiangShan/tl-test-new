@@ -13,6 +13,7 @@ enum class TLSequenceMode {
     FUZZ_ARI,
     FUZZ_STREAM,
     FUZZ_STREAM_GS,
+    TRACE,
     FUZZ_COUNTER,
     FUZZ_COUNTER_SYNC,
     STREAM_COPY2,
