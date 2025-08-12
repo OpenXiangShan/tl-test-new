@@ -160,7 +160,7 @@ namespace V3::PortGen {
                 PullMMasterPort(i, j, "a_bits_source"      , "a.source");
                 PullMMasterPort(i, j, "a_bits_address"     , "a.address");
                 PullMMasterPort(i, j, "a_bits_mask"        , "a.mask");
-                PullMMasterPort(i, j,"a_bits_user_matrix"  , "a.matrix");
+                PullMMasterPort(i, j, "a_bits_user_matrix" , "a.matrix");
                 cpp_file.Append("    std::memcpy(",
                         "verilated->", GenerateMasterMPortName(i, j, "a_bits_data"), ", "
                         "port->a.data->data, ",
