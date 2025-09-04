@@ -88,6 +88,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.fuzzStreamStart               = CFUZZER_FUZZ_STREAM_START;
     tlcfg.fuzzStreamEnd                 = CFUZZER_FUZZ_STREAM_END;
 
+    tlcfg.traceFilePath                 = "/nfs/home/chenxi/Matrix/NEMU-Matrix/line_trace.txt"; // Default trace file path
+
     tlcfgInit(tlcfg);
 
     glbl.cfg.verbose                    = false;
@@ -110,6 +112,17 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
             target = section.toInt(key); \
             LogInfo("INI", \
                 Append("Configuration \'" #target "\' overrided by " section_name ":" key " = ", uint64_t(target), ".").EndLine()); \
+        } \
+    } \
+
+#   define INI_OVERRIDE_STRING(section_name, key, target) \
+    { \
+        auto section = ini[section_name]; \
+        if (section.isKeyExist(key)) \
+        { \
+            target = section.toString(key); \
+            LogInfo("INI", \
+                Append("Configuration \'" #target "\' overrided by " section_name ":" key " = \"", target, "\".").EndLine()); \
         } \
     } \
 
@@ -164,9 +177,12 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.fuzzer", "stream.start",               tlcfg.fuzzStreamStart);
     INI_OVERRIDE_INT("tltest.fuzzer", "stream.end",                 tlcfg.fuzzStreamEnd);
 
+    INI_OVERRIDE_STRING("tltest.fuzzer", "trace.file.path",           tlcfg.traceFilePath);
+
     INI_OVERRIDE_INT("tltest.profile", "cycle_unit",                tlcfg.profileCycleUnit);
 
 #   undef INI_OVERRIDE_INT
+#   undef INI_OVERRIDE_STRING
 
     // read sequence mode configurations
     {
