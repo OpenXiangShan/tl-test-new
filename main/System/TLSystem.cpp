@@ -88,7 +88,7 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.fuzzStreamStart               = CFUZZER_FUZZ_STREAM_START;
     tlcfg.fuzzStreamEnd                 = CFUZZER_FUZZ_STREAM_END;
 
-    tlcfg.traceFilePath                 = NULL; // as default
+    tlcfg.traceFilePath                 = ""; // as default
 
     tlcfgInit(tlcfg);
 
