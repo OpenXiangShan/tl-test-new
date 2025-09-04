@@ -326,7 +326,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
                 printf("#### Fuzzer %d mode: %d\n", i, fuzzers[i]->mode);
 
-                fuzzers [i]->read_trace("/nfs/home/chenxi/Matrix/NEMU-Matrix/line_trace.txt");
+                fuzzers [i]->read_trace(cfg.traceFilePath.c_str());
 
                 printf("#### MFuzzer %d state: %d\n", i, fuzzers[i]->state);
 

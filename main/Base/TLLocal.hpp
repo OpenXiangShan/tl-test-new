@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <unordered_map>
+#include <string>
 
 
 enum class TLSequenceMode {
@@ -71,6 +72,8 @@ public:
     uint64_t            fuzzStreamEnd;                          // Fuzz Stream end address
 
     uint64_t            profileCycleUnit;                       // Profiler cycle unit
+
+    std::string         traceFilePath;                          // Trace file path for fuzzer
 
 public:
     size_t                          GetAgentCount() const noexcept;

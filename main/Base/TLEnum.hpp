@@ -7,6 +7,7 @@
 #define TLC_TEST_TLENUM_H
 
 #include <string>
+#include <cstdint>
 
 #include "../Utils/gravity_utility.hpp"
 
