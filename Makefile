@@ -213,12 +213,10 @@ coupledL2-test-l2l3l2-v3: coupledL2-compile coupledL2-verilog-test-top-l2l3l2 co
 coupledL2-test-l2l3l2-dpi: coupledL2-compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
 						   tltest-config-coupledL2-test-l2l3l2 tltest-build-dpi-coupledL2
 
-# TODO
 coupledL2-verilog-test-top-matrix:
 	$(MAKE) -C ./dut/CoupledL2 test-top-matrix
 
- # coupledL2-verilog-test-top-matrix
-coupledL2-test-matrix: coupledL2-verilate \
+coupledL2-test-matrix: coupledL2-verilog-test-top-matrix coupledL2-verilate \
 					   tltest-config-coupledL2-test-matrix tltest-build-all-coupledL2
 
 coupledL2-test-matrix-tltest: tltest-config-coupledL2-test-matrix tltest-build-all-coupledL2

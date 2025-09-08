@@ -324,12 +324,9 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 fuzzers [i]->set_cycles(&cycles);
                 fuzzers [i]->set_index(i);
 
-                printf("#### Fuzzer %d mode: %d\n", i, fuzzers[i]->mode);
+                printf("#### MFuzzer %d mode: %d, init state: %d\n", i, fuzzers[i]->mode, fuzzers[i]->state);
 
                 fuzzers [i]->read_trace(cfg.traceFilePath.c_str());
-
-                printf("#### MFuzzer %d state: %d\n", i, fuzzers[i]->state);
-
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-M Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
 

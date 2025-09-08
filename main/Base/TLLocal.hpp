@@ -15,6 +15,8 @@ enum class TLSequenceMode {
     FUZZ_STREAM,
     FUZZ_STREAM_GS,
     TRACE,
+    TRACE_WITH_REFILL,
+    TRACE_WITH_FENCE,
     FUZZ_COUNTER,
     FUZZ_COUNTER_SYNC,
     STREAM_COPY2,

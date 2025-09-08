@@ -79,6 +79,14 @@ MFuzzer::MFuzzer(tl_agent::MAgent *mAgent) noexcept {
         LogInfo(this->mAgent->cycle(), Append("MFuzzer [", mAgent->sysId(), "] stream ends at ")
             .Hex().ShowBase().Append(this->fuzzStreamEnd).EndLine());
     }
+    else if (this->mode == TLSequenceMode::TRACE_WITH_REFILL)
+    {
+        LogInfo(this->mAgent->cycle(), Append("MFuzzer [", mAgent->sysId(), "] in TRACE_WITH_REFILL mode").EndLine());
+    }
+    else if (this->mode == TLSequenceMode::TRACE_WITH_FENCE)
+    {
+        LogInfo(this->mAgent->cycle(), Append("MFuzzer [", mAgent->sysId(), "] in TRACE_WITH_FENCE mode").EndLine());
+    }
 }
 
 void MFuzzer::randomTest(bool put) {
@@ -506,68 +514,25 @@ void MFuzzer::traceTestWithFence() {
 
 
 void MFuzzer::tick() {
+  // perfCycleEnd != 0 means the test is finished
+  if (perfCycleEnd != 0) return;
 
-    // if (this->mode == TLSequenceMode::FUZZ_ARI)
-    // {
-    //     this->randomTest(false);
+  if (this->mode == TLSequenceMode::TRACE_WITH_REFILL) {
+    this->traceBandwidthTest();
+  } else if (this->mode == TLSequenceMode::TRACE_WITH_FENCE) {
+    this->traceTestWithFence();
+  } else {
+    // default bw test
+    this->bandwidthTest();
 
-    //     if (this->mAgent->cycle() >= this->fuzzARIRangeIterationTime)
-    //     {
-    //         this->fuzzARIRangeIterationTime += this->fuzzARIRangeIterationInterval;
-    //         this->fuzzARIRangeIndex++;
-
-    //         if (this->fuzzARIRangeIndex == fuzzARIRangeOrdinal.size())
-    //         {
-    //             this->fuzzARIRangeIndex = 0;
-    //             this->fuzzARIRangeIterationCount++;
-
-    //             std::next_permutation(fuzzARIRangeOrdinal.begin(), fuzzARIRangeOrdinal.end());
-    //         }
-
-    //         LogInfo(this->mAgent->cycle(), Append("Fuzz Set switched: index = ", this->fuzzARIRangeIndex, ", permutation: "));
-    //         LogEx(
-    //             std::cout << "[ ";
-    //             for (size_t i = 0; i < fuzzARIRangeOrdinal.size(); i++)
-    //                 std::cout << fuzzARIRangeOrdinal[i] << " ";
-    //             std::cout << "]";
-    //         );
-    //         LogEx(std::cout << std::endl);
-    //     }
-
-    //     if (this->fuzzARIRangeIterationCount == this->fuzzARIRangeIterationTarget)
-    //     {
-    //         // TLSystemFinishEvent().Fire();
-    //     }
-    // }
-    // else if (this->mode == TLSequenceMode::FUZZ_STREAM)
-    // {
-    //     this->randomTest(false);
-
-    //     if (this->mAgent->cycle() >= this->fuzzStreamStepTime)
-    //     {
-    //         this->fuzzStreamStepTime += this->fuzzStreamInterval;
-    //         this->fuzzStreamOffset   += this->fuzzStreamStep;
-    //     }
-
-    //     if (this->fuzzStreamEnded)
-    //     {
-    //         // TLSystemFinishEvent().Fire();
-    //     }
-    // }
-    // else 
-    // if (this->mode == TLSequenceMode::FUZZ_STREAM_GS) {
-    if(perfCycleEnd==0){
-      // this->traceBandwidthTest();
-      this->traceTestWithFence();
-
-      if (this->mAgent->cycle() >= this->fuzzStreamStepTime)
-      {
-          this->fuzzStreamStepTime += this->fuzzStreamInterval;
-      }
-
-      if (this->fuzzStreamEnded)
-      {
-          // TLSystemFinishEvent().Fire();
-      }
+    if (this->mAgent->cycle() >= this->fuzzStreamStepTime)
+    {
+        this->fuzzStreamStepTime += this->fuzzStreamInterval;
     }
+
+    if (this->fuzzStreamEnded)
+    {
+        // TLSystemFinishEvent().Fire();
+    }
+  }
 }
