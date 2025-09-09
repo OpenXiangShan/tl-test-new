@@ -240,6 +240,8 @@ public:
     void InitAnvil();
     void TickAnvil();
 
+    void RandomC(tl_agent::CAgent* cAgent, paddr_t begin, paddr_t end, bool cmoEnabled = true);
+
 public:
     void tick();
 };

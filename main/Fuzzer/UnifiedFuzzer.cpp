@@ -83,7 +83,7 @@ void UnifiedFuzzer::InitAnvil()
 
     decltype(cfg->unifiedSequenceModeAnvil)& cfgAnvil = cfg->unifiedSequenceModeAnvil;
 
-    for (int i = 0; i < (cfgAnvil.widthB + 1); i++)
+    for (int i = 0; i < cAgentCount; i++)
         contextAnvil.ordinal.push_back(i);
 
     tlsys_assert(cfgAnvil.size >= 8, Gravity::StringAppender(
@@ -94,9 +94,6 @@ void UnifiedFuzzer::InitAnvil()
 
     tlsys_assert(cAgentCount >= (1 + cfgAnvil.widthB), Gravity::StringAppender(
         "coherent agent count = ", cAgentCount, " of Anvil mode must be >= (1 + widthB = ", (1 + cfgAnvil.widthB) , ")").ToString());
-
-    tlsys_assert(!cfgAnvil.noise || cAgentCount >= 4, Gravity::StringAppender(
-        "coherent agent count = ", cAgentCount, " of Anvil mode with noise generation enabled must be >= 4").ToString());
 
     if (!cfgAnvil.thresholdR)
         cfgAnvil.thresholdR = cfgAnvil.size * 3 / 4;
@@ -138,6 +135,14 @@ void UnifiedFuzzer::TickAnvil()
 
         if (denial)
             monitoredGrant[agentIndex].insert(address);
+        else
+        {
+            if (cfgAnvil.noise)
+            {
+                RandomC(cAgents[agentIndex],
+                    cfg->memoryStart, cfg->memoryStart + cfgAnvil.size * DATASIZE, true);
+            }
+        }
     }
     else
         stageUComplete = true;
@@ -148,7 +153,15 @@ void UnifiedFuzzer::TickAnvil()
         size_t agentIndex = contextAnvil.ordinal[0];
 
         if (contextAnvil.counterR >= contextAnvil.counterU)
+        {
             ; // don't skip and retry on running ahead
+
+            if (cfgAnvil.noise)
+            {
+                RandomC(cAgents[agentIndex],
+                    cfg->memoryStart, cfg->memoryStart + cfgAnvil.size * DATASIZE, true);
+            }
+        }
         else if (contextAnvil.counterU >= cfgAnvil.thresholdR && 
             monitoredGrant[agentIndex].find(address) == monitoredGrant[agentIndex].end())
         {
@@ -161,10 +174,29 @@ void UnifiedFuzzer::TickAnvil()
                 ;
             else
                 contextAnvil.counterR++;
+
+            if (!denial)
+            {
+                if (cfgAnvil.noise)
+                {
+                    RandomC(cAgents[agentIndex],
+                        cfg->memoryStart, cfg->memoryStart + cfgAnvil.size * DATASIZE, true);
+                }
+            }
         }
     }
     else
-        stageRComplete = true; 
+    {
+        stageRComplete = true;
+
+        size_t agentIndex = contextAnvil.ordinal[0];
+
+        if (cfgAnvil.noise)
+        {
+            RandomC(cAgents[agentIndex],
+                cfg->memoryStart, cfg->memoryStart + cfgAnvil.size * DATASIZE, true);
+        }
+    }
 
     if (contextAnvil.counterB < cfgAnvil.size)
     {
@@ -186,8 +218,10 @@ void UnifiedFuzzer::TickAnvil()
                 }
 
                 {
+                    size_t agentIndex = contextAnvil.ordinal[1 + i];
+
                     // alternative AcquirePerm toT operation on B stage
-                    auto denial = cAgents[contextAnvil.ordinal[1 + i]]->do_acquireBlock(
+                    auto denial = cAgents[agentIndex]->do_acquireBlock(
                         cfg->memoryStart + contextAnvil.counterB * DATASIZE, TLParamAcquire::NtoB, 0);
                 
                     if (denial == tl_agent::ActionDenial::CHANNEL_CONGESTION
@@ -199,6 +233,15 @@ void UnifiedFuzzer::TickAnvil()
                         contextAnvil.counterB++;
                         continue;
                     }
+
+                    if (!denial)
+                    {
+                        if (cfgAnvil.noise)
+                        {
+                            RandomC(cAgents[agentIndex],
+                                cfg->memoryStart, cfg->memoryStart + cfgAnvil.size * DATASIZE, true);
+                        }
+                    }
                 }
 
                 if (ulAgentCountPerC)
@@ -208,10 +251,23 @@ void UnifiedFuzzer::TickAnvil()
                         cfg->memoryStart + contextAnvil.counterB * DATASIZE);
 
                     if (denial == tl_agent::ActionDenial::CHANNEL_CONGESTION
-                    || denial == tl_agent::ActionDenial::CHANNEL_RESOURCE)
+                     || denial == tl_agent::ActionDenial::CHANNEL_RESOURCE)
                         ;
                     else
                         contextAnvil.counterB++;
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < cfgAnvil.widthB && contextAnvil.counterB < cfgAnvil.size; i++)
+            {
+                size_t agentIndex = contextAnvil.ordinal[1 + i];
+
+                if (cfgAnvil.noise)
+                {
+                    RandomC(cAgents[agentIndex],
+                        cfg->memoryStart, cfg->memoryStart + cfgAnvil.size * DATASIZE, true);
                 }
             }
         }
@@ -221,7 +277,11 @@ void UnifiedFuzzer::TickAnvil()
 
     if (cfgAnvil.noise)
     {
-        // TODO
+        for (int i = 0; i < (cAgentCount - 1 - cfgAnvil.widthB); i++)
+        {
+            RandomC(cAgents[contextAnvil.ordinal[1 + cfgAnvil.widthB + i]],
+                cfg->memoryStart, cfg->memoryStart + cfgAnvil.size * DATASIZE, true);
+        }
     }
 
     if (stageUComplete && stageRComplete && stageBComplete)
@@ -241,6 +301,67 @@ void UnifiedFuzzer::TickAnvil()
         contextAnvil.counterB = 0;
 
         std::next_permutation(contextAnvil.ordinal.begin(), contextAnvil.ordinal.end());
+    }
+}
+
+void UnifiedFuzzer::RandomC(tl_agent::CAgent* cAgent, paddr_t begin, paddr_t end, bool cmoEnabled)
+{
+    paddr_t addr;
+    int     alias;
+
+    bool do_alias = CAGENT_RAND64(cAgent, "UnifiedFuzzer") % 2;
+
+    addr  = ((CAGENT_RAND64(cAgent, "UnifiedFuzzer") % (end - begin)) + begin) & ~(DATASIZE - 1);
+    alias = (do_alias) ? (CAGENT_RAND64(cAgent, "UnifiedFuzzer") % 4) : 0;
+
+    if (CAGENT_RAND64(cAgent, "UnifiedFuzzer") % 4)
+    {
+        if (!cAgent->config().memoryEnable)
+            return;
+
+        if (CAGENT_RAND64(cAgent, "UnifiedFuzzer") % 2)
+        {
+            if (CAGENT_RAND64(cAgent, "UnifiedFuzzer") % 3)
+            {
+                if (CAGENT_RAND64(cAgent, "UnifiedFuzzer") % 2)
+                    cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias); // AcquireBlock NtoT
+                else
+                    cAgent->do_acquireBlock(addr, TLParamAcquire::NtoB, alias); // AcquireBlock NtoB
+            }
+            else
+                cAgent->do_acquirePerm(addr, TLParamAcquire::NtoT, alias); // AcquirePerm
+        }
+        else
+        {
+            cAgent->do_releaseDataAuto(addr, alias,
+                CAGENT_RAND64(cAgent, "UnifiedFuzzer") & 0x1,
+                CAGENT_RAND64(cAgent, "UnifiedFuzzer") & 0x1);
+        }
+    }
+    else if (cmoEnabled && cAgent->config().cmoEnable)
+    {
+        bool alwaysHit = (CAGENT_RAND64(cAgent, "UnifiedFuzzer") % 8) == 0;
+
+        switch (CAGENT_RAND64(cAgent, "UnifiedFuzzer") % 3)
+        {
+            case 0: // cbo.clean
+                if (cAgent->config().cmoEnableCBOClean)
+                    cAgent->do_cbo_clean(addr, alwaysHit);
+                break;
+
+            case 1: // cbo.flush
+                if (cAgent->config().cmoEnableCBOFlush)
+                    cAgent->do_cbo_flush(addr, alwaysHit);
+                break;
+
+            case 2: // cbo.inval
+                if (cAgent->config().cmoEnableCBOInval)
+                    cAgent->do_cbo_inval(addr, alwaysHit);
+                break;
+
+            default:
+                break;
+        }
     }
 }
 
