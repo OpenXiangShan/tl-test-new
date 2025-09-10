@@ -41,6 +41,7 @@ namespace tl_agent {
         uint8_t             needHint;
         paddr_t             vaddr;
         uint8_t             alias;
+        uint8_t             way;
     };
 
     class BundleChannelB : public DecoupledBundle {

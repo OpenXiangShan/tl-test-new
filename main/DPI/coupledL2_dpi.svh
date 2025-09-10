@@ -87,6 +87,7 @@ import "DPI-C" function void TileLinkPullChannelA (
     output  byte            user_needHint,
     output  longint         user_vaddr,
     output  byte            user_alias,
+    output  byte            user_way,
     output  int             mask,
     output  longint         data0,
     output  longint         data1,
@@ -107,6 +108,7 @@ function void SvTileLinkPullChannelA (
     output  logic           user_needHint,
     output  logic [35:0]    user_vaddr,
     output  logic [1:0]     user_alias,
+    output  logic [3:0]     user_way,
     output  logic [31:0]    mask,
     output  logic [255:0]   data,
     output  logic           corrupt
@@ -125,6 +127,7 @@ function void SvTileLinkPullChannelA (
             user_needHint,
             user_vaddr,
             user_alias,
+            user_way,
             mask,
             data[63:0],
             data[127:64],
@@ -268,6 +271,7 @@ import "DPI-C" function void TileLinkPullChannelC (
     output  byte            user_needHint,
     output  longint         user_vaddr,
     output  byte            user_alias,
+    output  byte            user_way,
     output  longint         data0,
     output  longint         data1,
     output  longint         data2,
@@ -287,6 +291,7 @@ function void SvTileLinkPullChannelC (
     output  logic           user_needHint,
     output  logic [35:0]    user_vaddr,
     output  logic [1:0]     user_alias,
+    output  logic [3:0]     user_way,
     output  logic [255:0]   data,
     output  logic           corrupt
 );
@@ -304,6 +309,7 @@ function void SvTileLinkPullChannelC (
             user_needHint,
             user_vaddr,
             user_alias,
+            user_way,
             data[63:0],
             data[127:64],
             data[191:128],
@@ -327,6 +333,7 @@ import "DPI-C" function void TileLinkPushChannelD (
     input   byte            size,
     input   longint         source,
     input   longint         sink,
+    input   byte            user_way,
     input   byte            denied,
     input   longint         data0,
     input   longint         data1,
@@ -344,6 +351,7 @@ function void SvTileLinkPushChannelD (
     input   logic [2:0]     size,
     input   logic [63:0]    source,
     input   logic [63:0]    sink,
+    input   logic [3:0]     user_way,
     input   logic           denied,
     input   logic [255:0]   data,
     input   logic           corrupt
@@ -356,6 +364,7 @@ function void SvTileLinkPushChannelD (
     guard_size:         assert (!resetn || !valid || !$isunknown(size         )) else $fatal("TileLinkPushChannelD: 'size' is unknown");
     guard_source:       assert (!resetn || !valid || !$isunknown(source       )) else $fatal("TileLinkPushChannelD: 'source' is unknown");
     guard_sink:         assert (!resetn || !valid || !$isunknown(sink         )) else $fatal("TileLinkPushChannelD: 'sink' is unknown");
+    guard_user_way:     assert (!resetn || !valid || !$isunknown(user_way     )) else $fatal("TileLinkPushChannelD: 'user_way' is unknown");
     guard_denied:       assert (!resetn || !valid || !$isunknown(denied       )) else $fatal("TileLinkPushChannelD: 'denied' is unknown");
 
     /*
@@ -390,6 +399,7 @@ function void SvTileLinkPushChannelD (
             size,
             source,
             sink,
+            user_way,
             denied,
             data[63:0],
             data[127:64],
