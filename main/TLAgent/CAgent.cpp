@@ -572,6 +572,7 @@ namespace tl_agent {
                     } else {
                         entry->update_status(this, S_SENDING_C, c->alias);
                     }
+                    c->way = entry->way;
                 } else {
                     tlc_assert(false, this, "Localboard key not found!");
                 }
@@ -613,6 +614,7 @@ namespace tl_agent {
                     } else {
                         entry->update_status(this, S_SENDING_C, c->alias);
                     }
+                    c->way = entry->way;
                 } else { 
                     tlc_assert(false, this, "Localboard key not found!");
                 }
@@ -726,6 +728,7 @@ namespace tl_agent {
         this->port->c.source   = c->source;
         this->port->c.alias    = 0;
         // this->port->c.dirty = c->dirty;
+        this->port->c.way      = c->way;
         this->port->c.valid    = true;
         return OK;
     }
@@ -953,6 +956,7 @@ namespace tl_agent {
                             .Append("source: ",     uint64_t(chnC.source))
                             .Append(", addr: ",     uint64_t(chnC.address))
                             .Append(", alias: ",    uint64_t(chnC.alias))
+                            .Append(", way: ",      uint64_t(chnC.way))
                             .EndLine());
                     }
                     inflightTimeStampsC[chnC.address] = { .time = cycle(), .opcode = TLOpcodeC::Release };
@@ -968,6 +972,7 @@ namespace tl_agent {
                             .Append("source: ",     uint64_t(chnC.source))
                             .Append(", addr: ",     uint64_t(chnC.address))
                             .Append(", alias: ",    uint64_t(chnC.alias))
+                            .Append(", way: ",      uint64_t(chnC.way))
                             .Append(", data: "));
                         LogEx(data_dump_embedded<BEATSIZE>(chnC.data->data));
                         LogEx(std::cout << std::endl);
@@ -1146,6 +1151,7 @@ namespace tl_agent {
 
             auto addr = idMap->query(this, chnD.source)->address;
             auto alias = idMap->query(this, chnD.source)->alias;
+            auto way = chnD.way;
 
             uint64_t latency;
 
@@ -1159,6 +1165,7 @@ namespace tl_agent {
                         .Append("source: ",     uint64_t(chnD.source))
                         .Append(", addr: ",     uint64_t(addr))
                         .Append(", alias: ",    uint64_t(alias))
+                        .Append(", way: ",      uint64_t(way))
                         .EndLine());
                 }
             }
@@ -1172,6 +1179,7 @@ namespace tl_agent {
                         .Append("source: ",     uint64_t(chnD.source))
                         .Append(", addr: ",     uint64_t(addr))
                         .Append(", alias: ",    uint64_t(alias))
+                        .Append(", way: ",      uint64_t(way))
                         .Append(", data: "));
                     LogEx(data_dump_embedded<BEATSIZE>(chnD.data->data));
                     LogEx(std::cout << std::endl);
@@ -1435,6 +1443,7 @@ namespace tl_agent {
                     tlc_assert(chnD.opcode == pendingD.info->opcode, this, "Opcode mismatch among beats!");
                     tlc_assert(chnD.param  == pendingD.info->param,  this, "Param mismatch among beats!");
                     tlc_assert(chnD.source == pendingD.info->source, this, "Source mismatch among beats!");
+                    tlc_assert(chnD.way    == pendingD.info->way,    this, "Way mismatch among beats!");
                     pendingD.update(this);
                 } else { // new D resp
                     auto resp_d = std::make_shared<BundleChannelD<RespField, EchoField, DATASIZE>>();
@@ -1442,6 +1451,7 @@ namespace tl_agent {
                     resp_d->param   = chnD.param;
                     resp_d->source  = chnD.source;
                     resp_d->data    = grant ? make_shared_tldata<DATASIZE>() : nullptr;
+                    resp_d->way     = chnD.way;
                     int nr_beat = TLEnumEquals(chnD.opcode, TLOpcodeD::Grant, TLOpcodeD::ReleaseAck) ? 0 : 1; // TODO: parameterize it
                     pendingD.init(resp_d, nr_beat);
                 }
@@ -1470,13 +1480,15 @@ namespace tl_agent {
                                     .Append(" at ", addr)
                                     .ToString());
 
+                            info->way = way;
+
                             latency = map_latency(addr);
                             
                             if (glbl.cfg.verbose_xact_data_complete)
                             {
                                 Log(this, Append("[data complete D] [GrantData ", 
                                         GrantDataParamToString(TLParamGrantData(chnD.param)), "] ")
-                                    .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias, ", data: "));
+                                    .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias, ", way: ", uint64_t(way), ", data: "));
                                 LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
                                 LogEx(std::cout << std::endl);
 
@@ -1510,6 +1522,9 @@ namespace tl_agent {
                                     .Append("Grant not expected on ", StatusToString(exact_status))
                                     .Append(" at ", addr)
                                     .ToString());
+
+                            info->way = way;
+
                             // Always set dirty in AcquirePerm toT txns
                             info->update_dirty(this, true, alias);
 
@@ -1867,6 +1882,7 @@ namespace tl_agent {
 #else
         req_c->needHint = 0;
 #endif
+        req_c->way      = entry->way;
         pendingC.init(req_c, DATASIZE / BEATSIZE);
 
         if (glbl.cfg.verbose_xact_sequenced)
@@ -1974,6 +1990,7 @@ namespace tl_agent {
                 req_c->opcode   = uint8_t(TLOpcodeC::Release);
                 req_c->param    = uint8_t(TLParamRelease(param));
                 req_c->data     = make_shared_tldata_zero<DATASIZE>();
+                req_c->way      = entry->way;
 
                 if (glbl.cfg.verbose_agent_debug)
                 {

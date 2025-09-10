@@ -71,6 +71,7 @@ namespace tl_agent {
         uint8_t             needHint;
         paddr_t             vaddr;
         uint8_t             alias;
+        uint8_t             way;
     };
 
     template<class Usr, class Echo, std::size_t N>
@@ -87,6 +88,7 @@ namespace tl_agent {
         uint8_t             dirty;
         shared_tldata_t<N>  data;
         uint8_t             corrupt;
+        uint8_t             way;
     };
 
     class BundleChannelE : public DecoupledBundle {
