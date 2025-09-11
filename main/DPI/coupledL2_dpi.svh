@@ -364,7 +364,7 @@ function void SvTileLinkPushChannelD (
     guard_size:         assert (!resetn || !valid || !$isunknown(size         )) else $fatal("TileLinkPushChannelD: 'size' is unknown");
     guard_source:       assert (!resetn || !valid || !$isunknown(source       )) else $fatal("TileLinkPushChannelD: 'source' is unknown");
     guard_sink:         assert (!resetn || !valid || !$isunknown(sink         )) else $fatal("TileLinkPushChannelD: 'sink' is unknown");
-    guard_user_way:     assert (!resetn || !valid || !$isunknown(user_way     )) else $fatal("TileLinkPushChannelD: 'user_way' is unknown");
+//  guard_user_way:     assert (!resetn || !valid || !$isunknown(user_way     )) else $fatal("TileLinkPushChannelD: 'user_way' is unknown");
     guard_denied:       assert (!resetn || !valid || !$isunknown(denied       )) else $fatal("TileLinkPushChannelD: 'denied' is unknown");
 
     /*
@@ -399,7 +399,7 @@ function void SvTileLinkPushChannelD (
             size,
             source,
             sink,
-            user_way,
+            $isunknown(user_way) ? 'hFF : user_way,
             denied,
             data[63:0],
             data[127:64],

@@ -1419,6 +1419,15 @@ namespace tl_agent {
                 bool hasData = TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData);
                 bool grant = TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData, TLOpcodeD::Grant);
 
+                if (grant && way >= cfg->masterCountWay)
+                {
+                    Log(this, Hex().ShowBase().Append("Invalid 'way' value, way: ", way).EndLine());
+                    if (way == 0xFF)
+                        Log(this, Append("0xFF captured, considering checking X-state propagation on 'way'.\n"));
+                    tlc_assert(false, this,  
+                        "'way' on channel D is invalid or out of range, consider checking X-state propagation");
+                }
+
                 auto info = localBoard->query(this, addr);
                 auto exact_status = info->status[alias];
                 if (exact_status == S_A_WAITING_D_NESTED_SENDING_C) {

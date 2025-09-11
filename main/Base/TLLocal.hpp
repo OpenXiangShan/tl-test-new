@@ -50,6 +50,7 @@ public:
     unsigned int        coreCount;                              // L1-L2 system count
     unsigned int        masterCountPerCoreTLC;                  // TL-C master count per core
     unsigned int        masterCountPerCoreTLUL;                 // TL-UL master count per core
+    unsigned int        masterCountWay;                         // L2 way count
 
     std::unordered_map<int, TLSequenceMode> sequenceModes;      // Agent sequence modes
 
