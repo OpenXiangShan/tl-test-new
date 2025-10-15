@@ -64,7 +64,9 @@ inline static void V3Reset(uint64_t& time, VTestTop* top, uint64_t n)
     for (uint64_t i = 0; i < n; i++)
     {
         top->reset = 1;
-
+#if DUMP_PERFCNT == 1
+        top->clean = 1;
+#endif
         top->clock = 0;
         top->eval(); 
         if (wave_enable && IsInWaveTime(time))
@@ -79,6 +81,10 @@ inline static void V3Reset(uint64_t& time, VTestTop* top, uint64_t n)
     }
 
     top->reset = 0;
+#if DUMP_PERFCNT == 1
+    top->clean = 0;
+    top->logEnable = 1;
+#endif
 }
 
 inline static void V3EvalNegedge(uint64_t& time, VTestTop* top)
@@ -282,6 +288,15 @@ int main(int argc, char **argv)
         if (!(time % 10000))
             std::cout << "[" << time << "] [tl-test-new] Simulation time elapsed: " << time << "ps" << std::endl;
     }
+
+#if DUMP_PERFCNT == 1
+    top->timer = time;
+    top->dump = true;
+    V3PushTime(top, time);
+    V3EvalNegedge(time, top);
+    V3PushTime(top, time);
+    V3EvalPosedge(time, top);
+#endif
 
     //
     int error = 0;

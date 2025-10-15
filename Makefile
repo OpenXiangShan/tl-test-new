@@ -5,6 +5,7 @@ ifneq ($(origin CXX_COMPILER), undefined)
 	CMAKE_CXX_COMPILER := -DCMAKE_CXX_COMPILER=$(CXX_COMPILER)
 endif
 
+TLTEST_COMMON_ARGS := -DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0 -DDUMP_PERFCNT=1
 
 init:
 	git submodule update --init --recursive
@@ -25,16 +26,13 @@ tltest-prepare-v3:
 
 
 tltest-prepare-all-coupledL2:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0
+	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS)
 
 tltest-prepare-dpi-coupledL2:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0
+	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS)
 
 tltest-prepare-v3-coupledL2:
-	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0
+	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS)
 
 
 tltest-prepare-all-openLLC:
