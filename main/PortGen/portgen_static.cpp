@@ -211,6 +211,7 @@ namespace V3::PortGen {
                 PullMasterPort(i, "c_bits_size"     , "c.size");
                 PullMasterPort(i, "c_bits_source"   , "c.source");
                 PullMasterPort(i, "c_bits_address"  , "c.address");
+                PullMasterPort(i, "c_bits_user_way" , "c.way");
                 cpp_file.Append("    verilated->", GenerateMasterPortName(i, "c_bits_user_alias"), " = 0;").EndLine();
                 cpp_file.Append("    std::memcpy(",
                         "verilated->", GenerateMasterPortName(i, "c_bits_data"), ", ",
@@ -245,6 +246,7 @@ namespace V3::PortGen {
                 PushMasterPort(i, "d.source"    , "d_bits_source");
                 PushMasterPort(i, "d.sink"      , "d_bits_sink");
                 PushMasterPort(i, "d.denied"    , "d_bits_denied");
+                PushMasterPort(i, "d.way"       , "d_bits_user_way");
                 cpp_file.Append("    std::memcpy(",
                         "port->d.data->data, ",
                         "verilated->", GenerateMasterPortName(i, "d_bits_data"), ", ",

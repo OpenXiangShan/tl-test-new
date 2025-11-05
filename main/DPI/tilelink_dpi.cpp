@@ -135,6 +135,7 @@ extern "C" void TileLinkPullChannelA(
     uint8_t*            user_needHint,
     uint64_t*           user_vaddr,
     uint8_t*            user_alias,
+    uint8_t*            user_way,
     uint32_t*           mask,
     uint64_t*           data0,
     uint64_t*           data1,
@@ -153,6 +154,7 @@ extern "C" void TileLinkPullChannelA(
         *user_needHint  = 0;
         *user_vaddr     = 0;
         *user_alias     = 0;
+        *user_way       = 0;
         *mask           = 0;
         *data0          = 0;
         *data1          = 0;
@@ -173,6 +175,7 @@ extern "C" void TileLinkPullChannelA(
     *user_needHint  =  port.a.needHint;
     *user_vaddr     =  port.a.vaddr;
     *user_alias     =  port.a.alias;
+    *user_way       =  port.a.way;
     *mask           =  port.a.mask;
     *data0          = (uint64_t(port.a.data->data[0]))
                     | (uint64_t(port.a.data->data[1])   << 8)
@@ -283,6 +286,7 @@ extern "C" void TileLinkPullChannelC(
     uint8_t*            user_needHint,
     uint64_t*           user_vaddr,
     uint8_t*            user_alias,
+    uint8_t*            user_way,
     uint64_t*           data0,
     uint64_t*           data1,
     uint64_t*           data2,
@@ -300,6 +304,7 @@ extern "C" void TileLinkPullChannelC(
         *user_needHint  = 0;
         *user_vaddr     = 0;
         *user_alias     = 0;
+        *user_way       = 0;
         *data0          = 0;
         *data1          = 0;
         *data2          = 0;
@@ -318,6 +323,7 @@ extern "C" void TileLinkPullChannelC(
     *user_needHint  =  port.c.needHint;
     *user_vaddr     =  port.c.vaddr;
     *user_alias     =  0;
+    *user_way       =  port.c.way;
     *data0      = (uint64_t(port.c.data->data[0]))
                 | (uint64_t(port.c.data->data[1])   <<  8)
                 | (uint64_t(port.c.data->data[2])   << 16)
@@ -366,6 +372,7 @@ extern "C" void TileLinkPushChannelD(
     const uint8_t       size,
     const uint64_t      source,
     const uint64_t      sink,
+    const uint8_t       user_way,
     const uint8_t       denied,
     const uint64_t      data0,
     const uint64_t      data1,
@@ -383,6 +390,7 @@ extern "C" void TileLinkPushChannelD(
     port.d.size             = size;
     port.d.source           = source;
     port.d.sink             = sink;
+    port.d.way              = user_way;
     port.d.denied           = denied;
     port.d.data->data[0]    =  data0        & 0xFF;
     port.d.data->data[1]    = (data0 >>  8) & 0xFF;

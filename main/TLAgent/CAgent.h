@@ -41,6 +41,7 @@ namespace tl_agent {
         TLPermission    privilege[4];
         TLPermission    pending_privilege[4];
         int             dirty[4];
+        uint8_t         way;
 
         inline C_SBEntry(const TLLocalContext* ctx, const int status[], const TLPermission privilege[])
         {
