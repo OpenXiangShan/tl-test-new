@@ -102,20 +102,20 @@ func paramstr(chn, param) {
   sink = $9;
   source = $10;
 
-  $1 = $14;                         # timestamp
-  $2 = $NF;                         # name
-  $3 = chnstr($13)                  # channel
-  $NF = "";                         # remove log id
-  $6 = sink;
-  $7 = source;
-  $5 = paramstr($13, $11)           # param
-  $4 = opstr($13, $12)              # opcode
+  $1 = sprintf("%6d", $14)                # timestamp
+  $2 = sprintf("%-14s", $NF)              # name
+  $3 = chnstr($13)                        # channel
+  $4 = sprintf("%-12s", opstr($13, $12))  # opcode
+  $NF = "";                               # remove log id
+  $5 = sprintf("%-12s", paramstr($13, $11)) # param
+  $6 = sprintf("%3d", sink)
+  $7 = sprintf("%3d", source)
 
   $8 = sprintf("%lx", $8)           # address
-  $9  = sprintf("%016lx", data_1)
-  $10 = sprintf("%016lx", data_2)
-  $11 = sprintf("%016lx", data_3)
-  $12 = sprintf("%016lx", data_4)
+  $9  = sprintf("%016lx", data_1)   # data_1
+  $10 = ""
+  $11 = ""
+  $12 = ""
 
   $13 = sprintf("user: %lx", user);
   $14 = sprintf("echo: %lx", echo);

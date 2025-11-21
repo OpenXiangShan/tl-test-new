@@ -1,3 +1,4 @@
+THREADS ?= 1
 THREADS_BUILD 	?= 1
 
 CMAKE_CXX_COMPILER :=
@@ -167,7 +168,7 @@ coupledL2-verilate:
 	rm -rf verilated
 	mkdir verilated
 	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/CoupledL2/build/*.*v -Wno-fatal \
-		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
+		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) --threads $(THREADS) -DSIM_TOP_MODULE_NAME=TestTop
 
 coupledL2-verilate-clean:
 	rm -rf verilated
@@ -186,7 +187,7 @@ openLLC-verilate:
 	rm -rf verilated
 	mkdir verilated
 	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/OpenLLC/build/*.*v -Wno-fatal \
-		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
+		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) --threads $(THREADS)  -DSIM_TOP_MODULE_NAME=TestTop
 
 openLLC-verilate-clean:
 	rm -rf verilated
