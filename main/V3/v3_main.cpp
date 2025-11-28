@@ -139,6 +139,36 @@ typename std::enable_if<!has_port_time<T>::value>::type V3PushTime(T* top, uint6
 { }
 
 
+template<typename T>
+concept ConceptPortL2ToL1Hint = requires {
+    { std::declval<T>().io_l1_0_l2Hint_valid           } -> std::convertible_to<uint8_t>;
+    { std::declval<T>().io_l1_0_l2Hint_bits_sourceId   } -> std::convertible_to<uint32_t>;
+};
+
+template<typename, typename = void>
+struct has_port_l2_to_l1_hint : std::false_type {};
+
+template<ConceptPortL2ToL1Hint T>
+struct has_port_l2_to_l1_hint<T, void> : std::true_type {};
+
+template<ConceptPortL2ToL1Hint T>
+typename std::enable_if<has_port_l2_to_l1_hint<T>::value>::type V3PullL2ToL1Hint(
+    T*          top,
+    uint8_t&    valid,
+    uint32_t&   sourceId)
+{
+    valid    = top->io_l1_0_l2Hint_valid;
+    sourceId = top->io_l1_0_l2Hint_bits_sourceId;
+}
+
+template<ConceptPortL2ToL1Hint T>
+typename std::enable_if<!has_port_l2_to_l1_hint<T>::value>::type V3PullL2ToL1Hint(
+    T*          top,
+    uint8_t&    valid,
+    uint32_t&   sourceId)
+{ }
+
+
 int main(int argc, char **argv)
 {
     atexit(V3Finalize);
@@ -160,6 +190,11 @@ int main(int argc, char **argv)
         std::cout << "[V3Main] \033[1;32mPassing ticking time to verilated TestTop\033[0m." << std::endl;
     else
         std::cout << "[V3Main] \033[31mNot passing ticking time to verilated TestTop\033[0m." << std::endl;
+
+    if constexpr (has_port_l2_to_l1_hint<VTestTop>::value)
+        std::cout << "[V3Main] \033[1;32mAccepting L2ToL1Hint from TestTop\033[0m." << std::endl;
+    else
+        std::cout << "[V3Main] \033[31mNot accepting L2ToL1Hint from TestTop\033[0m." << std::endl;
 
     //
     Verilated::commandArgs(argc, argv);
