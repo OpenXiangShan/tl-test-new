@@ -287,6 +287,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 fuzzers [i] = new CFuzzer(static_cast<CAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
                 fuzzers [i]->set_index(i);
+                fuzzers [i]->read_trace(cfg.traceFilePath.c_str());
 
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-C Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
@@ -305,6 +306,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 fuzzers [i] = new ULFuzzer(static_cast<ULAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
                 fuzzers [i]->set_index(i);
+                fuzzers [i]->read_trace(cfg.traceFilePath.c_str());
 
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-UL Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
@@ -323,10 +325,8 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 fuzzers [i] = new MFuzzer(static_cast<MAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
                 fuzzers [i]->set_index(i);
-
-                printf("#### MFuzzer %d mode: %d, init state: %d\n", i, fuzzers[i]->mode, fuzzers[i]->state);
-
                 fuzzers [i]->read_trace(cfg.traceFilePath.c_str());
+                
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-M Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
 

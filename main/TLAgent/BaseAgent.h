@@ -221,6 +221,8 @@ namespace tl_agent {
         inline void  connect(tlport_t* p){ this->port = p; }
 
         inline uint64_t rand64() noexcept { return rand(); }
+
+        tlport_t* getPort() noexcept { return port; }
     };
 
 }

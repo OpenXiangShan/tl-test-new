@@ -208,4 +208,34 @@ void ULFuzzer::tick() {
             // TLSystemFinishEvent().Fire();
         }
     }
+    else if (this->mode == TLSequenceMode::TRACE_WITH_FENCE) {
+        this->traceTestWithFence();
+    }
+}
+
+bool ULFuzzer::do_read(paddr_t addr) {
+    return ulAgent->do_getAuto(addr);
+}
+
+bool ULFuzzer::do_write(paddr_t addr, shared_tldata_t<DATASIZE> data) {
+    return ulAgent->do_putfulldata(addr, data);
+}
+
+bool ULFuzzer::read_ack() {
+    static bool last_beat = false;
+    auto &chnD = ulAgent->getPort()->d;
+    if (chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData)) {
+        if (last_beat) {
+            last_beat = false;
+            return true;
+        } else {
+            last_beat = true;
+        }
+    }
+    return false;
+}
+
+bool ULFuzzer::write_ack() {
+    auto &chnD = ulAgent->getPort()->d;
+    return chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck);
 }

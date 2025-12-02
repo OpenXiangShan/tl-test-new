@@ -70,3 +70,20 @@ void MMIOFuzzer::tick()
 
     this->randomTest(true);
 }
+
+// TODO: ignore MMIO Fuzzer for now
+bool MMIOFuzzer::do_read(paddr_t addr) {
+    return true;
+}
+
+bool MMIOFuzzer::do_write(paddr_t addr, shared_tldata_t<DATASIZE> data) {
+    return true;
+}
+
+bool MMIOFuzzer::read_ack() {
+    return true;
+}
+
+bool MMIOFuzzer::write_ack() {
+    return true;
+}

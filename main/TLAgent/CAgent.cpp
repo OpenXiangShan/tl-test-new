@@ -1875,8 +1875,13 @@ namespace tl_agent {
             address = iter->first;
         }
 
-        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
+        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full())
             return false;
+
+        // TODO-AI: target addr not in localBoard - return true to skip line in trace
+        if (!localBoard->haskey(address))
+            return true;
+
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(this, address);
         auto perm = entry->privilege[alias];

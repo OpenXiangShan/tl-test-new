@@ -524,6 +524,9 @@ void CFuzzer::tick() {
         if (this->bwprof.addr >= this->fuzzStreamEnd)
             flagDone = true;
     }
+    else if (this->mode == TLSequenceMode::TRACE_WITH_FENCE) {
+        this->traceTestWithFence();
+    }
 
     if (flagDone)
     {
@@ -540,4 +543,42 @@ void CFuzzer::tick() {
 bool CFuzzer::done() const noexcept
 {
     return flagDone;
+}
+
+bool CFuzzer::do_read(paddr_t addr) {
+    return cAgent->do_acquireBlock(addr, TLPermPromotion::NtoB, 0);
+}
+
+// TODO-AI: we all use AcquirePerm for now
+bool CFuzzer::do_write(paddr_t addr, shared_tldata_t<DATASIZE> data) {
+    return cAgent->do_acquirePerm(addr, TLPermPromotion::NtoT, 0);
+}
+
+bool CFuzzer::do_evict(paddr_t addr) {
+    return cAgent->do_releaseDataAuto(addr, 0, true, false);
+}
+
+bool CFuzzer::read_ack() {
+    static bool last_beat = false;
+    auto &chnD = cAgent->getPort()->d;
+    if (chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData)) {
+        if (last_beat) {
+            last_beat = false;
+            return true;
+        } else {
+            last_beat = true;
+        }
+    }
+
+    return false;
+}
+
+bool CFuzzer::write_ack() {
+    auto &chnD = cAgent->getPort()->d;
+    return chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::Grant);
+}
+
+bool CFuzzer::evict_ack() {
+    auto &chnD = cAgent->getPort()->d;
+    return chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::ReleaseAck);
 }

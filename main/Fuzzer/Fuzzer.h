@@ -11,6 +11,7 @@
 #include "../TLAgent/CAgent.h"
 #include "../TLAgent/MMIOAgent.h"
 
+#include <cassert>
 #include <cstdint>
 #include <vector>
 #include <queue>
@@ -118,7 +119,8 @@ public:
         READ = 0,
         WRITE = 1,
         MODIFY = 2,
-        FENCE = 3
+        EVICT = 3,
+        FENCE = 4
     };
     // preload data into L2 Cache
     std::queue<uint64_t> filledAddrs;
@@ -145,66 +147,29 @@ public:
         return ((addr % (cmoEnd - cmoStart)) + cmoStart);
     }
 
-    void read_trace(const std::string& tracefile_path) {
-        blkCountLimit = 0;
-        blkCountLimitTrace = 0;
+    // TODO-AI: we do not consider MMIO agent now
+    void read_trace(const std::string& tracefile_path);
+    void traceTestWithPrefill();
+    void traceTestWithFence();
 
-        std::ifstream tracefile(tracefile_path);
-        if (!tracefile.is_open()) {
-            throw std::runtime_error("Failed to open tracefile: " + tracefile_path);
-        }
-
-        printf("Agent %d: Reading tracefile %s\n", index, tracefile_path.c_str());
-
-        // std::string line;
-        // while (std::getline(tracefile, line)) {
-        for (std::string line; std::getline(tracefile, line); ) {
-            std::istringstream iss(line);
-            char operation;
-            uint64_t address;
-            int bank_idx;
-
-            // trace format: <operation> <address> <agent>
-            if (!(iss >> operation >> std::hex >> address >> bank_idx)) {
-                continue; // Skip malformed lines
-            }
-
-            // printf("Operation: %c, Address: 0x%lx, Agent: %d\n", operation, address, agent);
-
-            if ((bank_idx + 2) == index) { // 0: cAgent, 1: ulAgent, 2~: mAgent
-                switch (operation) {
-                    case 'r':
-                    case 'w':
-                    case 'm':
-                        traceAddrs.push(std::make_pair(
-                            operation == 'r' ? traceOp::READ :
-                            operation == 'w' ? traceOp::WRITE : traceOp::MODIFY,
-                            address));
-                        blkCountLimitTrace++;
-                        break;
-                    case 'f':
-                        traceAddrs.push(std::make_pair(traceOp::FENCE, address));
-                        break;
-                    case 'p':
-                        filledAddrs.push(address);
-                        blkCountLimit++;
-                        break;
-                    default:
-                        printf("Unknown operation: %c\n", operation);
-                        continue; // Skip unknown operations
-                }
-            }
-        }
-
-        printf("Fuzzer %d: filledAddrs size: %d, traceAddrs size: %d\n", index, blkCountLimit, blkCountLimitTrace);
-        tracefile.close();
-
-        // no preload address, directly start acquire2 process
-        if (blkCountLimit == 0) {
-            state = bwTestState::acquire2;
-        }
+    virtual bool do_read(paddr_t addr) = 0;
+    virtual bool do_write(paddr_t addr, shared_tldata_t<DATASIZE> data) = 0;
+    virtual bool read_ack() = 0;
+    virtual bool write_ack() = 0;
+    // the following two functions are used only for CAgent, se we override them only in CFuzzer
+    // leaving ULFuzzer/MFuzzer/MMIOFuzzer triggering assert failure when calling do_evict
+    virtual bool do_evict(paddr_t addr) {
+        assert(false && "do_evict not supported");
+        return false;
     }
-
+    virtual bool evict_ack() {
+        return false;
+    }
+    // the following function is used only for MAgent
+    virtual bool do_read_modify(paddr_t addr) {
+        assert(false && "do_read_modify not supported");
+        return false;
+    }
 };
 
 class ULFuzzer: public Fuzzer {
@@ -217,16 +182,26 @@ public:
     void caseTest();
     void caseTest2();
     void tick();
+
+    bool do_read(paddr_t addr);
+    bool do_write(paddr_t addr, shared_tldata_t<DATASIZE> data);
+    bool read_ack();
+    bool write_ack();
 };
 
 class MMIOFuzzer : public Fuzzer {
 private:
     tl_agent::MMIOAgent* mmioAgent;
 public:
-    MMIOFuzzer(tl_agent::MMIOAgent* ulAgent) noexcept;
+    MMIOFuzzer(tl_agent::MMIOAgent* mmioAgent) noexcept;
     virtual ~MMIOFuzzer() noexcept = default;
     void randomTest(bool put);
     void tick();
+
+    bool do_read(paddr_t addr);
+    bool do_write(paddr_t addr, shared_tldata_t<DATASIZE> data);
+    bool read_ack();
+    bool write_ack();
 };
 
 class MFuzzer: public Fuzzer {
@@ -239,9 +214,12 @@ public:
     void caseTest();
     void caseTest2();
     void bandwidthTest();
-    void traceBandwidthTest();
-    void traceTestWithFence();
     void tick();
+
+    bool do_read(paddr_t addr);
+    bool do_write(paddr_t addr, shared_tldata_t<DATASIZE> data);
+    bool read_ack();
+    bool write_ack();
 };
 
 struct CFuzzRange {
@@ -298,6 +276,13 @@ public:
     void caseTest();
     void tick();
     bool done() const noexcept;
+
+    bool do_read(paddr_t addr);
+    bool do_write(paddr_t addr, shared_tldata_t<DATASIZE> data);
+    bool read_ack();
+    bool write_ack();
+    bool do_evict(paddr_t addr) override;
+    bool evict_ack() override;
 };
 
 

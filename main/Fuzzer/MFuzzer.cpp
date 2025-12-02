@@ -278,247 +278,12 @@ void MFuzzer::bandwidthTest() {
   }
 }
 
-void MFuzzer::traceBandwidthTest() {
-  //复用fuzzStream Code
-  paddr_t addr;
-  int     alias;
-  bool do_alias = false;
-
-  // dont alias
-  alias = (do_alias) ? (CAGENT_RAND64(mAgent, "MFuzzer") % FUZZ_STREAM_RANGE.maxAlias) : 0;
-
-  // ============================================================
-  // |               Preload data into L2 Cache                 |
-  // ============================================================
-  if (state == bwTestState::acquire) {
-    if (!mAgent->config().memoryEnable)
-      return;
-
-    addr = filledAddrs.front();
-    // addr = remap_memory_address(addr);
-    if(mAgent->do_getAuto(addr)){
-        LogX("%ld IIIIacq try do_getAuto(0x%lx) at agent %d\n", *cycles, addr, index);
-        blkSent++;
-        filledAddrs.push(addr); // push equals push_back
-        filledAddrs.pop();
-    };
-
-    if (blkSent == blkCountLimit) {
-      printf("#### MFuzzer %d state: wait_acquire\n", index);
-      state = bwTestState::wait_acquire;
-      blkSent = 0;
-    }
-  }
-
-  if (state == bwTestState::wait_acquire || state == bwTestState::acquire) {
-    // wait channel M to fire
-    if (mAgent->is_m_fired()) {
-      blkReceived++;
-    }
-    if (blkReceived == blkCountLimit) {
-      printf("#### MFuzzer %d state: releasing\n", index);
-      state = bwTestState::releasing;
-      blkReceived = 0;
-    }
-  }
-  // FIXME 重地址冲突(M1和M3相邻时间对同一地址读写)
-  if (state == bwTestState::releasing) {
-    addr = filledAddrs.front();
-
-    // randomize putdata
-    auto putdata = make_shared_tldata<DATASIZE>();
-    for (int i = 0; i < DATASIZE; i++) {
-      putdata->data[i] = (uint8_t)CAGENT_RAND64(mAgent, "CFuzzer");
-    }
-
-    if(mAgent->do_putfulldata(addr, putdata)){
-        LogX("%ld IIIIrel try do_putFull(0x%lx) at agent %d\n", *cycles, addr, index);
-        blkSent++;
-        filledAddrs.pop();
-    }
-
-    if (blkSent == blkCountLimit) {
-      printf("#### MFuzzer %d state: wait_release\n", index);
-      state = bwTestState::wait_release;
-      blkSent = 0;
-    }
-  }
-
-  if (state == bwTestState::releasing||state == bwTestState::wait_release) {
-    // wait channel D to fire (AccessAck)
-    if (mAgent->is_d_fired()) {
-      blkReceived++;
-    }
-    if (blkReceived == blkCountLimit) {
-      printf("#### MFuzzer %d state: acquire2\n", index);
-      state = bwTestState::acquire2;
-      perfCycleStart=this->mAgent->cycle();
-      blkReceived = 0;
-    }
-  }
-
-  // ============================================================
-  // |                Trace r/w accessing L2                    |
-  // ============================================================
-  if (state == bwTestState::acquire2) {
-    auto [opcode2, addr2] = traceAddrs.front();
-
-    bool success = false;
-    switch (opcode2) {
-      case traceOp::READ:
-        if(mAgent->do_getAuto(addr2)){
-          success = true;
-          LogX("%ld IIIIacq2 try do_GetAuto(0x%lx) at agent %d\n", *cycles, addr2, index);
-        };
-        break;
-
-      case traceOp::WRITE:
-        auto putdata = make_shared_tldata<DATASIZE>();
-        for (int i = 0; i < DATASIZE; i++) {
-          putdata->data[i] = (uint8_t)CAGENT_RAND64(mAgent, "CFuzzer");
-        }
-        if(mAgent->do_putfulldata(addr2, putdata)){
-          success = true;
-          LogX("%ld IIIIacq2 try do_putFull(0x%lx) at agent %d\n", *cycles, addr2, index);
-        }
-        break;
-    }
-
-    if (success) {
-      blkSent++;
-      traceAddrs.pop();
-
-      if (blkSent % 10000 == 0) {
-        printf("#### MFuzzer %d processed %d blocks\n", index, blkSent);
-      }
-    }
-
-
-    if (blkSent == blkCountLimitTrace) {
-      printf("#### MFuzzer %d state: wait_acquire2\n", index);
-      state = bwTestState::wait_acquire2;
-      blkSent = 0;
-    }
-  }
-
-  if (state == bwTestState::acquire2 || state == bwTestState::wait_acquire2) {
-    // M_fire and D_fire might happen at the same cycle
-    if (mAgent->is_m_fired()) {
-      blkReceived++;
-    }
-    if (mAgent->is_d_fired()) {
-      blkReceived++;
-    }
-
-    if (blkReceived == blkCountLimitTrace) {
-      state = exit_fuzzer;
-      blkReceived = 0;
-      perfCycleEnd = this->mAgent->cycle(); // maybe just *cycles
-      // perfCycleEnd=(this->mAgent->cycle()-perfCycleStart)/2;
-      // TLSystemFinishEvent().Fire();// stop
-      std::cout << "perf debug : "<< blkCountLimitTrace*64/((this->mAgent->cycle()-perfCycleStart)/2)<< "B/Cycle"<<std::endl;
-    }
-  }
-}
-
-void MFuzzer::traceTestWithFence() {
-  //复用fuzzStream Code
-  paddr_t addr;
-
-  // require no prefill since no such handling logic
-  assert(filledAddrs.size() == 0);
-
-  // ============================================================
-  // |                Trace r/w accessing L2                    |
-  // ============================================================
-  if (state == bwTestState::acquire2) {
-    auto [opcode2, addr2] = traceAddrs.front();
-
-    bool rwsuccess = false;
-    switch (opcode2) {
-      case traceOp::FENCE:
-        printf("#### MFuzzer %d state: wait_fence\n", index);
-        LogX("%ld IIIIacq2 try Fence(0x%lx) at agent %d\n", *cycles, addr2, index);
-        state = bwTestState::wait_fence;
-        traceAddrs.pop();
-        break;
-
-      case traceOp::READ:
-      case traceOp::MODIFY:
-        if (mAgent->do_getAuto(addr2, opcode2 == traceOp::MODIFY)) {
-          rwsuccess = true;
-          LogX("%ld IIIIacq2 try do_GetAuto(0x%lx) at agent %d\n", *cycles, addr2, index);
-        };
-        break;
-
-      case traceOp::WRITE:
-        auto putdata = make_shared_tldata<DATASIZE>();
-        for (int i = 0; i < DATASIZE; i++) {
-          putdata->data[i] = (uint8_t)CAGENT_RAND64(mAgent, "CFuzzer");
-        }
-        if(mAgent->do_putfulldata(addr2, putdata)){
-          rwsuccess = true;
-          LogX("%ld IIIIacq2 try do_putFull(0x%lx) at agent %d\n", *cycles, addr2, index);
-        }
-        break;
-    }
-
-    if (rwsuccess) {
-      blkSentFence ++;
-      blkSent ++;
-      traceAddrs.pop();
-
-      if (blkSent % 10000 == 0) {
-        printf("#### MFuzzer %d processed %d blocks\n", index, blkSent);
-      }
-    }
-
-    if (blkSent == blkCountLimitTrace) {
-      printf("#### MFuzzer %d state: wait_acquire2\n", index);
-      state = bwTestState::wait_acquire2;
-      blkSent = 0;
-    }
-  }
-
-  if (mAgent->is_m_fired()) {
-    blkReceived ++;
-    blkReceivedFence ++;
-  }
-  if (mAgent->is_d_fired()) {
-    blkReceived ++;
-    blkReceivedFence ++;
-  }
-
-
-  if (state == bwTestState::wait_fence) {
-    if (blkSentFence == blkReceivedFence) {
-      blkSentFence = 0;
-      blkReceivedFence = 0;
-      state = bwTestState::acquire2;
-      printf("#### MFuzzer %d state: acquire2\n", index);
-    }
-  }
-
-  // === count all responses to determine the end of test ===
-  // M_fire and D_fire might happen at the same cycle
-  if (blkReceived == blkCountLimitTrace) {
-    state = exit_fuzzer;
-    blkReceived = 0;
-    perfCycleEnd = this->mAgent->cycle(); // maybe just *cycles
-    // perfCycleEnd=(this->mAgent->cycle()-perfCycleStart)/2;
-    // TLSystemFinishEvent().Fire();// stop
-    std::cout << "perf debug : "<< blkCountLimitTrace*64/((this->mAgent->cycle()-perfCycleStart)/2)<< "B/Cycle"<<std::endl;
-  }
-}
-
-
-
 void MFuzzer::tick() {
   // perfCycleEnd != 0 means the test is finished
   if (perfCycleEnd != 0) return;
 
   if (this->mode == TLSequenceMode::TRACE_WITH_REFILL) {
-    this->traceBandwidthTest();
+    this->traceTestWithPrefill();
   } else if (this->mode == TLSequenceMode::TRACE_WITH_FENCE) {
     this->traceTestWithFence();
   } else {
@@ -535,4 +300,20 @@ void MFuzzer::tick() {
         // TLSystemFinishEvent().Fire();
     }
   }
+}
+
+bool MFuzzer::do_read(paddr_t addr) {
+  return mAgent->do_getAuto(addr, false); //TODO-AI: add modify later
+}
+
+bool MFuzzer::do_write(paddr_t addr, shared_tldata_t<DATASIZE> data) {
+  return mAgent->do_putfulldata(addr, data);
+}
+
+bool MFuzzer::read_ack() {
+    return mAgent->is_m_fired();
+}
+
+bool MFuzzer::write_ack() {
+    return mAgent->is_d_fired();
 }
