@@ -161,6 +161,10 @@ namespace V3::PortGen {
                 PullMMasterPort(i, j, "a_bits_address"     , "a.address");
                 PullMMasterPort(i, j, "a_bits_mask"        , "a.mask");
                 PullMMasterPort(i, j, "a_bits_user_matrix" , "a.matrix");
+				// 添加这些行（重新构建后请确认 Verilog 信号名称）：
+                PullMMasterPort(i, j, "a_bits_user_AmeIndex", "a.ameIndex");
+                PullMMasterPort(i, j, "a_bits_user_AmeChannel", "a.ameChannel");
+
                 cpp_file.Append("    std::memcpy(",
                         "verilated->", GenerateMasterMPortName(i, j, "a_bits_data"), ", "
                         "port->a.data->data, ",
@@ -351,7 +355,7 @@ namespace V3::PortGen {
                         DATASIZE,
                     ");").EndLine();
                 cpp_file.Append("    port->", "m.source", " = verilated->",
-                        GenerateDataMPortName(j, "bits_sourceId"), ";")
+                        GenerateDataMPortName(j, "bits_sourceId"),"%32" ";")
                     .EndLine();
                 cpp_file.Append("    port->", "m.valid", " = verilated->",
                         GenerateDataMPortName(j, "valid"), ";")

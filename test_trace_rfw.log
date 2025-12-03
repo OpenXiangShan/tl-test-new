@@ -1,0 +1,79 @@
+# -------------------------
+# Phase 1: cold read fill
+# -------------------------
+r 0x40  1
+r 0x80  0
+r 0xC0  1
+r 0x100 0
+r 0x140 1
+r 0x180 0
+r 0x1C0 1
+r 0x200 0
+
+# global phase barrier: BOTH agents must fence
+f 0x0 0
+f 0x0 1
+
+# -------------------------
+# Phase 2: write after fence
+# -------------------------
+w 0x40  1
+w 0x80  0
+w 0xC0  1
+w 0x100 0
+w 0x140 1
+w 0x180 0
+w 0x1C0 1
+w 0x200 0
+
+# global phase barrier: BOTH agents must fence
+f 0x0 0
+f 0x0 1
+
+# -------------------------
+# Phase 3: read-back check
+# -------------------------
+r 0x40  1
+r 0x80  0
+r 0xC0  1
+r 0x100 0
+r 0x140 1
+r 0x180 0
+r 0x1C0 1
+r 0x200 0
+
+# global phase barrier: BOTH agents must fence
+f 0x0 0
+f 0x0 1
+
+# -------------------------
+# Phase 4: repeat (stress FSM)
+# 每个小序列的 fence 必须跟随该序列的 agent
+# -------------------------
+r 0x240 1
+f 0x0  1
+w 0x240 1
+f 0x0  1
+r 0x240 1
+
+r 0x280 0
+f 0x0  0
+w 0x280 0
+f 0x0  0
+r 0x280 0
+
+r 0x2C0 1
+f 0x0  1
+w 0x2C0 1
+f 0x0  1
+r 0x2C0 1
+
+r 0x300 0
+f 0x0  0
+w 0x300 0
+f 0x0  0
+r 0x300 0
+
+# end barrier (optional but推荐): BOTH agents fence
+f 0x0 0
+f 0x0 1

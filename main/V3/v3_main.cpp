@@ -67,13 +67,13 @@ inline static void V3Reset(uint64_t& time, VTestTop* top, uint64_t n)
 #if DUMP_PERFCNT == 1
         top->clean = 1;
 #endif
-        top->clock = 0;
+        top->clock = 1;
         top->eval(); 
         if (wave_enable && IsInWaveTime(time))
             fst->dump(time);
         time++;
 
-        top->clock = 1;
+        top->clock = 0;
         top->eval(); 
         if (wave_enable && IsInWaveTime(time))
             fst->dump(time);
@@ -258,7 +258,7 @@ int main(int argc, char **argv)
 
         //
         V3PushTime(top, time);
-        V3EvalNegedge(time, top);
+        V3EvalPosedge(time, top);
 
         // Pull 'ready's
         V3::PortGen::PullChannelB(top, tltest);
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
 
         //
         V3PushTime(top, time);
-        V3EvalPosedge(time, top);
+        V3EvalNegedge(time, top);
 
         //
         if (!(time % 10000))
@@ -293,9 +293,9 @@ int main(int argc, char **argv)
     top->timer = time;
     top->dump = true;
     V3PushTime(top, time);
-    V3EvalNegedge(time, top);
-    V3PushTime(top, time);
     V3EvalPosedge(time, top);
+    V3PushTime(top, time);
+    V3EvalNegedge(time, top);
 #endif
 
     //

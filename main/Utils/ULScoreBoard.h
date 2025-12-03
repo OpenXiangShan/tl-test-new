@@ -317,7 +317,7 @@ int UncachedBoard<Tk>::verify(TLLocalContext* ctx, size_t sysId, const Tk& key, 
         tlc_assert(false, ctx, "non-exist data verify action");
 
     bool hit = false;
-    std::vector<shared_tldata_t<DATASIZE>> entry = this->mapping[sysId][key][source];
+    auto& entry = this->mapping[sysId][key][source];
     for (auto ref : entry)
         if (data_check(ctx, data->data, ref->data))
         {
@@ -327,9 +327,19 @@ int UncachedBoard<Tk>::verify(TLLocalContext* ctx, size_t sysId, const Tk& key, 
 
     if (!hit)
     {
-        printf("@@@ addr: 0x%lx\n", key);
-        data_dump_multiple_on_verify<DATASIZE>(data->data, entry);
-        tlc_assert(false, ctx, "Data mismatch");
+        bool replaced_placeholder = false;
+        if (entry.size() == 1 && entry[0] == init_zeros)
+        {
+            entry[0] = data;
+            replaced_placeholder = true;
+        }
+
+        if (!replaced_placeholder)
+        {
+            printf("@@@ addr: 0x%lx\n", key);
+            data_dump_multiple_on_verify<DATASIZE>(data->data, entry);
+            tlc_assert(false, ctx, "Data mismatch");
+        }
     }
 
     return 0;

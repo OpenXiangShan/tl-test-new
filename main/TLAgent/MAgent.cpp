@@ -91,6 +91,10 @@ namespace tl_agent {
         this->port->a.source   = a->source;
         this->port->a.valid    = true;
         this->port->a.matrix   = a->matrix;
+	    // 添加这两行：
+        this->port->a.ameIndex = a->ameIndex;
+        this->port->a.ameChannel = a->ameChannel;
+
         return OK;
     }
 
@@ -450,6 +454,11 @@ namespace tl_agent {
         req_a->source   = this->idpool.getid();
         req_a->vaddr    = address;
         req_a->matrix   = modify? 0b11 : 0b01;
+
+		// 添加这些行：
+        req_a->ameIndex = req_a->source; // 使用 source ID 作为 ameIndex
+        req_a->ameChannel = 0;           // 如果需要，设置适当的 channel
+
 #ifdef MAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
@@ -482,6 +491,11 @@ namespace tl_agent {
         req_a->source   = this->idpool.getid();
         req_a->vaddr    = address;
         req_a->matrix   = 1;
+
+		// 添加这些行：
+        req_a->ameIndex = req_a->source; // 使用 source ID 作为 ameIndex
+        req_a->ameChannel = 0;           // 如果需要，设置适当的 channel
+
 #ifdef MAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
@@ -518,6 +532,11 @@ namespace tl_agent {
         req_a->data     = data;
         req_a->vaddr    = address;
         req_a->matrix   = 1;
+
+		// 添加这些行：
+        req_a->ameIndex = req_a->source; // 使用 source ID 作为 ameIndex
+        req_a->ameChannel = 0;           // 如果需要，设置适当的 channel
+
 #ifdef MAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
@@ -553,6 +572,11 @@ namespace tl_agent {
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
         req_a->vaddr    = address;
+
+		// 添加这些行：
+        req_a->ameIndex = req_a->source; // 使用 source ID 作为 ameIndex
+        req_a->ameChannel = 0;           // 如果需要，设置适当的 channel
+
 #ifdef MAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else

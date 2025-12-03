@@ -41,6 +41,10 @@ namespace tl_agent {
 #ifndef MatrixTest
         uint8_t             matrix;
 #endif
+		// 添加这些行：
+        uint8_t             ameIndex;
+        uint8_t             ameChannel;
+
         uint8_t             needHint;
         paddr_t             vaddr;
         uint8_t             alias;

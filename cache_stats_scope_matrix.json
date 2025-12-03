@@ -1,0 +1,117 @@
+{
+  "assumptions": {
+    "primary_miss_definition": "MISS if upstream (L3_L2/MEM_L3) A(Get/AcquireBlock) to same addr occurs between req..resp",
+    "mshr_merge_definition": "MSHR_MERGE if an outstanding PRIMARY MISS exists for same addr under scope='matrix' at req time",
+    "tag_hit_definition": "TAG_HIT if not MISS and not MSHR_MERGE",
+    "reuse_definition": "per-address: ignore first access; compute rates for accesses #2..end; ignore single-touch addrs",
+    "matrix_read_req": "L2_Matrix* A Get",
+    "matrix_read_resp": [
+      "M MatrixData",
+      "D AccessAckData"
+    ],
+    "upstream_agents": [
+      "L3_L2",
+      "MEM_L3"
+    ],
+    "upstream_a_ops": [
+      "Get",
+      "AcquireBlock"
+    ],
+    "source_matching": "match by (agent, addr, source_low) where source_low = source & inferred_mask; mask inferred from request max source per agent"
+  },
+  "overall": {
+    "total_reads": 76,
+    "miss": 32,
+    "tag_hit": 32,
+    "mshr_merge": 12,
+    "hit_any": 44,
+    "hit_rate_any": 0.5789473684210527,
+    "tag_hit_rate": 0.42105263157894735,
+    "mshr_merge_rate": 0.15789473684210525,
+    "reuse_total_reads": 44,
+    "reuse_tag_hits": 32,
+    "reuse_mshr_merges": 12,
+    "reuse_hits_any": 44,
+    "reuse_hit_rate_any": 1.0,
+    "reuse_tag_hit_rate": 0.7272727272727273,
+    "reuse_mshr_merge_rate": 0.2727272727272727,
+    "unmatched_reads": 0,
+    "latency_cycles": {
+      "count": 76,
+      "avg": 1689.8157894736842,
+      "p50": 15,
+      "p90": 7968,
+      "p99": 8220,
+      "max": 8222,
+      "min": 5
+    },
+    "reuse_distance": {
+      "intervening_reads": {
+        "count": 44,
+        "avg": 21.681818181818183,
+        "p50": 17,
+        "p90": 39,
+        "p99": 43,
+        "max": 43,
+        "min": 1
+      },
+      "cycle_gap": {
+        "count": 44,
+        "avg": 2918.7272727272725,
+        "p50": 53,
+        "p90": 8216,
+        "p99": 8220,
+        "max": 8220,
+        "min": 2
+      }
+    },
+    "access_count_histogram": {
+      "1": 10,
+      "2": 8,
+      "3": 12,
+      "7": 2
+    },
+    "mask_by_agent": {
+      "L2_Matrix[0]": "0x7",
+      "L2_Matrix[1]": "0x7"
+    },
+    "mshr_scope": "matrix"
+  },
+  "per_matrix": {
+    "0": {
+      "total": 38,
+      "miss": 16,
+      "tag_hit": 16,
+      "mshr_merge": 6,
+      "hit_any": 22,
+      "reuse_total": 22,
+      "reuse_tag_hit": 16,
+      "reuse_mshr_merge": 6,
+      "reuse_hit_any": 22,
+      "hit_rate_any": 0.5789473684210527,
+      "tag_hit_rate": 0.42105263157894735,
+      "mshr_merge_rate": 0.15789473684210525,
+      "reuse_hit_rate_any": 1.0,
+      "reuse_tag_hit_rate": 0.7272727272727273,
+      "reuse_mshr_merge_rate": 0.2727272727272727
+    },
+    "1": {
+      "total": 38,
+      "miss": 16,
+      "tag_hit": 16,
+      "mshr_merge": 6,
+      "hit_any": 22,
+      "reuse_total": 22,
+      "reuse_tag_hit": 16,
+      "reuse_mshr_merge": 6,
+      "reuse_hit_any": 22,
+      "hit_rate_any": 0.5789473684210527,
+      "tag_hit_rate": 0.42105263157894735,
+      "mshr_merge_rate": 0.15789473684210525,
+      "reuse_hit_rate_any": 1.0,
+      "reuse_tag_hit_rate": 0.7272727272727273,
+      "reuse_mshr_merge_rate": 0.2727272727272727
+    }
+  },
+  "debug_unmatched": []
+}
