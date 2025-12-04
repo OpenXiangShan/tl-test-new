@@ -402,6 +402,11 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             mmio[i]->e.valid = 0;
         }
 
+        for (size_t i = 0; i < total_c_agents; i++)
+        {
+            l2ToL1Hint[i]->valid = 0;
+        }
+
         for (size_t i = 0; i < cfg.memoryPortCount; i++)
         {
             memoryAXI[i]->aw.ready  = 0;
