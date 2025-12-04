@@ -125,6 +125,7 @@ namespace tl_agent {
         this->lastProbeAfterReleaseAddress = 0;
         this->lostOrLateL2ToL1Hints = 0;
         this->firstGrantDataCount = 0;
+        this->totalL2ToL1Hints = 0;
 
         Gravity::RegisterListener(
             Gravity::MakeListener(
@@ -1635,7 +1636,7 @@ namespace tl_agent {
                 }
                 else
                 {
-                    if (TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData))
+                    if (this->totalL2ToL1Hints && TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData))
                     {
                         this->firstGrantDataCount++;
 
@@ -1767,6 +1768,8 @@ namespace tl_agent {
         {
             if (this->l2ToL1HintPort->fire())
             {
+                this->totalL2ToL1Hints++;
+
                 auto& l2ToL1Hint = *this->l2ToL1HintPort;
 
                 if (glbl.cfg.verbose_xact_fired)

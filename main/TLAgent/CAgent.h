@@ -310,6 +310,7 @@ namespace tl_agent {
         std::vector<FiredL2ToL1Hint> unconsumedL2ToL1Hints;
         uint64_t                     lostOrLateL2ToL1Hints;
         uint64_t                     firstGrantDataCount;
+        uint64_t                     totalL2ToL1Hints;
 
     public:
         std::unordered_map<paddr_t, InflightTimeStampA> inflightTimeStampsA;
