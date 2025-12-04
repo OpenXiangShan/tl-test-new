@@ -57,6 +57,8 @@ public:
     using MMIOPort          = tl_agent::Bundle<ReqField, RespField, EchoField, DATASIZE_MMIO>;
     using MMIOGlobalStatus  = tl_agent::MMIOGlobalStatus;
 
+    using L2ToL1HintPort    = tl_agent::BundleL2ToL1Hint;
+
     using MemoryAgent       = axi_agent::MemoryAgent;
     using MemoryAXIPort     = axi_agent::Bundle<BEATSIZE_MEMORY>;
 
@@ -86,6 +88,7 @@ private:
 
     IOPort**                io;
     MMIOPort**              mmio;
+    L2ToL1HintPort**        l2ToL1Hint;
     MemoryAXIPort**         memoryAXI;
 
     uint64_t                cycles;
@@ -115,6 +118,9 @@ public:
 
     MMIOPort*       MMIO() noexcept;
     MMIOPort&       MMIO(int deviceId) noexcept;
+
+    L2ToL1HintPort* L2ToL1Hint() noexcept;
+    L2ToL1HintPort& L2ToL1Hint(int deviceId) noexcept;
 
     MemoryAXIPort*  MemoryAXI() noexcept;
     MemoryAXIPort&  MemoryAXI(int deviceId) noexcept;

@@ -5,6 +5,8 @@
 #ifndef TLC_TEST_CAGENT_H
 #define TLC_TEST_CAGENT_H
 
+#include <map>
+
 #include "BaseAgent.h"
 
 #include "../Base/TLEnum.hpp"
@@ -253,6 +255,13 @@ namespace tl_agent {
     };
 
 
+    class FiredL2ToL1Hint {
+    public:
+        uint64_t            tick;
+        BundleL2ToL1Hint    bundle;
+    };
+
+
     class CAgent : public BaseAgent<> {
     public:
         using LocalScoreBoard       = ScoreBoard<paddr_t, C_SBEntry, ScoreBoardUpdateCallbackCSBEntry<paddr_t>>;
@@ -272,6 +281,7 @@ namespace tl_agent {
 
     private:
         uint64_t *cycles;
+        uint64_t  tick;
         PendingTrans<BundleChannelA<ReqField, EchoField, DATASIZE>> pendingA;
         PendingTrans<BundleChannelB> pendingB;
         PendingTrans<BundleChannelC<ReqField, EchoField, DATASIZE>> pendingC;
@@ -297,10 +307,18 @@ namespace tl_agent {
         void timeout_check() override;
 
     public:
+        std::vector<FiredL2ToL1Hint> unconsumedL2ToL1Hints;
+        uint64_t                     lostOrLateL2ToL1Hints;
+        uint64_t                     firstGrantDataCount;
+        uint64_t                     totalL2ToL1Hints;
+
+    public:
         std::unordered_map<paddr_t, InflightTimeStampA> inflightTimeStampsA;
         std::unordered_map<paddr_t, InflightTimeStampC> inflightTimeStampsC;
         std::unordered_map<uint64_t, uint64_t> latencyMapA[16];
         std::unordered_map<uint64_t, uint64_t> latencyMapC[16];
+
+        std::map<uint64_t, uint64_t> latencyMapL2ToL1Hint;
 
     public:
         CAgent(TLLocalConfig* cfg, MemoryBackend* mem, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ub, int sys, int id, unsigned int seed, uint64_t* cycles) noexcept;
@@ -317,6 +335,7 @@ namespace tl_agent {
         void fire_c() override;
         void fire_d() override;
         void fire_e() override;
+        void fire_l2ToL1Hint();
         void handle_channel() override;
         void update_signal() override;
 

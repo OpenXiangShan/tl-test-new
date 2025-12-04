@@ -200,12 +200,14 @@ namespace tl_agent {
     class BaseAgent : public TLLocalContext {
     public:
         using tlport_t = Bundle<ReqField, RespField, EchoField, BeatSize>;
+        using l1hintport_t = BundleL2ToL1Hint;
 
     protected:
         TLLocalConfig*              cfg;
         const int                   core;
         const int                   id;
         tlport_t*                   port;
+        l1hintport_t*               l2ToL1HintPort;
         GlobalBoard<paddr_t>*       globalBoard;
         UncachedBoard<paddr_t>*     uncachedBoards;
         MemoryBackend*              mem;
@@ -246,6 +248,7 @@ namespace tl_agent {
         virtual ~BaseAgent() = default;
 
         inline void  connect(tlport_t* p){ this->port = p; }
+        inline void  connect(l1hintport_t* p) { this->l2ToL1HintPort = p; }
 
         inline uint64_t rand64() noexcept { return rand(); }
     };

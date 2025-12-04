@@ -221,6 +221,9 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
         mmioFuzzers = new MMIOFuzzer*   [total_c_agents];
 
         //
+        l2ToL1Hint  = new L2ToL1HintPort*[total_c_agents];
+
+        //
         pmem        = new uint8_t       [cfg.memoryEnd - cfg.memoryStart];
         memoryAXI   = new MemoryAXIPort*[cfg.memoryPortCount];
         memories    = new MemoryAgent*  [cfg.memoryPortCount];
@@ -282,8 +285,11 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             {
                 //
                 io      [i] = new IOPort;
+                l2ToL1Hint[j * cfg.masterCountPerCoreTLC + k] = new L2ToL1HintPort;
+
                 agents  [i] = new CAgent(&this->config, memories[0], globalBoard, uncachedBoard, j, i, cfg.seed, &cycles);
                 agents  [i]->connect(io[i]);
+                agents  [i]->connect(l2ToL1Hint[j * cfg.masterCountPerCoreTLC + k]);
 
                 fuzzers [i] = new CFuzzer(static_cast<CAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
@@ -396,6 +402,11 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             mmio[i]->e.valid = 0;
         }
 
+        for (size_t i = 0; i < total_c_agents; i++)
+        {
+            l2ToL1Hint[i]->valid = 0;
+        }
+
         for (size_t i = 0; i < cfg.memoryPortCount; i++)
         {
             memoryAXI[i]->aw.ready  = 0;
@@ -480,6 +491,12 @@ void TLSequencer::Finalize() noexcept
             {
                 delete mmio[i];
                 mmio[i] = nullptr;
+            }
+
+            if (l2ToL1Hint[i])
+            {
+                delete l2ToL1Hint[i];
+                l2ToL1Hint[i] = nullptr;
             }
         }
 
@@ -611,6 +628,16 @@ TLSequencer::MMIOPort* TLSequencer::MMIO() noexcept
 TLSequencer::MMIOPort& TLSequencer::MMIO(int deviceId) noexcept
 {
     return *(mmio[deviceId]);
+}
+
+TLSequencer::L2ToL1HintPort* TLSequencer::L2ToL1Hint() noexcept
+{
+    return *l2ToL1Hint;
+}
+
+TLSequencer::L2ToL1HintPort& TLSequencer::L2ToL1Hint(int deviceId) noexcept
+{
+    return *(l2ToL1Hint[deviceId]);
 }
 
 TLSequencer::MemoryAXIPort* TLSequencer::MemoryAXI() noexcept

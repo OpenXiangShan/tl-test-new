@@ -24,6 +24,15 @@ namespace tl_agent {
         }
     };
 
+    class ValidBundle {
+    public:
+        uint8_t     valid;
+
+        bool fire() const {
+            return valid;
+        }
+    };
+
     //
     template<class Usr, class Echo, std::size_t N>
     class BundleChannelA : public DecoupledBundle {
@@ -122,6 +131,13 @@ namespace tl_agent {
     public:
         BundleCMOReq        req;
         BundleCMOResp       resp;
+    };
+
+    //
+    class BundleL2ToL1Hint : public ValidBundle {
+    public:
+        uint32_t            sourceId;
+        uint8_t             isKeyword;
     };
 }
 

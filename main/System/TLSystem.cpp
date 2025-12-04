@@ -100,10 +100,13 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
 
     tlcfgInit(tlcfg);
 
+    glbl.cfg.errorHintInaccurate        = false;
+
     glbl.cfg.verbose                    = false;
     glbl.cfg.verbose_xact_fired         = false;
     glbl.cfg.verbose_xact_sequenced     = false;
     glbl.cfg.verbose_xact_data_complete = false;
+    glbl.cfg.verbose_l2tol1hint_accuracy= true;
     glbl.cfg.verbose_memory_axi_write   = false;
     glbl.cfg.verbose_memory_axi_read    = false;
     glbl.cfg.verbose_data_full          = false;
@@ -163,6 +166,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.config", "cmo.start",                  tlcfg.cmoStart);
     INI_OVERRIDE_INT("tltest.config", "cmo.end",                    tlcfg.cmoEnd);
     INI_OVERRIDE_INT("tltest.config", "cmo.parallel.depth",         tlcfg.cmoParallelDepth);
+
+    INI_OVERRIDE_INT("tltest.config", "error.hintInaccurate",       glbl.cfg.errorHintInaccurate);
 
     INI_OVERRIDE_INT("tltest.fuzzer", "seed",                       tlcfg.seed);
     INI_OVERRIDE_INT("tltest.fuzzer", "ari.interval",               tlcfg.fuzzARIInterval);
