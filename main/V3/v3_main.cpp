@@ -164,7 +164,7 @@ typename std::enable_if<has_port_l2_to_l1_hint<T>::value>::type V3PullL2ToL1Hint
     isKeyword   = top->io_l1_0_l2Hint_bits_isKeyword;
 }
 
-template<ConceptPortL2ToL1Hint T>
+template<typename T>
 typename std::enable_if<!has_port_l2_to_l1_hint<T>::value>::type V3PullL2ToL1Hint(
     T*          top,
     uint8_t&    valid,
