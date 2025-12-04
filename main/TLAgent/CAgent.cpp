@@ -10,6 +10,8 @@
 #include "Bundle.h"
 #include "CAgent.h"
 
+#include "../Events/TLSystemEvent.hpp"
+
 
 /*
 * 0 = Non-inclusive System
@@ -45,6 +47,9 @@
 #ifndef CAGENT_TRAIN_PREFETCH_C
 #   define CAGENT_TRAIN_PREFETCH_C      1
 #endif
+
+
+#define CAGENT_L2_TO_L1_HINT_TICKSHIFT  3
 
 
 namespace tl_agent {
@@ -111,12 +116,15 @@ namespace tl_agent {
         this->globalBoard = gb;
         this->uncachedBoards = ubs;
         this->cycles = cycles;
+        this->tick = 0;
         this->localBoard = new LocalScoreBoard();
         this->idMap = new IDMapScoreBoard();
         this->acquirePermBoard = new AcquirePermScoreBoard();
         this->localCMOStatus = new CMOLocalStatus();
         this->lastProbeAfterRelease = false;
         this->lastProbeAfterReleaseAddress = 0;
+        this->lostOrLateL2ToL1Hints = 0;
+        this->firstGrantDataCount = 0;
 
         Gravity::RegisterListener(
             Gravity::MakeListener(
@@ -124,6 +132,45 @@ namespace tl_agent {
                 0,
                 &CAgent::onGrant,
                 this
+            )
+        );
+
+        Gravity::RegisterListener(
+            Gravity::MakeListener<TLSystemFinishEvent>(
+                Gravity::StringAppender("tltest.cagent.l2tol1hintprof.finish@", uint64_t(this)).ToString(),
+                0,
+                [this] (TLSystemFinishEvent& event) -> void {
+
+                    uint64_t lostOrLateHint = this->lostOrLateL2ToL1Hints;
+                    uint64_t dissociatedHint = this->unconsumedL2ToL1Hints.size();
+                    uint64_t accurateHint = this->latencyMapL2ToL1Hint[CAGENT_L2_TO_L1_HINT_TICKSHIFT];
+                    uint64_t totalHint = 0;
+                    uint64_t totalExpectedHint = this->firstGrantDataCount;
+
+                    for (auto& e : this->latencyMapL2ToL1Hint)
+                        totalHint += e.second;
+
+                    double accuracy = (double(accurateHint) / double(totalExpectedHint)) * 100;
+
+                    LogFinal(this->cycle(), Append("================================================================").EndLine());
+                    LogFinal(this->cycle(), Append("L2ToL1Hint Profiler of CAgent [", this->sysId(), "]").EndLine());
+                    LogFinal(this->cycle(), Append("Total expected   : ").Append(firstGrantDataCount).EndLine());
+                    LogFinal(this->cycle(), Append("Total hint       : ").Append(totalHint).EndLine());
+                    LogFinal(this->cycle(), Append("Accurate hint    : ").Append(accurateHint).EndLine());
+                    LogFinal(this->cycle(), Append("Dissociated hint : ").Append(dissociatedHint).EndLine());
+                    LogFinal(this->cycle(), Append("Lost/late hint   : ").Append(lostOrLateHint).EndLine());
+                    LogFinal(this->cycle(), Append("Accuracy         : ", accuracy, "%").EndLine());
+                    LogFinal(this->cycle(), Append("Accurate         : ", ((accurateHint == totalExpectedHint) ? "Yes" : "No")).EndLine());
+                    LogFinal(this->cycle(), Append("Latency (Tick) distribution >>").EndLine());
+
+                    for (auto& e : this->latencyMapL2ToL1Hint)
+                    {
+                        LogFinal(this->cycle(), Append("  ")
+                            .NextWidth(10).Right().Append(e.first).Append(" - ")
+                            .Left().Append(e.second)
+                            .EndLine());
+                    }
+                }
             )
         );
     }
@@ -1586,6 +1633,112 @@ namespace tl_agent {
                     idMap->erase(this, chnD.source);
                     this->idpool.freeid(chnD.source);
                 }
+                else
+                {
+                    if (TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData))
+                    {
+                        this->firstGrantDataCount++;
+
+                        bool foundHint = false;
+
+                        for (auto hintIter = this->unconsumedL2ToL1Hints.rbegin(); hintIter != this->unconsumedL2ToL1Hints.rend(); hintIter++)
+                        {
+                            if (hintIter->bundle.sourceId != chnD.source)
+                                continue;
+
+                            foundHint = true;
+
+                            if ((tick - hintIter->tick) < CAGENT_L2_TO_L1_HINT_TICKSHIFT)
+                            {
+                                if (glbl.cfg.verbose_l2tol1hint_accuracy)
+                                {
+                                    Log(this, Append("[fire D] [GrantData] [L2ToL1Hint] ")
+                                        .Append("inaccurate late hint, tick-interval: ", uint64_t(tick - hintIter->tick))
+                                        .Hex().ShowBase()
+                                        .Append(", source: ", uint64_t(hintIter->bundle.sourceId))
+                                        .EndLine());
+                                }
+                                
+                                if (glbl.cfg.errorHintInaccurate)
+                                {
+                                    tlc_assert(false, this, "inaccurate late hint");
+                                }
+                            }
+                            else if ((tick - hintIter->tick) > CAGENT_L2_TO_L1_HINT_TICKSHIFT)
+                            {
+                                if (glbl.cfg.verbose_l2tol1hint_accuracy)
+                                {
+                                    Log(this, Append("[fire D] [GrantData] [L2ToL1Hint] ")
+                                        .Append("inaccurate early hint or lost, tick-interval: ", uint64_t(tick - hintIter->tick))
+                                        .Hex().ShowBase()
+                                        .Append(", source: ", uint64_t(hintIter->bundle.sourceId))
+                                        .EndLine());
+                                }
+
+                                if (glbl.cfg.errorHintInaccurate)
+                                {
+                                    tlc_assert(false, this, "inaccurate early hint or lost");
+                                }
+                            }
+                            else
+                            {
+                                if (glbl.cfg.verbose_l2tol1hint_accuracy)
+                                {
+                                    Log(this, Append("[fire D] [GrantData] [L2ToL1Hint] ")
+                                        .Append("accurate hint, tick-interval: ", uint64_t(tick - hintIter->tick))
+                                        .Hex().ShowBase()
+                                        .Append(", source: ", uint64_t(hintIter->bundle.sourceId))
+                                        .EndLine());
+                                }
+                            }
+
+                            if (foundHint)
+                            {
+                                this->latencyMapL2ToL1Hint[tick - hintIter->tick]++;
+
+                                this->unconsumedL2ToL1Hints.erase(hintIter.base() - 1);
+
+                                break;
+                            }
+                        }
+
+                        if (!foundHint)
+                        {
+                            if (glbl.cfg.verbose_l2tol1hint_accuracy)
+                            {
+                                Log(this, Append("[fire D] [GrantData] [L2ToL1Hint] ")
+                                    .Hex().ShowBase()
+                                        .Append("inaccurate lost hint, source: ", uint64_t(chnD.source))
+                                        .EndLine());
+                            }
+
+                            this->lostOrLateL2ToL1Hints++;
+
+                            if (glbl.cfg.errorHintInaccurate)
+                            {
+                                tlc_assert(false, this, "inaccurate lost hint");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (auto hintIter = this->unconsumedL2ToL1Hints.rbegin(); hintIter != this->unconsumedL2ToL1Hints.rend(); hintIter++)
+                        {
+                            if ((tick - hintIter->tick) < CAGENT_L2_TO_L1_HINT_TICKSHIFT)
+                                continue;
+                            else if ((tick - hintIter->tick) > CAGENT_L2_TO_L1_HINT_TICKSHIFT)
+                                break;
+
+                            if (glbl.cfg.verbose_l2tol1hint_accuracy)
+                            {
+                                Log(this, Hex().ShowBase()
+                                    .Append("[fire D] [", TLOpcodeDToString(TLOpcodeD(chnD.opcode)) , "] ")
+                                    .Append("[L2ToL1Hint] inaccurate disturbed hint, source: ", uint64_t(hintIter->bundle.sourceId))
+                                    .EndLine());
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -1609,6 +1762,25 @@ namespace tl_agent {
         }
     }
 
+    void CAgent::fire_l2ToL1Hint() {
+        if (this->l2ToL1HintPort)
+        {
+            if (this->l2ToL1HintPort->fire())
+            {
+                auto& l2ToL1Hint = *this->l2ToL1HintPort;
+
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire L2ToL1Hint] source: ", uint64_t(l2ToL1Hint.sourceId))
+                        .EndLine());
+                }
+
+                this->unconsumedL2ToL1Hints.push_back({ .tick = this->tick, .bundle = l2ToL1Hint });
+            }
+        }
+    }
+
     void CAgent::handle_channel() {
         // Constraint: fire_e > fire_d, otherwise concurrent D/E requests will disturb the pendingE
         fire_a();
@@ -1616,6 +1788,9 @@ namespace tl_agent {
         fire_c();
         fire_e();
         fire_d();
+        fire_l2ToL1Hint();
+
+        tick++;
     }
 
     void CAgent::update_signal() {

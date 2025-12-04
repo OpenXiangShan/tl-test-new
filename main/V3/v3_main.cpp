@@ -143,6 +143,7 @@ template<typename T>
 concept ConceptPortL2ToL1Hint = requires {
     { std::declval<T>().io_l1_0_l2Hint_valid           } -> std::convertible_to<uint8_t>;
     { std::declval<T>().io_l1_0_l2Hint_bits_sourceId   } -> std::convertible_to<uint32_t>;
+    { std::declval<T>().io_l1_0_l2Hint_bits_isKeyword  } -> std::convertible_to<uint8_t>;
 };
 
 template<typename, typename = void>
@@ -155,18 +156,31 @@ template<ConceptPortL2ToL1Hint T>
 typename std::enable_if<has_port_l2_to_l1_hint<T>::value>::type V3PullL2ToL1Hint(
     T*          top,
     uint8_t&    valid,
-    uint32_t&   sourceId)
+    uint32_t&   sourceId,
+    uint8_t&    isKeyword)
 {
-    valid    = top->io_l1_0_l2Hint_valid;
-    sourceId = top->io_l1_0_l2Hint_bits_sourceId;
+    valid       = top->io_l1_0_l2Hint_valid;
+    sourceId    = top->io_l1_0_l2Hint_bits_sourceId;
+    isKeyword   = top->io_l1_0_l2Hint_bits_isKeyword;
 }
 
 template<ConceptPortL2ToL1Hint T>
 typename std::enable_if<!has_port_l2_to_l1_hint<T>::value>::type V3PullL2ToL1Hint(
     T*          top,
     uint8_t&    valid,
-    uint32_t&   sourceId)
+    uint32_t&   sourceId,
+    uint8_t&    isKeyword)
 { }
+
+void V3PullL2ToL1Hint(VTestTop* verilated, TLSequencer* tltest)
+{
+    auto& io = tltest->L2ToL1Hint(0);
+
+    V3PullL2ToL1Hint<VTestTop>(verilated,
+        io.valid,
+        io.sourceId,
+        io.isKeyword);
+}
 
 
 int main(int argc, char **argv)
@@ -265,6 +279,8 @@ int main(int argc, char **argv)
         // Push
         V3::PortGen::PushChannelB(top, tltest);
         V3::PortGen::PushChannelD(top, tltest);
+
+        V3PullL2ToL1Hint(top, tltest);
 
 #if TLTEST_MEMORY == 1
         V3::Memory::PushChannelAW(top, tltest);
