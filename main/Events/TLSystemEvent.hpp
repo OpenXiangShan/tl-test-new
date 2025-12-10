@@ -66,5 +66,20 @@ class TLSystemFinishEvent : public Gravity::Event<TLSystemFinishEvent>
 //
 
 
+/*
+* TL-Test TileLink subsystem finished events
+* -----------------------------------------------------------------------
+* This event is called by main routine to broadcast the finished state of
+* main routine and never called by TL-Test components.
+* It is guaranteed that all circuit activity was ended after this event.
+*/
+class TLSystemFinishedEvent : public Gravity::Event<TLSystemFinishedEvent>
+{ };
+
+class TLSystemFailedEvent : public Gravity::Event<TLSystemFailedEvent>
+{ };
+//
+
+
 #endif // TLC_TEST_EVENTS_SYSTEM_EVENT_H
 

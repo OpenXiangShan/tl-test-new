@@ -130,10 +130,10 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
 
     //
     Gravity::RegisterListener(
-        Gravity::MakeListener<TLSystemFinishEvent>(
-            Gravity::StringAppender("tltest.cfuzzer.bwprof.finish", uint64_t(this)).ToString(),
+        Gravity::MakeListener<TLSystemFinishedEvent>(
+            Gravity::StringAppender("tltest.cfuzzer.bwprof.finished", uint64_t(this)).ToString(),
             0,
-            [this] (TLSystemFinishEvent& event) -> void {
+            [this] (TLSystemFinishedEvent& event) -> void {
 
                 if (this->mode == TLSequenceMode::BWPROF_STREAM_STRIDE_READ)
                 {

@@ -137,10 +137,10 @@ namespace tl_agent {
         );
 
         Gravity::RegisterListener(
-            Gravity::MakeListener<TLSystemFinishEvent>(
-                Gravity::StringAppender("tltest.cagent.l2tol1hintprof.finish@", uint64_t(this)).ToString(),
-                0,
-                [this] (TLSystemFinishEvent& event) -> void {
+            Gravity::MakeListener<TLSystemFinishedEvent>(
+                Gravity::StringAppender("tltest.cagent.l2tol1hintprof.finished@", uint64_t(this)).ToString(),
+                1,
+                [this] (TLSystemFinishedEvent& event) -> void {
 
                     uint64_t lostOrLateHint = this->lostOrLateL2ToL1Hints;
                     uint64_t dissociatedHint = this->unconsumedL2ToL1Hints.size();
