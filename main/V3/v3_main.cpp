@@ -13,13 +13,13 @@
 #include "../Plugins/PluginManager.hpp"
 #include "../System/TLSystem.hpp"
 #include "../PortGen/portgen_dynamic.hpp"
+#include "../Events/TLSystemEvent.hpp"
 
 #include <verilated_fst_c.h>
 
 #if TLTEST_MEMORY == 1
 #include "v3_memaxi.hpp"
 #endif
-
 
 static bool wave_enable     = true;
 static uint64_t wave_begin  = 0;
@@ -104,24 +104,6 @@ inline static void V3EvalPosedge(uint64_t& time, VTestTop* top)
 }
 
 
-void V3Finalize()
-{
-    if (!initialized)
-        return;
-
-    if (!finalized)
-    {
-        TLFinalize(&tltest, &plugins);
-        finalized = true;
-    }
-}
-
-void V3SignalHandler(int signum)
-{
-    V3Finalize();
-}
-
-
 template<typename, typename = void>
 struct has_port_time : std::false_type {};
 
@@ -153,7 +135,7 @@ template<ConceptPortL2ToL1Hint T>
 struct has_port_l2_to_l1_hint<T, void> : std::true_type {};
 
 template<ConceptPortL2ToL1Hint T>
-typename std::enable_if<has_port_l2_to_l1_hint<T>::value>::type V3PullL2ToL1Hint(
+typename std::enable_if<has_port_l2_to_l1_hint<T>::value>::type V3PushL2ToL1Hint(
     T*          top,
     uint8_t&    valid,
     uint32_t&   sourceId,
@@ -165,21 +147,68 @@ typename std::enable_if<has_port_l2_to_l1_hint<T>::value>::type V3PullL2ToL1Hint
 }
 
 template<typename T>
-typename std::enable_if<!has_port_l2_to_l1_hint<T>::value>::type V3PullL2ToL1Hint(
+typename std::enable_if<!has_port_l2_to_l1_hint<T>::value>::type V3PushL2ToL1Hint(
     T*          top,
     uint8_t&    valid,
     uint32_t&   sourceId,
     uint8_t&    isKeyword)
 { }
 
-void V3PullL2ToL1Hint(VTestTop* verilated, TLSequencer* tltest)
+void V3PushL2ToL1Hint(VTestTop* verilated, TLSequencer* tltest)
 {
     auto& io = tltest->L2ToL1Hint(0);
 
-    V3PullL2ToL1Hint<VTestTop>(verilated,
+    V3PushL2ToL1Hint<VTestTop>(verilated,
         io.valid,
         io.sourceId,
         io.isKeyword);
+}
+
+template<typename T>
+concept ConceptPortLogPerf = requires {
+    { std::declval<T>().log_dump    } -> std::convertible_to<uint8_t>;
+    { std::declval<T>().log_clean   } -> std::convertible_to<uint8_t>;
+};
+
+template<typename, typename = void>
+struct has_port_log_perf : std::false_type {};
+
+template<ConceptPortLogPerf T>
+struct has_port_log_perf<T, void> : std::true_type {};
+
+template<ConceptPortLogPerf T>
+typename std::enable_if<has_port_log_perf<T>::value>::type V3PullLogPerf(
+    T*      top,
+    uint8_t dump,
+    uint8_t clean)
+{
+    top->log_dump   = dump;
+    top->log_clean  = clean;
+}
+
+template<typename T>
+typename std::enable_if<!has_port_log_perf<T>::value>::type V3PullLogPerf(
+    T*      top,
+    uint8_t dump,
+    uint8_t clean)
+{ }
+
+
+void V3Finalize()
+{
+    if (!initialized)
+        return;
+
+    if (!finalized)
+    {
+        TLFinalize(&tltest, &plugins);
+        finalized = true;
+    }
+}
+
+void V3SignalHandler(int signum)
+{
+    V3Finalize();
 }
 
 
@@ -210,12 +239,38 @@ int main(int argc, char **argv)
     else
         std::cout << "[V3Main] \033[31mNot accepting L2ToL1Hint from TestTop\033[0m." << std::endl;
 
+    if constexpr (has_port_log_perf<VTestTop>::value)
+        std::cout << "[V3Main] \033[1;32mControlling Performance Logging of TestTop\033[0m." << std::endl;
+    else
+        std::cout << "[V3Main] \033[31mNot controlling Performance Logging of TestTop\033[0m." << std::endl;
+
     //
     Verilated::commandArgs(argc, argv);
 
     // initialize TL-Test subsystem
     TLInitialize(&tltest, &plugins, [](TLLocalConfig&) -> void {});
     initialized = true;
+
+    Gravity::RegisterListener(
+        Gravity::MakeListener<TLSystemFinishEvent>(
+            Gravity::StringAppender("v3main.finish").ToString(),
+            -1,
+            [&time] (TLSystemFinishEvent& event) -> void {
+
+                std::ios_base::sync_with_stdio(true);
+
+                V3PullLogPerf(top, 1, 0);
+
+                V3EvalNegedge(time, top);
+                V3EvalPosedge(time, top);
+
+                V3PullLogPerf(top, 0, 0);
+
+                std::cerr << std::flush;
+                std::cout << std::flush;
+            }
+        )
+    );
 
     // load PortGen component
 #   ifdef TLTEST_PORTGEN_DYNAMIC
@@ -267,6 +322,8 @@ int main(int argc, char **argv)
         fst->open(GetFstFileName().c_str());
     }
 
+    V3PullLogPerf(top, 0, 0);
+
     V3Reset(time, top, 10);
     V3PushTime(top, time);
 
@@ -280,7 +337,7 @@ int main(int argc, char **argv)
         V3::PortGen::PushChannelB(top, tltest);
         V3::PortGen::PushChannelD(top, tltest);
 
-        V3PullL2ToL1Hint(top, tltest);
+        V3PushL2ToL1Hint(top, tltest);
 
 #if TLTEST_MEMORY == 1
         V3::Memory::PushChannelAW(top, tltest);
