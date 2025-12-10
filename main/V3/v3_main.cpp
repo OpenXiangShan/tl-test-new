@@ -258,16 +258,7 @@ int main(int argc, char **argv)
             [&time] (TLSystemFinishEvent& event) -> void {
 
                 std::ios_base::sync_with_stdio(true);
-
                 V3PullLogPerf(top, 1, 0);
-
-                V3EvalNegedge(time, top);
-                V3EvalPosedge(time, top);
-
-                V3PullLogPerf(top, 0, 0);
-
-                std::cerr << std::flush;
-                std::cout << std::flush;
             }
         )
     );
@@ -394,15 +385,22 @@ int main(int argc, char **argv)
     //
     int error = 0;
 
+    std::cerr << std::flush;
+    std::cout << std::flush;
+
     //
     if (tltest->IsFinished())
     {
+        TLSystemFinishedEvent().Fire();
+
         LogInfo("test_top", 
             Append("TL-Test TileLink subsystem FINISHED.")
             .EndLine());
     }
     else if (tltest->IsFailed())
     {
+        TLSystemFailedEvent().Fire();
+
         LogInfo("test_top",
             Append("TL-Test TileLink subsystem FAILED.")
             .EndLine());
