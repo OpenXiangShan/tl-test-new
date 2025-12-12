@@ -91,6 +91,7 @@ namespace tl_agent {
         this->port->a.source   = a->source;
         this->port->a.valid    = true;
         this->port->a.matrix   = a->matrix;
+        this->port->a.ameIndex = a->ameIndex;
         return OK;
     }
 
@@ -442,14 +443,16 @@ namespace tl_agent {
         if (pendingA.is_pending() || idpool.full())
             return false;
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
+        auto a_source = this->idpool.getid();
         req_a->opcode   = uint8_t(TLOpcodeA::Get);
         req_a->address  = address;
         req_a->param    = 0; // reserved
         req_a->size     = ceil(log2((double)DATASIZE));
         req_a->mask     = 0xffffffffUL;
-        req_a->source   = this->idpool.getid();
+        req_a->source   = a_source;
         req_a->vaddr    = address;
         req_a->matrix   = modify? 0b11 : 0b01;
+        req_a->ameIndex = a_source;
 #ifdef MAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else

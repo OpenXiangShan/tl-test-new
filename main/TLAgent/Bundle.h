@@ -40,6 +40,7 @@ namespace tl_agent {
         uint8_t             corrupt;
 #ifndef MatrixTest
         uint8_t             matrix;
+        uint8_t             ameIndex;
 #endif
         uint8_t             needHint;
         paddr_t             vaddr;
