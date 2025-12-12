@@ -218,6 +218,7 @@ public:
 
     bool do_read(paddr_t addr);
     bool do_write(paddr_t addr, shared_tldata_t<DATASIZE> data);
+    bool do_read_modify(paddr_t addr);
     bool read_ack();
     bool write_ack();
 };

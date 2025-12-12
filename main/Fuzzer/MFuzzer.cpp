@@ -303,11 +303,15 @@ void MFuzzer::tick() {
 }
 
 bool MFuzzer::do_read(paddr_t addr) {
-  return mAgent->do_getAuto(addr, false); //TODO-AI: add modify later
+  return mAgent->do_getAuto(addr, false);
 }
 
 bool MFuzzer::do_write(paddr_t addr, shared_tldata_t<DATASIZE> data) {
   return mAgent->do_putfulldata(addr, data);
+}
+
+bool MFuzzer::do_read_modify(paddr_t addr)  {
+  return mAgent->do_getAuto(addr, true);
 }
 
 bool MFuzzer::read_ack() {

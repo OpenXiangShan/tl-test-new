@@ -474,6 +474,7 @@ namespace tl_agent {
 
     bool MAgent::do_get(paddr_t address, uint8_t size, uint32_t mask)
     {
+        tlc_assert(false, this, "do_get needs check, use do_getAuto instead");
         if (pendingA.is_pending() || idpool.full())
             return false;
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
