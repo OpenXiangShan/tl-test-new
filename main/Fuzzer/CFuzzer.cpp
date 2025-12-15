@@ -525,7 +525,7 @@ void CFuzzer::tick() {
             flagDone = true;
     }
     else if (this->mode == TLSequenceMode::TRACE_WITH_FENCE) {
-        this->traceTestWithFence();
+        // this->traceTestWithFence();
     }
 
     if (flagDone)

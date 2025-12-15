@@ -209,7 +209,7 @@ void ULFuzzer::tick() {
         }
     }
     else if (this->mode == TLSequenceMode::TRACE_WITH_FENCE) {
-        this->traceTestWithFence();
+        // this->traceTestWithFence();
     }
 }
 

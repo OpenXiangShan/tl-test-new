@@ -285,7 +285,7 @@ void MFuzzer::tick() {
   if (this->mode == TLSequenceMode::TRACE_WITH_REFILL) {
     this->traceTestWithPrefill();
   } else if (this->mode == TLSequenceMode::TRACE_WITH_FENCE) {
-    this->traceTestWithFence();
+    // this->traceTestWithFence();
   } else {
     // default bw test
     this->bandwidthTest();

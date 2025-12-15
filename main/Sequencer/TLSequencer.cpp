@@ -8,7 +8,7 @@
 #include <ostream>
 
 #include "../Events/TLSystemEvent.hpp"
-
+#include "../Fuzzer/TraceDispatcher.hpp"
 
 #define ASSERTION_FAILURE_CAPTURE(exception) \
     auto& event = exception.GetCopiedEvent(); \
@@ -224,6 +224,9 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
         memoryAXI   = new MemoryAXIPort*[cfg.memoryPortCount];
         memories    = new MemoryAgent*  [cfg.memoryPortCount];
 
+        // TraceDispatcher
+        traceDispatcher = new TraceDispatcher(&cycles, cfg.traceFilePath.c_str());
+
         // UL Scoreboard
         uncachedBoard   = new UncachedBoard<paddr_t>(total_n_agents);
 
@@ -287,7 +290,6 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 fuzzers [i] = new CFuzzer(static_cast<CAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
                 fuzzers [i]->set_index(i);
-                fuzzers [i]->read_trace(cfg.traceFilePath.c_str());
 
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-C Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
@@ -306,7 +308,6 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 fuzzers [i] = new ULFuzzer(static_cast<ULAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
                 fuzzers [i]->set_index(i);
-                fuzzers [i]->read_trace(cfg.traceFilePath.c_str());
 
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-UL Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
@@ -325,7 +326,6 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 fuzzers [i] = new MFuzzer(static_cast<MAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
                 fuzzers [i]->set_index(i);
-                fuzzers [i]->read_trace(cfg.traceFilePath.c_str());
                 
                 LogInfo("INIT", Append("TLSequencer::Initialize: ")
                     .Append("Instantiated TL-M Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
@@ -584,14 +584,24 @@ void TLSequencer::Tock() noexcept
         for (size_t i = 0; i < total_n_agents; i++)
             agents[i]->handle_channel();
 
-        bool endTLM=true;
+
+
+        // handle trace entries for each agent
+        traceDispatcher->send([this](int agentId, const TraceEntry& e) -> bool {
+            if (agentId < 0 || size_t(agentId) >= GetAgentCount()) return false;
+            return this->fuzzers[agentId]->issue_trace_entry(e.op, e.addr);
+        });
+
+        for (size_t i = 0; i < total_n_agents; i++)
+            traceDispatcher->receive(fuzzers[i]->read_ack(), fuzzers[i]->write_ack(), fuzzers[i]->evict_ack());
+
+
+
+        bool endTLM = traceDispatcher->empty();
 
         // TL-C fuzzers
         for (size_t i = 0; i < total_c_agents; i++){
             fuzzers[i]->tick();
-            #ifdef TLC_TEST
-            endTLM = endTLM && (fuzzers[i]->perfCycleEnd);
-            #endif
         }
         // TL-UL fuzzers
         for (size_t i = total_c_agents; i < total_n_agents-total_m_agents; i++){
@@ -600,7 +610,6 @@ void TLSequencer::Tock() noexcept
         // TL-M fuzzers
         for (size_t i = total_n_agents-total_m_agents; i < total_n_agents; i++){
             fuzzers[i]->tick();
-            endTLM = endTLM && fuzzers[i]->perfCycleEnd;
         }
         if(endTLM){
             TLSystemFinishEvent().Fire();

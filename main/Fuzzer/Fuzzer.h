@@ -170,6 +170,8 @@ public:
         assert(false && "do_read_modify not supported");
         return false;
     }
+    // issue a trace entry
+    bool issue_trace_entry(uint8_t op, uint64_t addr);
 };
 
 class ULFuzzer: public Fuzzer {
