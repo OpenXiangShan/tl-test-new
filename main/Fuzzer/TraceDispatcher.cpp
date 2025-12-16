@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <cstdlib>
 
+using OP = Fuzzer::traceOp;
+
 TraceDispatcher::TraceDispatcher(uint64_t *cycles, const std::string& path) {
     this->cycles = cycles;
 
@@ -34,15 +36,15 @@ TraceDispatcher::TraceDispatcher(uint64_t *cycles, const std::string& path) {
 
         uint8_t mapped_op = 0xFF;
         if (op == "LD" || op == "IF" || op == "MR")
-            mapped_op = uint8_t(Fuzzer::traceOp::READ);
+            mapped_op = OP::READ;
         else if (op == "CR")
-            mapped_op = uint8_t(Fuzzer::traceOp::MODIFY);
+            mapped_op = OP::MODIFY;
         else if (op == "ST" || op == "MW")
-            mapped_op = uint8_t(Fuzzer::traceOp::WRITE);
+            mapped_op = OP::WRITE;
         else if (op == "EV")
-            mapped_op = uint8_t(Fuzzer::traceOp::EVICT);
+            mapped_op = OP::EVICT;
         else if (op == "FE")
-            mapped_op = uint8_t(Fuzzer::traceOp::FENCE);
+            mapped_op = OP::FENCE;
         else
             continue;
 
@@ -56,13 +58,24 @@ TraceDispatcher::TraceDispatcher(uint64_t *cycles, const std::string& path) {
     std::cerr << "[TraceDispatcher] loaded " << entries.size() << " entries from " << path << std::endl;
 }
 
-bool TraceDispatcher::send(const std::function<bool(int,const TraceEntry&)>& tryIssue)
+bool TraceDispatcher::send(const std::function<bool(int,const TraceEntry&,bool*)>& tryIssue)
 {
     if (entries.empty()) return false;
 
     const TraceEntry& e = entries.front();
 
-    if (e.op == uint8_t(Fuzzer::traceOp::FENCE)) {
+    if (*cycles % 10000 == 0) {
+        LogX("%ld [Dump] sent: R=%d W=%d E=%d, recvd: R=%d W=%d E=%d\n",
+            *cycles/2,
+            numReadSent, numWriteSent, numEvictSent,
+            numReadReceived, numWriteReceived, numEvictReceived);
+        LogX("     reqs left: %lu\n", entries.size());
+        if (e.op == OP::FENCE) {
+            LogX("      FENCE waiting\n");
+        }
+    }
+
+    if (e.op == OP::FENCE) {
         // check whether all previous requests have been completed
         if (numReadSent == numReadReceived &&
             numWriteSent == numWriteReceived &&
@@ -75,20 +88,13 @@ bool TraceDispatcher::send(const std::function<bool(int,const TraceEntry&)>& try
         return false;
     }
 
-    if (tryIssue(e.agentId, e)) {
-        LogX("%ld Agent %d: %s(0x%lx)\n", *cycles/2, e.agentId,
-            (e.op == uint8_t(Fuzzer::traceOp::READ)   ? "Read" :
-                e.op == uint8_t(Fuzzer::traceOp::MODIFY) ? "ReadModify" :
-                e.op == uint8_t(Fuzzer::traceOp::WRITE)  ? "Write" :
-                e.op == uint8_t(Fuzzer::traceOp::EVICT)  ? "Evict" : "Unknown"),
-            e.addr);
-
-
-        if (e.op == uint8_t(Fuzzer::traceOp::READ) || e.op == uint8_t(Fuzzer::traceOp::MODIFY))
+    bool skip = false;
+    if (tryIssue(e.agentId, e, &skip)) {
+        if (e.op == OP::READ || e.op == OP::MODIFY)
             numReadSent++;
-        else if (e.op == uint8_t(Fuzzer::traceOp::WRITE))
+        else if (e.op == OP::WRITE)
             numWriteSent++;
-        else if (e.op == uint8_t(Fuzzer::traceOp::EVICT))
+        else if (e.op == OP::EVICT && !skip)
             numEvictSent++;
 
         entries.pop_front();

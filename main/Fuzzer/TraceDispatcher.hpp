@@ -29,7 +29,7 @@ public:
 
     // try to issue current front entry by calling tryIssue(agentId, entry).
     // If tryIssue returns true, pop front and return true; otherwise leave it.
-    bool send(const std::function<bool(int,const TraceEntry&)>& tryIssue);
+    bool send(const std::function<bool(int,const TraceEntry&,bool*)>& tryIssue);
 
     void receive(bool readAck, bool writeAck, bool evictAck) noexcept {
         if (readAck)  numReadReceived++;

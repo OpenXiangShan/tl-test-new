@@ -319,7 +319,7 @@ void Fuzzer::traceTestWithFence() {
   }
 }
 
-bool Fuzzer::issue_trace_entry(uint8_t op, uint64_t addr)
+bool Fuzzer::issue_trace_entry(uint8_t op, uint64_t addr, bool *skip)
 {
     switch (op)
     {
@@ -337,7 +337,7 @@ bool Fuzzer::issue_trace_entry(uint8_t op, uint64_t addr)
         }
 
         case traceOp::EVICT:
-            return do_evict(addr);
+            return do_evict(addr, skip);
 
         default:
             assert(false && "Unhandled trace operation");

@@ -554,8 +554,8 @@ bool CFuzzer::do_write(paddr_t addr, shared_tldata_t<DATASIZE> data) {
     return cAgent->do_acquirePerm(addr, TLPermPromotion::NtoT, 0);
 }
 
-bool CFuzzer::do_evict(paddr_t addr) {
-    return cAgent->do_releaseDataAuto(addr, 0, true, false);
+bool CFuzzer::do_evict(paddr_t addr, bool *skip) {
+    return cAgent->do_releaseDataAuto(addr, 0, true, false, skip);
 }
 
 bool CFuzzer::read_ack() {

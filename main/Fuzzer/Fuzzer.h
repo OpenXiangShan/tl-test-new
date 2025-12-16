@@ -158,7 +158,7 @@ public:
     virtual bool write_ack() = 0;
     // the following two functions are used only for CAgent, se we override them only in CFuzzer
     // leaving ULFuzzer/MFuzzer/MMIOFuzzer triggering assert failure when calling do_evict
-    virtual bool do_evict(paddr_t addr) {
+    virtual bool do_evict(paddr_t addr, bool *skip) {
         assert(false && "do_evict not supported");
         return false;
     }
@@ -171,7 +171,8 @@ public:
         return false;
     }
     // issue a trace entry
-    bool issue_trace_entry(uint8_t op, uint64_t addr);
+    // skip is to tell the caller whether this entry is skipped (for evict)
+    bool issue_trace_entry(uint8_t op, uint64_t addr, bool *skip);
 };
 
 class ULFuzzer: public Fuzzer {
@@ -284,7 +285,7 @@ public:
     bool do_write(paddr_t addr, shared_tldata_t<DATASIZE> data);
     bool read_ack();
     bool write_ack();
-    bool do_evict(paddr_t addr) override;
+    bool do_evict(paddr_t addr, bool *skip) override;
     bool evict_ack() override;
 };
 

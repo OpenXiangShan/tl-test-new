@@ -2,6 +2,7 @@
 // Created by wkf on 2021/11/2.
 //
 
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <unordered_map>
@@ -1631,7 +1632,6 @@ namespace tl_agent {
             send_a(pendingA.info);
         }
         if (pendingB.is_pending()) {
-            printf("Is HADLE_B\n");
             handle_b(pendingB.info);
         }
         if (pendingC.is_pending()) {
@@ -1859,7 +1859,7 @@ namespace tl_agent {
         return true;
     }
 
-    bool CAgent::do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced)
+    bool CAgent::do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced, bool *skip)
     {
         if (forced)
         {
@@ -1878,9 +1878,11 @@ namespace tl_agent {
         if (pendingC.is_pending() || pendingB.is_pending() || idpool.full())
             return false;
 
-        // TODO-AI: target addr not in localBoard - return true to skip line in trace
-        if (!localBoard->haskey(address))
+        // AI: target addr not in localBoard - return true to skip line in trace
+        if (!localBoard->haskey(address)) {
+            if (skip) *skip = true;
             return true;
+        }
 
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(this, address);
@@ -1890,7 +1892,9 @@ namespace tl_agent {
         switch (perm) 
         {
             case TLPermission::INVALID:
-                return false;
+                // AI: target addr not in localBoard - return true to skip line in trace
+                if (skip) *skip = true;
+                return true;
 
             case TLPermission::BRANCH:
                 param = TLPermDemotion::BtoN;

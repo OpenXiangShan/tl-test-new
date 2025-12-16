@@ -326,7 +326,7 @@ namespace tl_agent {
         bool do_acquireBlock(paddr_t address, TLParamAcquire param, int alias);
         bool do_acquirePerm(paddr_t address, TLParamAcquire param, int alias);
         bool do_releaseData(paddr_t address, TLParamRelease param, shared_tldata_t<DATASIZE> data, int alias);
-        bool do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced);
+        bool do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced, bool *skip = NULL);
 
         bool do_cbo(TLOpcodeA opcode, paddr_t address, bool alwaysHit);
         bool do_cbo_clean(paddr_t address, bool alwaysHit);
