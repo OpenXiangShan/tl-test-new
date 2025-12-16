@@ -299,7 +299,7 @@ namespace tl_agent {
                 resp_d->param   = chnD.param;
                 resp_d->source  = chnD.source;
                 resp_d->data    = hasData ? make_shared_tldata<DATASIZE>() : nullptr;
-                int nr_beat     = TLEnumEquals(chnD.opcode, TLOpcodeD::Grant,TLOpcodeD::ReleaseAck) ? 0 :
+                int nr_beat     = TLEnumEquals(chnD.opcode, TLOpcodeD::Grant,TLOpcodeD::ReleaseAck, TLOpcodeD::AccessAck) ? 0 :
                                   (chnD.size <= 5) ? 0 :
                                   (chnD.size == 6) ? 1 :
                                   (chnD.size == 7) ? 2 : 0;
