@@ -208,6 +208,7 @@ void Fuzzer::traceTestWithPrefill() {
 }
 
 void Fuzzer::traceTestWithFence() {
+/*
   //复用fuzzStream Code
   paddr_t addr;
 
@@ -311,12 +312,11 @@ void Fuzzer::traceTestWithFence() {
   if (blkReceived == blkCountLimitTrace) {
     state = exit_fuzzer;
     blkReceived = 0;
-    /*
-    perfCycleEnd = this->mAgent->cycle(); // maybe just *cycles
-    // TLSystemFinishEvent().Fire();// stop
-    std::cout << "perf debug : [!Needs FIX]"<< blkCountLimitTrace*64/((this->mAgent->cycle()-perfCycleStart)/2)<< "B/Cycle"<<std::endl;
-    */
+    // perfCycleEnd = this->mAgent->cycle(); // maybe just *cycles
+    // // TLSystemFinishEvent().Fire();// stop
+    // std::cout << "perf debug : [!Needs FIX]"<< blkCountLimitTrace*64/((this->mAgent->cycle()-perfCycleStart)/2)<< "B/Cycle"<<std::endl;
   }
+*/
 }
 
 bool Fuzzer::issue_trace_entry(uint8_t op, uint64_t addr, bool *skip)
