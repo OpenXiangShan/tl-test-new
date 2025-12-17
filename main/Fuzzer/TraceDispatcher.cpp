@@ -65,7 +65,7 @@ bool TraceDispatcher::send(const std::function<bool(int,const TraceEntry&,bool*)
     const TraceEntry& e = entries.front();
 
     if (*cycles % 10000 == 0) {
-        LogX("%ld [Dump] sent: R=%d W=%d E=%d, recvd: R=%d W=%d E=%d\n",
+        LogX("%ld [Dump] sent: R=%d W=%d E=%d, recvd: R=%d W=%d E=%d, ",
             *cycles/2,
             numReadSent, numWriteSent, numEvictSent,
             numReadReceived, numWriteReceived, numEvictReceived);

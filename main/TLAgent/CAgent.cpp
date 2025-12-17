@@ -1114,8 +1114,18 @@ namespace tl_agent {
                 }
                 if (TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAckData)) {
                     auto global_SBEntry = std::make_shared<Global_SBEntry>();
+                    // if we have a MAgent Put -> CAgent ProbeAckData situation,
+                    // we should keep the pending_data and PENDING state in global SBEntry
                     global_SBEntry->data = pendingC.info->data;
-                    global_SBEntry->status = Global_SBEntry::SB_VALID;
+                    if (this->globalBoard->get().count(pendingC.info->address) == 0) {
+                        global_SBEntry->status = Global_SBEntry::SB_VALID;
+                        global_SBEntry->pending_data = nullptr;
+                    } else {
+                        auto sb_entry = this->globalBoard->get()[pendingC.info->address];
+                        global_SBEntry->status = sb_entry->status == Global_SBEntry::SB_PENDING ?
+                                     Global_SBEntry::SB_PENDING : Global_SBEntry::SB_VALID;
+                        global_SBEntry->pending_data = sb_entry->pending_data;
+                    }
                     this->globalBoard->update(this, pendingC.info->address, global_SBEntry);
 
                     uncachedBoards->appendAll(this, pendingC.info->address, global_SBEntry->data);
