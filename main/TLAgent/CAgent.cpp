@@ -1882,8 +1882,11 @@ namespace tl_agent {
             {
                 if (TLEnumEquals(perm, TLPermission::TIP))
                     return ActionDenial::PERMISSION;
-                if (TLEnumEquals(perm, TLPermission::BRANCH) && !TLEnumEquals(param, TLParamAcquire::BtoT))
+                if (TLEnumEquals(perm, TLPermission::BRANCH) && TLEnumEquals(param, TLParamAcquire::NtoB))
                     return ActionDenial::PERMISSION;
+                // if status == BRANCH and param == NtoT, convert to BtoT
+                if (TLEnumEquals(perm, TLPermission::BRANCH) && TLEnumEquals(param, TLParamAcquire::NtoT))
+                    param = TLParamAcquire::BtoT;
                 if (TLEnumEquals(perm, TLPermission::INVALID) && TLEnumEquals(param, TLParamAcquire::BtoT))
                     return ActionDenial::PERMISSION;
             }
