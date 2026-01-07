@@ -344,6 +344,11 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
         unifiedFuzzer->set_cycles(&cycles);
 
+        traceDispatcher = new TraceDispatcher(&this->config,
+            cAgents, GetCAgentCount(),
+            ulAgents, GetULAgentCount(),
+            &cycles, cfg.traceFilePath.c_str());
+
         // IO data field pre-allocation
         for (size_t i = 0; i < total_n_agents; i++)
         {
@@ -576,18 +581,25 @@ void TLSequencer::Tock() noexcept
         for (size_t i = 0; i < total_c_agents; i++)
             mmioAgents[i]->handle_channel();
 
-        if (!config.unifiedSequenceEnable)
+        assert(!(config.traceEnable && config.unifiedSequenceEnable) &&
+         "Trace mode and Unified Sequence mode cannot be enabled at the same time.");
+
+        if (config.traceEnable)
+        {
+            traceDispatcher->tick();
+        }
+        else if (config.unifiedSequenceEnable)
+        {
+            // unified fuzzer
+            unifiedFuzzer->tick();
+        }
+        else
         {
             for (size_t i = 0; i < total_n_agents; i++)
                 fuzzers[i]->tick();
 
             for (size_t i = 0; i < total_c_agents; i++)
                 mmioFuzzers[i]->tick();
-        }
-        else
-        {
-            // unified fuzzer
-            unifiedFuzzer->tick();
         }
 
         for (size_t i = 0; i < total_n_agents; i++)

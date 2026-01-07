@@ -539,6 +539,30 @@ namespace tl_agent {
         return ActionDenial::ACCEPTED;
     }
     
+    bool ULAgent::recv_readAck()
+    {
+        auto& chnD = this->port->d;
+        static int beatCnt = 0;
+
+        if (chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData)) {
+            if (beatCnt == (DATASIZE / BEATSIZE - 1)) {
+                beatCnt = 0;
+                return true;
+            }
+            else {
+                beatCnt++;
+            }
+        }
+        return false;
+    }
+
+    bool ULAgent::recv_writeAck()
+    {
+        auto& chnD = this->port->d;
+        return chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck);
+    }
+
+
     void ULAgent::timeout_check() {
         if (localBoard->get().empty()) {
             return;

@@ -357,6 +357,10 @@ namespace tl_agent {
 
         LocalScoreBoard*        local() noexcept;
         const LocalScoreBoard*  local() const noexcept;
+
+        bool             recv_readAck();
+        bool             recv_writeAck();
+        bool             recv_evictAck();
     };
 }
 

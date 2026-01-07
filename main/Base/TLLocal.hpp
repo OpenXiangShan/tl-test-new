@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #ifndef TLC_TEST_TLLOCAL_H
 #define TLC_TEST_TLLOCAL_H
 
@@ -103,6 +104,9 @@ public:
         uint64_t                thresholdB;
         uint64_t                noise;
     }                       unifiedSequenceModeAnvil;
+
+    bool                    traceEnable;
+    std::string             traceFilePath;
 
 public:
     size_t                          GetAgentCount() const noexcept;

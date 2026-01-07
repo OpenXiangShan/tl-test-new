@@ -98,6 +98,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.unifiedSequenceModeAnvil.thresholdR   = 0;
     tlcfg.unifiedSequenceModeAnvil.noise        = false;
 
+    tlcfg.traceEnable                   = false;
+
     tlcfgInit(tlcfg);
 
     glbl.cfg.errorHintInaccurate        = false;
@@ -123,6 +125,17 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
             target = section.toInt(key); \
             LogInfo("INI", \
                 Append("Configuration \'" #target "\' overrided by " section_name ":" key " = ", uint64_t(target), ".").EndLine()); \
+        } \
+    } \
+
+#   define INI_OVERRIDE_STRING(section_name, key, target) \
+    { \
+        auto section = ini[section_name]; \
+        if (section.isKeyExist(key)) \
+        { \
+            target = section.toString(key); \
+            LogInfo("INI", \
+                Append("Configuration \'" #target "\' overrided by " section_name ":" key " = \"", target, "\".").EndLine()); \
         } \
     } \
 
@@ -188,7 +201,11 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.fuzzer", "unified.anvil.threshold.b",  tlcfg.unifiedSequenceModeAnvil.thresholdB);
     INI_OVERRIDE_INT("tltest.fuzzer", "unified.anvil.noise",        tlcfg.unifiedSequenceModeAnvil.noise);
 
+    INI_OVERRIDE_INT("tltest.fuzzer", "trace.enable",               tlcfg.traceEnable);
+    INI_OVERRIDE_STRING("tltest.fuzzer", "trace.filepath",         tlcfg.traceFilePath);
+
 #   undef INI_OVERRIDE_INT
+#   undef INI_OVERRIDE_STRING
 
     // read sequence mode configurations
     {

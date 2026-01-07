@@ -2391,6 +2391,35 @@ namespace tl_agent {
         return do_cbo(TLOpcodeA::CBOInval, address, alwaysHit);
     }
 
+    bool CAgent::recv_readAck()
+    {
+        auto& chnD = this->port->d;
+        static int beatCnt = 0;
+
+        if (chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData)) {
+            if (beatCnt == (DATASIZE / BEATSIZE - 1)) {
+                beatCnt = 0;
+                return true;
+            }
+            else {
+                beatCnt++;
+            }
+        }
+        return false;
+    }
+
+    bool CAgent::recv_writeAck()
+    {
+        auto& chnD = this->port->d;
+        return chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::Grant);
+    }
+
+    bool CAgent::recv_evictAck()
+    {
+        auto& chnD = this->port->d;
+        return chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::ReleaseAck);
+    }
+
     void CAgent::timeout_check() {
         return;
         if (localBoard->get().empty()) {

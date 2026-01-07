@@ -213,6 +213,16 @@ inline std::string GetBase1024B(_TIntegral val, int width = 6, const char** base
         } \
     } while(0)
 
+// FIXME: tmp used for debug
+#define LogXEnable 0
+#define LogX(...) \
+    do { \
+        if (LogXEnable) { \
+            printf(__VA_ARGS__); \
+            fflush(stdout); \
+            fflush(stderr); \
+        } \
+    } while(0)
 
 #define tlc_assert(cond, ctx, info) \
     do { \
