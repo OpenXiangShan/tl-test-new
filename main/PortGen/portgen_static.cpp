@@ -89,6 +89,7 @@ namespace V3::PortGen {
                 PullMasterPort(i, "a_bits_source"       , "a.source");
                 PullMasterPort(i, "a_bits_address"      , "a.address");
                 PullMasterPort(i, "a_bits_user_alias"   , "a.alias");
+                PullMasterPort(i, "a_bits_user_needHint", "a.needHint");
                 PullMasterPort(i, "a_bits_mask"         , "a.mask");
                 cpp_file.Append("    std::memcpy(",
                         "verilated->", GenerateMasterPortName(i, "a_bits_data"), ", "
