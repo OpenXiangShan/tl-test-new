@@ -152,8 +152,8 @@ public:
     void traceTestWithPrefill();
     void traceTestWithFence();
 
-    virtual bool do_read(paddr_t addr) = 0;
-    virtual bool do_write(paddr_t addr, shared_tldata_t<DATASIZE> data) = 0;
+    virtual bool do_read(paddr_t addr, vaddr_t vaddr) = 0;
+    virtual bool do_write(paddr_t addr, vaddr_t vaddr, shared_tldata_t<DATASIZE> data) = 0;
     virtual bool read_ack() = 0;
     virtual bool write_ack() = 0;
     // the following two functions are used only for CAgent, se we override them only in CFuzzer
@@ -166,13 +166,13 @@ public:
         return false;
     }
     // the following function is used only for MAgent
-    virtual bool do_read_modify(paddr_t addr) {
+    virtual bool do_read_modify(paddr_t addr, vaddr_t vaddr) {
         assert(false && "do_read_modify not supported");
         return false;
     }
     // issue a trace entry
     // skip is to tell the caller whether this entry is skipped (for evict)
-    bool issue_trace_entry(uint8_t op, uint64_t addr, bool *skip);
+    bool issue_trace_entry(uint8_t op, uint64_t addr, uint64_t vaddr, bool *skip);
 };
 
 class ULFuzzer: public Fuzzer {
@@ -186,8 +186,8 @@ public:
     void caseTest2();
     void tick();
 
-    bool do_read(paddr_t addr);
-    bool do_write(paddr_t addr, shared_tldata_t<DATASIZE> data);
+    bool do_read(paddr_t addr, vaddr_t vaddr);
+    bool do_write(paddr_t addr, vaddr_t vaddr, shared_tldata_t<DATASIZE> data);
     bool read_ack();
     bool write_ack();
 };
@@ -201,8 +201,8 @@ public:
     void randomTest(bool put);
     void tick();
 
-    bool do_read(paddr_t addr);
-    bool do_write(paddr_t addr, shared_tldata_t<DATASIZE> data);
+    bool do_read(paddr_t addr, vaddr_t vaddr);
+    bool do_write(paddr_t addr, vaddr_t vaddr, shared_tldata_t<DATASIZE> data);
     bool read_ack();
     bool write_ack();
 };
@@ -219,9 +219,9 @@ public:
     void bandwidthTest();
     void tick();
 
-    bool do_read(paddr_t addr);
-    bool do_write(paddr_t addr, shared_tldata_t<DATASIZE> data);
-    bool do_read_modify(paddr_t addr);
+    bool do_read(paddr_t addr, vaddr_t vaddr);
+    bool do_write(paddr_t addr, vaddr_t vaddr, shared_tldata_t<DATASIZE> data);
+    bool do_read_modify(paddr_t addr, vaddr_t vaddr);
     bool read_ack();
     bool write_ack();
 };
@@ -281,8 +281,8 @@ public:
     void tick();
     bool done() const noexcept;
 
-    bool do_read(paddr_t addr);
-    bool do_write(paddr_t addr, shared_tldata_t<DATASIZE> data);
+    bool do_read(paddr_t addr, vaddr_t vaddr);
+    bool do_write(paddr_t addr, vaddr_t vaddr, shared_tldata_t<DATASIZE> data);
     bool read_ack();
     bool write_ack();
     bool do_evict(paddr_t addr, bool *skip) override;

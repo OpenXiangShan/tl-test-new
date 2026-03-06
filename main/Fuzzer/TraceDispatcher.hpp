@@ -9,6 +9,7 @@ struct TraceEntry {
     int     agentId;
     uint8_t op;    // use Fuzzer::traceOp values
     uint64_t addr;
+    uint64_t user;
 };
 
 class TraceDispatcher {

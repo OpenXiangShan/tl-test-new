@@ -97,6 +97,7 @@ void MFuzzer::randomTest(bool put) {
     else if (this->mode == TLSequenceMode::FUZZ_ARI || this->mode == TLSequenceMode::FUZZ_STREAM)
     {
         paddr_t addr = (CAGENT_RAND64(mAgent, "MFuzzer") % 0x400) << 6;
+        vaddr_t vaddr = addr;
 
         if (this->mode == TLSequenceMode::FUZZ_ARI)
         {
@@ -105,6 +106,7 @@ void MFuzzer::randomTest(bool put) {
                   + ((CAGENT_RAND64(mAgent, "MFuzzer") % FUZZ_ARI_RANGES[fuzzARIRangeOrdinal[fuzzARIRangeIndex]].maxSet) << 6);
 
             addr  = remap_memory_address(addr);
+            vaddr = addr;
         }
         else // FUZZ_STREAM
         {
@@ -112,16 +114,17 @@ void MFuzzer::randomTest(bool put) {
                   + ((CAGENT_RAND64(mAgent, "MFuzzer") % FUZZ_STREAM_RANGE.maxSet) << 6)
                   + this->fuzzStreamOffset
                   + this->fuzzStreamStart;
+            vaddr = addr;
         }
 
         if (!put || CAGENT_RAND64(mAgent, "MFuzzer") % 2) {  // Get
-            mAgent->do_getAuto(addr);
+            mAgent->do_getAuto(addr, vaddr);
         } else { // Put
             auto putdata = make_shared_tldata<DATASIZE>();
             for (int i = 0; i < DATASIZE; i++) {
                 putdata->data[i] = (uint8_t)CAGENT_RAND64(mAgent, "MFuzzer");
             }
-            mAgent->do_putfulldata(addr, putdata);
+            mAgent->do_putfulldata(addr, vaddr, putdata);
         }
     }
 }
@@ -135,10 +138,10 @@ void MFuzzer::caseTest() {
         for (int i = DATASIZE/2; i < DATASIZE; i++) {
             putdata->data[i] = putdata->data[i-DATASIZE/2];
         }
-        mAgent->do_putpartialdata(0x1070, 2, 0xf0000, putdata);
+        mAgent->do_putpartialdata(0x1070, 0x1070, 2, 0xf0000, putdata);
     }
     if (*cycles == 600) {
-      mAgent->do_getAuto(0x1040);
+      mAgent->do_getAuto(0x1040, 0x1040);
     }
 }
 
@@ -151,10 +154,10 @@ void MFuzzer::caseTest2() {
     for (int i = DATASIZE/2; i < DATASIZE; i++) {
       putdata->data[i] = putdata->data[i-DATASIZE/2];
     }
-    mAgent->do_putpartialdata(0x1000, 2, 0xf, putdata);
+    mAgent->do_putpartialdata(0x1000, 0x1000, 2, 0xf, putdata);
   }
   if (*cycles == 500) {
-    mAgent->do_get(0x1000, 2, 0xf);
+    mAgent->do_get(0x1000, 0x1000, 2, 0xf);
   }
 }
 
@@ -162,6 +165,7 @@ void MFuzzer::bandwidthTest() {
   //复用fuzzStream Code
   paddr_t addr;
   int     alias;
+  vaddr_t vaddr = 0;
   bool do_alias = false;
 
   // dont alias
@@ -180,7 +184,8 @@ void MFuzzer::bandwidthTest() {
       return;
 
     // addr = remap_memory_address(addr);
-    if(mAgent->do_getAuto(addr)){
+    vaddr = addr;
+    if(mAgent->do_getAuto(addr, vaddr)){
         blkSent++;
         filledAddrs.push(addr);
         // printf("size1 %lu\n",filledAddrs.size());
@@ -210,12 +215,13 @@ void MFuzzer::bandwidthTest() {
   if (state == bwTestState::releasing) {
 
     addr = filledAddrs.front();
+    vaddr = addr;
     auto putdata = make_shared_tldata<DATASIZE>();
     for (int i = 0; i < DATASIZE; i++) {
       putdata->data[i] = (uint8_t)CAGENT_RAND64(mAgent, "CFuzzer");
     }
     // printf("will do_putfulldata(%lx)\n",addr);
-    if(mAgent->do_putfulldata(addr, putdata)){
+    if(mAgent->do_putfulldata(addr, vaddr, putdata)){
         blkSent++;
         filledAddrs.push(addr); // push equals push_back
         filledAddrs.pop();
@@ -248,8 +254,10 @@ void MFuzzer::bandwidthTest() {
     // Read 2 0x00,0x40,0x80,0xc0
   if (state == bwTestState::acquire2) {
     addr = filledAddrs.front();
+    vaddr = addr;
 
-    if(mAgent->do_getAuto(addr)){
+    if(mAgent->do_getAuto(addr, vaddr))
+    {
         blkSent++;
         filledAddrs.pop();
     };
@@ -302,16 +310,16 @@ void MFuzzer::tick() {
   }
 }
 
-bool MFuzzer::do_read(paddr_t addr) {
-  return mAgent->do_getAuto(addr, false);
+bool MFuzzer::do_read(paddr_t addr, vaddr_t vaddr) {
+  return mAgent->do_getAuto(addr, vaddr, false);
 }
 
-bool MFuzzer::do_write(paddr_t addr, shared_tldata_t<DATASIZE> data) {
-  return mAgent->do_putfulldata(addr, data);
+bool MFuzzer::do_write(paddr_t addr, vaddr_t vaddr, shared_tldata_t<DATASIZE> data) {
+  return mAgent->do_putfulldata(addr, vaddr, data);
 }
 
-bool MFuzzer::do_read_modify(paddr_t addr)  {
-  return mAgent->do_getAuto(addr, true);
+bool MFuzzer::do_read_modify(paddr_t addr, vaddr_t vaddr)  {
+  return mAgent->do_getAuto(addr, vaddr, true);
 }
 
 bool MFuzzer::read_ack() {

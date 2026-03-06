@@ -323,8 +323,8 @@ namespace tl_agent {
 
         uint64_t map_latency(paddr_t address);
 
-        bool do_acquireBlock(paddr_t address, TLParamAcquire param, int alias);
-        bool do_acquirePerm(paddr_t address, TLParamAcquire param, int alias);
+        bool do_acquireBlock(paddr_t address, vaddr_t vaddr, TLParamAcquire param, int alias);
+        bool do_acquirePerm(paddr_t address, vaddr_t vaddr, TLParamAcquire param, int alias);
         bool do_releaseData(paddr_t address, TLParamRelease param, shared_tldata_t<DATASIZE> data, int alias);
         bool do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced, bool *skip = NULL);
 

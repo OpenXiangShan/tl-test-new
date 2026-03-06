@@ -215,6 +215,7 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
 void CFuzzer::randomTest(bool do_alias) {
     paddr_t addr;
     int     alias;
+    vaddr_t vaddr;
     if (this->mode == TLSequenceMode::FUZZ_ARI || this->mode == TLSequenceMode::FUZZ_STREAM)
     {
         if (this->mode == TLSequenceMode::FUZZ_ARI)
@@ -238,6 +239,7 @@ void CFuzzer::randomTest(bool do_alias) {
                 return;
             }
         }
+        vaddr = addr;
 
         if (CAGENT_RAND64(cAgent, "CFuzzer") % 4)
         {
@@ -245,16 +247,17 @@ void CFuzzer::randomTest(bool do_alias) {
                 return;
 
             addr = remap_memory_address(addr);
+            vaddr = addr;
 
             if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
                 if (CAGENT_RAND64(cAgent, "CFuzzer") % 3) {
                     if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
-                        cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias); // AcquireBlock NtoT
+                        cAgent->do_acquireBlock(addr, vaddr, TLParamAcquire::NtoT, alias); // AcquireBlock NtoT
                     } else {
-                        cAgent->do_acquireBlock(addr, TLParamAcquire::NtoB, alias); // AcquireBlock NtoB
+                        cAgent->do_acquireBlock(addr, vaddr, TLParamAcquire::NtoB, alias); // AcquireBlock NtoB
                     }
                 } else {
-                    cAgent->do_acquirePerm(addr, TLParamAcquire::NtoT, alias); // AcquirePerm
+                    cAgent->do_acquirePerm(addr, vaddr, TLParamAcquire::NtoT, alias); // AcquirePerm
                 }
             } else {
                 /*
@@ -272,6 +275,7 @@ void CFuzzer::randomTest(bool do_alias) {
         else if (cAgent->config().cmoEnable)
         {
             addr = remap_cmo_address(addr);
+            vaddr = addr;
 
             bool alwaysHit = (CAGENT_RAND64(cAgent, "CFuzzer") % 8) == 0;
 
@@ -303,6 +307,7 @@ void CFuzzer::caseTest() {
   //复用fuzzStream Code
   paddr_t addr;
   int     alias;
+  vaddr_t vaddr = 0;
   bool do_alias = false;
 
   // dont alias
@@ -318,7 +323,8 @@ void CFuzzer::caseTest() {
       return;
 
     addr = remap_memory_address(addr);
-    if(cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias)){
+    vaddr = addr;
+    if(cAgent->do_acquireBlock(addr, vaddr, TLParamAcquire::NtoT, alias)){
         blkSent++;
         filledAddrs.push(addr);
     };  // AcquireBlock NtoT
@@ -346,6 +352,7 @@ void CFuzzer::caseTest() {
 
     addr = filledAddrs.front();
     // printf("Debug RRRRRR 0x%08lx\n",addr);
+    vaddr = addr;
     
     auto putdata = make_shared_tldata<DATASIZE>();
     for (int i = 0; i < DATASIZE; i++) {
@@ -358,7 +365,7 @@ void CFuzzer::caseTest() {
         filledAddrs.pop();
     }
     // else{
-    //     cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias);
+    //     cAgent->do_acquireBlock(addr, vaddr, TLParamAcquire::NtoT, alias);
     //     printf("HAVE RWRWRWRWRWRW\n");
     // }; // ReleaseData
     
@@ -386,7 +393,7 @@ void CFuzzer::caseTest() {
   if (state == bwTestState::acquire2) {
     addr = filledAddrs.front();
     
-    if(cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias)){
+    if(cAgent->do_acquireBlock(addr, vaddr, TLParamAcquire::NtoT, alias)){
         blkSent++;
         filledAddrs.pop();
     };
@@ -501,7 +508,7 @@ void CFuzzer::tick() {
         this->bwprof.cycle++;
         this->bwprof.distributionCycle++;
 
-        if (this->cAgent->do_acquireBlock(this->bwprof.addr, TLParamAcquire::NtoB, 0))
+        if (this->cAgent->do_acquireBlock(this->bwprof.addr, this->bwprof.addr, TLParamAcquire::NtoB, 0))
         {
             this->bwprof.addr += BWPROF_STRIDE_ELEMENT * this->bwprof.step;
             this->bwprof.count++;
@@ -545,13 +552,13 @@ bool CFuzzer::done() const noexcept
     return flagDone;
 }
 
-bool CFuzzer::do_read(paddr_t addr) {
-    return cAgent->do_acquireBlock(addr, TLPermPromotion::NtoB, 0);
+bool CFuzzer::do_read(paddr_t addr, vaddr_t vaddr) {
+    return cAgent->do_acquireBlock(addr, vaddr, TLPermPromotion::NtoB, 0);
 }
 
 // TODO-AI: we all use AcquirePerm for now
-bool CFuzzer::do_write(paddr_t addr, shared_tldata_t<DATASIZE> data) {
-    return cAgent->do_acquirePerm(addr, TLPermPromotion::NtoT, 0);
+bool CFuzzer::do_write(paddr_t addr, vaddr_t vaddr, shared_tldata_t<DATASIZE> data) {
+    return cAgent->do_acquirePerm(addr, vaddr, TLPermPromotion::NtoT, 0);
 }
 
 bool CFuzzer::do_evict(paddr_t addr, bool *skip) {

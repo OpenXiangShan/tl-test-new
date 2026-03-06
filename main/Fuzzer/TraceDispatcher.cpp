@@ -24,15 +24,36 @@ TraceDispatcher::TraceDispatcher(uint64_t *cycles, const std::string& path) {
     for (std::string line; std::getline(tracefile, line); ) {
         std::istringstream iss(line);
         std::string op;
-        uint64_t address;
-        int agent_id;
+        std::string token1;
+        std::string token2;
+        uint64_t address = 0;
+        uint64_t vaddr   = 0;
+        int agent_id = 0;
 
-        // trace format: <op> <address> <agent>   (op is two-letter code, check addr.py in NEMU-Matrix)
-        if (!(iss >> op >> std::hex >> address >> agent_id))
-            continue; // Skip malformed lines
+        if (!(iss >> op))
+            continue;
 
-        // captialize op
+        // trace format: (1) <op> V=0x<vaddr> P=0x<paddr> <agent>
+        //               (2) <op> 0x<paddr> <agent> [0x<vaddr>] (legacy, vaddr defaults to paddr)
         std::transform(op.begin(), op.end(), op.begin(), ::toupper);
+        if ((iss >> token1) && token1.rfind("V=", 0) == 0) {
+            token1 = token1.substr(2);
+            if (!(iss >> token2) || token2.rfind("P=", 0) != 0)
+                continue;
+            token2 = token2.substr(2);
+            vaddr   = std::stoull(token1, nullptr, 16);
+            address = std::stoull(token2, nullptr, 16);
+            if (!(iss >> agent_id))
+                continue;
+        } else {
+            iss.clear();
+            iss.str(line);
+            iss >> op;
+            if (!(iss >> std::hex >> address >> agent_id))
+                continue;
+            if (!(iss >> std::hex >> vaddr))
+                vaddr = address;
+        }
 
         uint8_t mapped_op = 0xFF;
         if (op == "LD" || op == "IF" || op == "MR")
@@ -52,10 +73,12 @@ TraceDispatcher::TraceDispatcher(uint64_t *cycles, const std::string& path) {
         e.agentId = agent_id;
         e.op      = mapped_op;
         e.addr    = address;
+        e.user    = vaddr;
         entries.push_back(e);
     }
 
-    std::cerr << "[TraceDispatcher] loaded " << entries.size() << " entries from " << path << std::endl;
+    std::cerr << "[TraceDispatcher] loaded " << entries.size()
+              << " entries from " << path << std::endl;
 }
 
 bool TraceDispatcher::send(const std::function<bool(int,const TraceEntry&,bool*)>& tryIssue)

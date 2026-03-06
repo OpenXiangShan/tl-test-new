@@ -89,6 +89,10 @@ namespace tl_agent {
         this->port->a.size     = a->size;
         this->port->a.mask     = a->mask;
         this->port->a.source   = a->source;
+        this->port->a.param    = a->param;
+        this->port->a.needHint = a->needHint;
+        this->port->a.vaddr    = a->vaddr;
+        this->port->a.alias    = a->alias;
         this->port->a.valid    = true;
         this->port->a.matrix   = a->matrix;
         this->port->a.ameIndex = a->ameIndex;
@@ -438,7 +442,7 @@ namespace tl_agent {
         // probeIDpool.update(this);
     }
     
-    bool MAgent::do_getAuto(paddr_t address, bool modify)
+    bool MAgent::do_getAuto(paddr_t address, vaddr_t vaddr, bool modify)
     {
         if (pendingA.is_pending() || idpool.full())
             return false;
@@ -450,14 +454,10 @@ namespace tl_agent {
         req_a->size     = ceil(log2((double)DATASIZE));
         req_a->mask     = 0xffffffffUL;
         req_a->source   = a_source;
-        req_a->vaddr    = address;
+        req_a->vaddr    = vaddr;
         req_a->matrix   = modify? 0b11 : 0b01;
         req_a->ameIndex = a_source;
-#ifdef MAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
-#else
-        req_a->needHint = 0;
-#endif
         pendingA.init(req_a, 1);
 
         if (glbl.cfg.verbose_xact_sequenced)
@@ -472,7 +472,7 @@ namespace tl_agent {
         return true;
     }
 
-    bool MAgent::do_get(paddr_t address, uint8_t size, uint32_t mask)
+    bool MAgent::do_get(paddr_t address, vaddr_t vaddr, uint8_t size, uint32_t mask)
     {
         tlc_assert(false, this, "do_get needs check, use do_getAuto instead");
         if (pendingA.is_pending() || idpool.full())
@@ -484,7 +484,7 @@ namespace tl_agent {
         req_a->size     = size;
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
-        req_a->vaddr    = address;
+        req_a->vaddr    = vaddr;
         req_a->matrix   = 1;
 #ifdef MAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
@@ -505,7 +505,7 @@ namespace tl_agent {
         return true;
     }
     
-    bool MAgent::do_putfulldata(paddr_t address, shared_tldata_t<DATASIZE> data)
+    bool MAgent::do_putfulldata(paddr_t address, vaddr_t vaddr, shared_tldata_t<DATASIZE> data)
     {
         if (pendingA.is_pending() || idpool.full())
             return false;
@@ -520,7 +520,7 @@ namespace tl_agent {
         req_a->mask     = 0xffffffffUL;
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
-        req_a->vaddr    = address;
+        req_a->vaddr    = vaddr;
         req_a->matrix   = 1;
 #ifdef MAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
@@ -542,7 +542,7 @@ namespace tl_agent {
         return true;
     }
 
-    bool MAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data)
+    bool MAgent::do_putpartialdata(paddr_t address, vaddr_t vaddr, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data)
     {
         if (pendingA.is_pending() || idpool.full())
             return false;
@@ -556,7 +556,7 @@ namespace tl_agent {
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
-        req_a->vaddr    = address;
+        req_a->vaddr    = vaddr;
 #ifdef MAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else

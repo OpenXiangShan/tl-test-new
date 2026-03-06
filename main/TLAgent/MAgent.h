@@ -45,10 +45,10 @@ namespace tl_agent {
         void handle_channel() override;
         void update_signal() override;
         // modify is a flag that this data is read-modify-write
-        bool do_getAuto         (paddr_t address, bool modify = false);
-        bool do_get             (paddr_t address, uint8_t size, uint32_t mask);
-        bool do_putfulldata     (paddr_t address, shared_tldata_t<DATASIZE> data);
-        bool do_putpartialdata  (paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data);
+        bool do_getAuto         (paddr_t address, vaddr_t vaddr, bool modify = false);
+        bool do_get             (paddr_t address, vaddr_t vaddr, uint8_t size, uint32_t mask);
+        bool do_putfulldata     (paddr_t address, vaddr_t vaddr, shared_tldata_t<DATASIZE> data);
+        bool do_putpartialdata  (paddr_t address, vaddr_t vaddr, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data);
     };
 
 }

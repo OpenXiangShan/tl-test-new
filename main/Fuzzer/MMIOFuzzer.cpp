@@ -72,11 +72,11 @@ void MMIOFuzzer::tick()
 }
 
 // TODO: ignore MMIO Fuzzer for now
-bool MMIOFuzzer::do_read(paddr_t addr) {
+bool MMIOFuzzer::do_read(paddr_t addr, vaddr_t vaddr) {
     return true;
 }
 
-bool MMIOFuzzer::do_write(paddr_t addr, shared_tldata_t<DATASIZE> data) {
+bool MMIOFuzzer::do_write(paddr_t addr, vaddr_t vaddr, shared_tldata_t<DATASIZE> data) {
     return true;
 }
 

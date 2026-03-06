@@ -92,6 +92,7 @@ void ULFuzzer::randomTest(bool put) {
     else if (this->mode == TLSequenceMode::FUZZ_ARI || this->mode == TLSequenceMode::FUZZ_STREAM_GS)
     {
         paddr_t addr = (CAGENT_RAND64(ulAgent, "ULFuzzer") % 0x400) << 6;
+        vaddr_t vaddr = addr;
 
         if (this->mode == TLSequenceMode::FUZZ_ARI)
         {
@@ -100,6 +101,7 @@ void ULFuzzer::randomTest(bool put) {
                   + ((CAGENT_RAND64(ulAgent, "ULFuzzer") % FUZZ_ARI_RANGES[fuzzARIRangeOrdinal[fuzzARIRangeIndex]].maxSet) << 6);
             
             addr  = remap_memory_address(addr);
+            vaddr = addr;
         }
         else // FUZZ_STREAM
         {
@@ -107,16 +109,17 @@ void ULFuzzer::randomTest(bool put) {
                   + ((CAGENT_RAND64(ulAgent, "ULFuzzer") % FUZZ_STREAM_RANGE.maxSet) << 6)
                   + this->fuzzStreamOffset
                   + this->fuzzStreamStart;
+            vaddr = addr;
         }
 
         if (!put || CAGENT_RAND64(ulAgent, "ULFuzzer") % 2) {  // Get
-            ulAgent->do_getAuto(addr);
+            ulAgent->do_getAuto(addr, vaddr);
         } else { // Put
             auto putdata = make_shared_tldata<DATASIZE>();
             for (int i = 0; i < DATASIZE; i++) {
                 putdata->data[i] = (uint8_t)CAGENT_RAND64(ulAgent, "ULFuzzer");
             }
-            ulAgent->do_putfulldata(addr, putdata);
+            ulAgent->do_putfulldata(addr, vaddr, putdata);
         }
     }
 }
@@ -130,10 +133,10 @@ void ULFuzzer::caseTest() {
         for (int i = DATASIZE/2; i < DATASIZE; i++) {
             putdata->data[i] = putdata->data[i-DATASIZE/2];
         }
-        ulAgent->do_putpartialdata(0x1070, 2, 0xf0000, putdata);
+        ulAgent->do_putpartialdata(0x1070, 0x1070, 2, 0xf0000, putdata);
     }
     if (*cycles == 600) {
-      ulAgent->do_getAuto(0x1040);
+      ulAgent->do_getAuto(0x1040, 0x1040);
     }
 }
 
@@ -146,10 +149,10 @@ void ULFuzzer::caseTest2() {
     for (int i = DATASIZE/2; i < DATASIZE; i++) {
       putdata->data[i] = putdata->data[i-DATASIZE/2];
     }
-    ulAgent->do_putpartialdata(0x1000, 2, 0xf, putdata);
+    ulAgent->do_putpartialdata(0x1000, 0x1000, 2, 0xf, putdata);
   }
   if (*cycles == 500) {
-    ulAgent->do_get(0x1000, 2, 0xf);
+    ulAgent->do_get(0x1000, 0x1000, 2, 0xf);
   }
 }
 
@@ -213,12 +216,12 @@ void ULFuzzer::tick() {
     }
 }
 
-bool ULFuzzer::do_read(paddr_t addr) {
-    return ulAgent->do_getAuto(addr);
+bool ULFuzzer::do_read(paddr_t addr, vaddr_t vaddr) {
+    return ulAgent->do_getAuto(addr, vaddr);
 }
 
-bool ULFuzzer::do_write(paddr_t addr, shared_tldata_t<DATASIZE> data) {
-    return ulAgent->do_putfulldata(addr, data);
+bool ULFuzzer::do_write(paddr_t addr, vaddr_t vaddr, shared_tldata_t<DATASIZE> data) {
+    return ulAgent->do_putfulldata(addr, vaddr, data);
 }
 
 bool ULFuzzer::read_ack() {

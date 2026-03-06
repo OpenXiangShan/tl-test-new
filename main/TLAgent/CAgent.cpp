@@ -1682,7 +1682,7 @@ namespace tl_agent {
         }
     }
 
-    bool CAgent::do_acquireBlock(paddr_t address, TLParamAcquire param, int alias) {
+    bool CAgent::do_acquireBlock(paddr_t address, vaddr_t vaddr, TLParamAcquire param, int alias) {
         if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
             return false;
         if (localBoard->haskey(address)) { // check whether this transaction is legal
@@ -1725,7 +1725,7 @@ namespace tl_agent {
         req_a->mask     = (0xffffffffUL);
         req_a->source   = this->idpool.getid();
         req_a->alias    = alias;
-        req_a->vaddr    = address;
+        req_a->vaddr    = vaddr;
 #if CAGENT_TRAIN_PREFETCH_A
         req_a->needHint = 1;
 #else
@@ -1747,7 +1747,7 @@ namespace tl_agent {
         return true;
     }
 
-    bool CAgent::do_acquirePerm(paddr_t address, TLParamAcquire param, int alias) {
+    bool CAgent::do_acquirePerm(paddr_t address, vaddr_t vaddr, TLParamAcquire param, int alias) {
         /*
         * *NOTICE: Only AcquirePerm NtoT & BtoT were possible to be issued,
         *          currently NtoB not utilized in L1.
@@ -1795,7 +1795,7 @@ namespace tl_agent {
         req_a->mask     = (0xffffffffUL);
         req_a->source   = this->idpool.getid();
         req_a->alias    = alias;
-        req_a->vaddr    = address;
+        req_a->vaddr    = vaddr;
 #if CAGENT_TRAIN_PREFETCH_A
         req_a->needHint = 1;
 #else

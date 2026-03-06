@@ -89,6 +89,9 @@ namespace tl_agent {
         this->port->a.mask     = a->mask;
         this->port->a.source   = a->source;
         this->port->a.param    = 0;
+        this->port->a.needHint = a->needHint;
+        this->port->a.vaddr    = a->vaddr;
+        this->port->a.alias    = a->alias;
         this->port->a.valid    = true;
         #ifndef MatrixTest
         this->port->a.matrix   = a->matrix;
@@ -390,7 +393,7 @@ namespace tl_agent {
         idpool.update(this);
     }
     
-    bool ULAgent::do_getAuto(paddr_t address)
+    bool ULAgent::do_getAuto(paddr_t address, vaddr_t vaddr)
     {
         if (pendingA.is_pending() || idpool.full())
             return false;
@@ -400,7 +403,7 @@ namespace tl_agent {
         req_a->size     = ceil(log2((double)DATASIZE));
         req_a->mask     = 0xffffffffUL;
         req_a->source   = this->idpool.getid();
-        req_a->vaddr    = address;
+        req_a->vaddr    = vaddr;
 #ifdef ULAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
@@ -420,7 +423,7 @@ namespace tl_agent {
         return true;
     }
 
-    bool ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask)
+    bool ULAgent::do_get(paddr_t address, vaddr_t vaddr, uint8_t size, uint32_t mask)
     {
         if (pendingA.is_pending() || idpool.full())
             return false;
@@ -430,7 +433,7 @@ namespace tl_agent {
         req_a->size     = size;
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
-        req_a->vaddr    = address;
+        req_a->vaddr    = vaddr;
 #ifdef ULAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
@@ -450,7 +453,7 @@ namespace tl_agent {
         return true;
     }
     
-    bool ULAgent::do_putfulldata(paddr_t address, shared_tldata_t<DATASIZE> data)
+    bool ULAgent::do_putfulldata(paddr_t address, vaddr_t vaddr, shared_tldata_t<DATASIZE> data)
     {
         if (pendingA.is_pending() || idpool.full())
             return false;
@@ -464,7 +467,7 @@ namespace tl_agent {
         req_a->mask     = 0xffffffffUL;
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
-        req_a->vaddr    = address;
+        req_a->vaddr    = vaddr;
         req_a->matrix   = 1;
 #ifdef ULAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
@@ -486,7 +489,7 @@ namespace tl_agent {
         return true;
     }
 
-    bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data)
+    bool ULAgent::do_putpartialdata(paddr_t address, vaddr_t vaddr, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data)
     {
         if (pendingA.is_pending() || idpool.full())
             return false;
@@ -499,7 +502,7 @@ namespace tl_agent {
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
-        req_a->vaddr    = address;
+        req_a->vaddr    = vaddr;
 #ifdef ULAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else

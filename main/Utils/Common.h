@@ -76,6 +76,7 @@ inline shared_tldata_t<N> make_shared_tldata_zero() noexcept
 //
 
 typedef uint64_t paddr_t;
+typedef uint64_t vaddr_t;
 
 class MemoryBackend {
 public:

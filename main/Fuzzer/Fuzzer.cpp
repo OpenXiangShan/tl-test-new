@@ -319,21 +319,21 @@ void Fuzzer::traceTestWithFence() {
 */
 }
 
-bool Fuzzer::issue_trace_entry(uint8_t op, uint64_t addr, bool *skip)
+bool Fuzzer::issue_trace_entry(uint8_t op, uint64_t addr, uint64_t vaddr, bool *skip)
 {
     switch (op)
     {
         case traceOp::READ:
-            return do_read(addr);
+            return do_read(addr, vaddr);
 
         case traceOp::MODIFY:
-            return do_read_modify(addr);
+            return do_read_modify(addr, vaddr);
 
         case traceOp::WRITE: {
             auto putdata = make_shared_tldata<DATASIZE>();
             for (int i = 0; i < DATASIZE; i++)
                 putdata->data[i] = (uint8_t)rand();
-            return do_write(addr, putdata);
+            return do_write(addr, vaddr, putdata);
         }
 
         case traceOp::EVICT:

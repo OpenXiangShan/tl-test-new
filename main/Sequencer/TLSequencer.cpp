@@ -589,7 +589,7 @@ void TLSequencer::Tock() noexcept
         // handle trace entries for each agent
         traceDispatcher->send([this](int agentId, const TraceEntry& e, bool *skip) -> bool {
             if (agentId < 0 || size_t(agentId) >= GetAgentCount()) return false;
-            return this->fuzzers[agentId]->issue_trace_entry(e.op, e.addr, skip);
+            return this->fuzzers[agentId]->issue_trace_entry(e.op, e.addr, e.user, skip);
         });
 
         for (size_t i = 0; i < total_n_agents; i++)

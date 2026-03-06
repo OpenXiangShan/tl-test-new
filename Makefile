@@ -27,7 +27,7 @@ tltest-prepare-v3:
 
 
 tltest-prepare-all-coupledL2:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS)
+	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON -DCMAKE_BUILD_TYPE=Debug $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS)
 
 tltest-prepare-dpi-coupledL2:
 	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS)

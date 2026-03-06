@@ -117,7 +117,9 @@ namespace V3::PortGen {
                 PullMasterPort(i, "a_bits_size"         , "a.size");
                 PullMasterPort(i, "a_bits_source"       , "a.source");
                 PullMasterPort(i, "a_bits_address"      , "a.address");
+                PullMasterPort(i, "a_bits_user_needHint", "a.needHint");
                 PullMasterPort(i, "a_bits_user_alias"   , "a.alias");
+                PullMasterPort(i, "a_bits_user_vaddr"   , "a.vaddr");
                 PullMasterPort(i, "a_bits_mask"         , "a.mask");
                 cpp_file.Append("    std::memcpy(",
                         "verilated->", GenerateMasterPortName(i, "a_bits_data"), ", "
@@ -139,6 +141,7 @@ namespace V3::PortGen {
                 PullULMasterPort(i, j, "a_bits_size"        , "a.size");
                 PullULMasterPort(i, j, "a_bits_source"      , "a.source");
                 PullULMasterPort(i, j, "a_bits_address"     , "a.address");
+                PullULMasterPort(i, j, "a_bits_user_vaddr"  , "a.vaddr");
                 PullULMasterPort(i, j, "a_bits_mask"        , "a.mask");
                 cpp_file.Append("    std::memcpy(",
                         "verilated->", GenerateMasterULPortName(i, j, "a_bits_data"), ", "
@@ -159,6 +162,8 @@ namespace V3::PortGen {
                 PullMMasterPort(i, j, "a_bits_size"        , "a.size");
                 PullMMasterPort(i, j, "a_bits_source"      , "a.source");
                 PullMMasterPort(i, j, "a_bits_address"     , "a.address");
+                PullMMasterPort(i, j, "a_bits_user_needHint", "a.needHint");
+                PullMMasterPort(i, j, "a_bits_user_vaddr"  , "a.vaddr");
                 PullMMasterPort(i, j, "a_bits_mask"        , "a.mask");
                 PullMMasterPort(i, j, "a_bits_user_matrix" , "a.matrix");
                 PullMMasterPort(i, j, "a_bits_user_AmeIndex", "a.ameIndex");
@@ -262,6 +267,7 @@ namespace V3::PortGen {
                 PullMasterPort(i, "c_bits_size"     , "c.size");
                 PullMasterPort(i, "c_bits_source"   , "c.source");
                 PullMasterPort(i, "c_bits_address"  , "c.address");
+                PullMasterPort(i, "c_bits_user_vaddr", "c.vaddr");
                 cpp_file.Append("    verilated->", GenerateMasterPortName(i, "c_bits_user_alias"), " = 0;").EndLine();
                 cpp_file.Append("    std::memcpy(",
                         "verilated->", GenerateMasterPortName(i, "c_bits_data"), ", ",
