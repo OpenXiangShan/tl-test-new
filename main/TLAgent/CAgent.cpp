@@ -2397,15 +2397,14 @@ namespace tl_agent {
     bool CAgent::recv_readAck()
     {
         auto& chnD = this->port->d;
-        static int beatCnt = 0;
 
         if (chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData)) {
-            if (beatCnt == (DATASIZE / BEATSIZE - 1)) {
-                beatCnt = 0;
+            if (readAckBeatCnt == (DATASIZE / BEATSIZE - 1)) {
+                readAckBeatCnt = 0;
                 return true;
             }
             else {
-                beatCnt++;
+                readAckBeatCnt++;
             }
         }
         return false;

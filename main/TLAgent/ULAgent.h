@@ -57,6 +57,7 @@ namespace tl_agent {
 
     private:
         uint64_t* cycles;
+        uint32_t readAckBeatCnt = 0;
         PendingTrans<BundleChannelA<ReqField, EchoField, DATASIZE>> pendingA;
         PendingTrans<BundleChannelD<RespField, EchoField, DATASIZE>> pendingD;
         /* We only need a localBoard recording SourceID -> UL_SBEntry

@@ -319,6 +319,7 @@ namespace tl_agent {
         std::unordered_map<uint64_t, uint64_t> latencyMapC[16];
 
         std::map<uint64_t, uint64_t> latencyMapL2ToL1Hint;
+        uint32_t readAckBeatCnt = 0;
 
     public:
         CAgent(TLLocalConfig* cfg, MemoryBackend* mem, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ub, int sys, int id, unsigned int seed, uint64_t* cycles) noexcept;
