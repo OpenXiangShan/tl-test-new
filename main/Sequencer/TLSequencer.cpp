@@ -26,6 +26,7 @@ TLSequencer::TLSequencer() noexcept
     , ulAgents          (nullptr)
     , fuzzers           (nullptr)
     , unifiedFuzzer     (nullptr)
+    , traceDispatcher   (nullptr)
     , mmioGlobalStatus  (nullptr)
     , mmioAgents        (nullptr)
     , mmioFuzzers       (nullptr)
@@ -38,6 +39,7 @@ TLSequencer::TLSequencer() noexcept
 
 TLSequencer::~TLSequencer() noexcept
 {
+    delete traceDispatcher;
     delete[] pmem;
     delete[] fuzzers;
     delete[] agents;
@@ -344,10 +346,13 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
         unifiedFuzzer->set_cycles(&cycles);
 
-        traceDispatcher = new TraceDispatcher(&this->config,
-            cAgents, GetCAgentCount(),
-            ulAgents, GetULAgentCount(),
-            &cycles, cfg.traceFilePath.c_str());
+        if (config.traceEnable)
+        {
+            traceDispatcher = new TraceDispatcher(&this->config,
+                cAgents, GetCAgentCount(),
+                ulAgents, GetULAgentCount(),
+                &cycles, cfg.traceFilePath.c_str());
+        }
 
         // IO data field pre-allocation
         for (size_t i = 0; i < total_n_agents; i++)
@@ -526,6 +531,12 @@ void TLSequencer::Finalize() noexcept
             unifiedFuzzer = nullptr;
         }
 
+        if (traceDispatcher)
+        {
+            delete traceDispatcher;
+            traceDispatcher = nullptr;
+        }
+
         delete globalBoard;
         globalBoard = nullptr;
 
@@ -586,6 +597,8 @@ void TLSequencer::Tock() noexcept
 
         if (config.traceEnable)
         {
+            assert(traceDispatcher != nullptr &&
+                "TraceDispatcher is not initialized while trace mode is enabled");
             traceDispatcher->tick();
         }
         else if (config.unifiedSequenceEnable)
