@@ -12,6 +12,7 @@
 #include "../Sequencer/TLSequencer.hpp"
 #include "../Plugins/PluginManager.hpp"
 #include "../System/TLSystem.hpp"
+#include "../Plugins/Constantin.hpp"
 #include "../PortGen/portgen_dynamic.hpp"
 
 #include <verilated_fst_c.h>
@@ -173,6 +174,7 @@ int main(int argc, char **argv)
     // initialize TL-Test subsystem
     TLInitialize(&tltest, &plugins, [](TLLocalConfig&) -> void {});
     initialized = true;
+    ConstantinCompat::Reload();
 
     // load PortGen component
 #   ifdef TLTEST_PORTGEN_DYNAMIC

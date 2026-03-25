@@ -8,6 +8,7 @@
 #include "../Plugins/PluginManager.hpp"
 
 #include "../System/TLSystem.hpp"
+#include "../Plugins/Constantin.hpp"
 
 #include <functional>
 
@@ -82,6 +83,7 @@ extern "C" void TileLinkSystemInitialize()
         cfg.masterCountPerCoreTLC   = TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLC;
         cfg.masterCountPerCoreTLUL  = TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLUL;
     });
+    ConstantinCompat::Reload();
 }
 
 /*

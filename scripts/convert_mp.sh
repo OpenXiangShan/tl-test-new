@@ -103,17 +103,19 @@ func taskstr(msTask) {
         return "Mshr"
     }
 }
-func fulladdr_tltest(tag, set, bank) {
-    tagbits = 10;
-    setbits = 9;
-    bankbits = 3;
-    return (tag * (2^(bankbits + setbits)) + (set * (2^bankbits)) + bank) * 64;
+func fulladdr_tltest(tag, set, bank,   setbits, bankbits, offsetbits) {
+    # Defaults for current TL test config: sets=128 (setBits=7), 4 banks (bankBits=2), blockBytes=64 (offsetBits=6).
+    # You can override via env: L2_SET_BITS / L2_BANK_BITS / L2_OFFSET_BITS.
+    setbits = (("L2_SET_BITS" in ENVIRON) ? ENVIRON["L2_SET_BITS"] + 0 : 7)
+    bankbits = (("L2_BANK_BITS" in ENVIRON) ? ENVIRON["L2_BANK_BITS"] + 0 : 2)
+    offsetbits = (("L2_OFFSET_BITS" in ENVIRON) ? ENVIRON["L2_OFFSET_BITS"] + 0 : 6)
+    return (tag * (2^(setbits + bankbits)) + (set * (2^bankbits)) + bank) * (2^offsetbits);
 }
-func fulladdr_xs(tag, set, bank) {
-    tagbits = 19;
-    setbits = 9;
-    bankbits = 2;
-    return (tag * (2^(bankbits + setbits)) + (set * (2^bankbits)) + bank) * 64;
+func fulladdr_xs(tag, set, bank,   setbits, bankbits, offsetbits) {
+    setbits = (("L2_SET_BITS" in ENVIRON) ? ENVIRON["L2_SET_BITS"] + 0 : 9)
+    bankbits = (("L2_BANK_BITS" in ENVIRON) ? ENVIRON["L2_BANK_BITS"] + 0 : 2)
+    offsetbits = (("L2_OFFSET_BITS" in ENVIRON) ? ENVIRON["L2_OFFSET_BITS"] + 0 : 6)
+    return (tag * (2^(setbits + bankbits)) + (set * (2^bankbits)) + bank) * (2^offsetbits);
 }
 
 # TODO: add param
