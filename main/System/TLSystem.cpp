@@ -297,11 +297,12 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
 
     (*plugins) = new PluginManager;
     (*plugins)->EnablePlugin(new ChiselDB::PluginInstance);
-    (*plugins)->EnablePlugin(new CHIron::CLogB::PluginInstance);
+    // (*plugins)->EnablePlugin(new CHIron::CLogB::PluginInstance);
 }
 
 void TLFinalize(TLSequencer** tltest, PluginManager** plugins)
 {
+    printf("finalize disable all plugins...\n");
     (*plugins)->DisableAll([](auto plugin) -> void { delete plugin; });
     delete *plugins;
     

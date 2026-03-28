@@ -39,7 +39,7 @@ void PluginManager::EnablePlugin(Plugin* plugin)
 Plugin* PluginManager::DisablePlugin(const std::string& name)
 {
     auto iter = plugins.find(name);
-
+    printf("disable plugin: %s\n", name.c_str());
     if (iter == end())
         return nullptr;
 
