@@ -5,7 +5,10 @@ ifneq ($(origin CXX_COMPILER), undefined)
 	CMAKE_CXX_COMPILER := -DCMAKE_CXX_COMPILER=$(CXX_COMPILER)
 endif
 
-TLTEST_COMMON_ARGS := -DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0 -DDUMP_PERFCNT=1
+TLTEST_COMMON_ARGS := -DDUT_PATH="$(CURDIR)/dut/CoupledL2" \
+	-DDUT_BUILD_PATH="$(CURDIR)/dut/CoupledL2/build" \
+	-DCHISELDB_PATH="$(CURDIR)/dut/CoupledL2/build" \
+	-DTLTEST_MEMORY=0 -DDUMP_PERFCNT=1
 
 init:
 	git submodule update --init --recursive
@@ -37,15 +40,15 @@ tltest-prepare-v3-coupledL2:
 
 tltest-prepare-all-openLLC:
 	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/OpenLLC"
+		-DDUT_PATH="$(CURDIR)/dut/OpenLLC"
 
 tltest-prepare-dpi-openLLC:
 	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/OpenLLC"
+		-DDUT_PATH="$(CURDIR)/dut/OpenLLC"
 
 tltest-prepare-v3-openLLC:
 	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/OpenLLC"
+		-DDUT_PATH="$(CURDIR)/dut/OpenLLC"
 
 
 tltest-portgen:
@@ -66,6 +69,12 @@ tltest-config-coupledL2-test-l2l3: tltest-config-user
 	@echo ""
 	@cat ./configs/coupledL2-test-l2l3.tltest.ini >> ./main/build/tltest.ini
 	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-l2l3" > ./main/build/Makefile.config
+
+tltest-config-coupledL2-test-l2l3-full: tltest-config-user
+	@cat ./configs/coupledL2-test-l2l3-full.tltest.ini
+	@echo ""
+	@cat ./configs/coupledL2-test-l2l3-full.tltest.ini >> ./main/build/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-l2l3-full" > ./main/build/Makefile.config
 
 tltest-config-coupledL2-test-l2l3l2: tltest-config-user
 	@cat ./configs/coupledL2-test-l2l3l2.tltest.ini
@@ -110,6 +119,9 @@ coupledL2-compile:
 coupledL2-verilog-test-top-l2l3:
 	$(MAKE) -C ./dut/CoupledL2 test-top-l2l3
 
+# coupledL2-verilog-test-top-l2l3-full:
+# 	$(MAKE) -C ./dut/CoupledL2 test-top-l2l3-full
+
 coupledL2-verilog-test-top-l2l3l2:
 	$(MAKE) -C ./dut/CoupledL2 test-top-l2l3l2
 
@@ -130,7 +142,11 @@ openLLC-verilog-clean:
 
 
 VERILATOR := verilator
-VERILATOR_COMMON_ARGS_COUPLEDL2 := ./dut/CoupledL2/build/*.*v \
+COUPLEDL2_ALL_V_FILES := $(shell find ./dut/CoupledL2/build -type f -name '*.*v' | sort)
+COUPLEDL2_VERILATOR_INC_DIRS := $(shell find ./dut/CoupledL2/build -type d | sort)
+COUPLEDL2_VERILATOR_INC := $(addprefix -I,$(COUPLEDL2_VERILATOR_INC_DIRS))
+VERILATOR_COMMON_ARGS_COUPLEDL2 := $(COUPLEDL2_ALL_V_FILES) \
+		$(COUPLEDL2_VERILATOR_INC) \
 		--Mdir ./verilated \
 		-O3 \
 		--trace-fst \
@@ -160,7 +176,7 @@ coupledL2-verilate-build:
 coupledL2-verilate:
 	rm -rf verilated
 	mkdir verilated
-	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/CoupledL2/build/*.*v -Wno-fatal \
+	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated $(COUPLEDL2_ALL_V_FILES) $(COUPLEDL2_VERILATOR_INC) -Wno-fatal \
 		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
 
 coupledL2-verilate-clean:
@@ -188,6 +204,17 @@ openLLC-verilate-clean:
 
 coupledL2-test-l2l3: coupledL2-compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
 					 tltest-config-coupledL2-test-l2l3 tltest-build-all-coupledL2
+
+coupledL2-test-l2l3-tltest: tltest-config-coupledL2-test-l2l3 tltest-build-all-coupledL2
+
+
+# RTL uses test-top-l2l3 as well
+coupledL2-test-l2l3-full: coupledL2-compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
+					 tltest-config-coupledL2-test-l2l3-full tltest-build-all-coupledL2
+
+coupledL2-test-l2l3-full-tltest: tltest-config-coupledL2-test-l2l3-full tltest-build-all-coupledL2
+
+
 
 coupledL2-test-l2l3-v3: coupledL2-compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
 					    tltest-config-coupledL2-test-l2l3 tltest-build-v3-coupledL2
