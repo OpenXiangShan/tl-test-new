@@ -214,7 +214,7 @@ inline std::string GetBase1024B(_TIntegral val, int width = 6, const char** base
     } while(0)
 
 // FIXME: tmp used for debug
-#define LogXEnable 0
+#define LogXEnable 1
 #define LogX(...) \
     do { \
         if (LogXEnable) { \

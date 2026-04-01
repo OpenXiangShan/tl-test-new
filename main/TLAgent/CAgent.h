@@ -304,6 +304,10 @@ namespace tl_agent {
         paddr_t                 lastProbeAfterReleaseAddress;
         AcquirePermScoreBoard*  acquirePermBoard;
         IDPool probeIDpool;
+        uint64_t cacheline_set_index(paddr_t address) const;
+        size_t resident_cacheline_count(uint64_t set_idx, int alias) const;
+        bool pick_lru_release_candidate(uint64_t set_idx, int alias, paddr_t& victim_addr) const;
+        bool try_evict_for_capacity(paddr_t incoming_addr, int alias);
         void timeout_check() override;
 
     public:

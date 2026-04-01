@@ -1847,6 +1847,10 @@ namespace tl_agent {
 
     ActionDenialEnum CAgent::do_acquireBlock(paddr_t address, TLParamAcquire param, int alias) {
 
+        const bool miss_addr = !localBoard->haskey(address);
+        if (miss_addr && !try_evict_for_capacity(address, alias))
+            return ActionDenial::REJECTED_BY_INFLIGHT;
+
         if (pendingA.is_pending())
             return ActionDenial::CHANNEL_CONGESTION;
 
@@ -1926,6 +1930,10 @@ namespace tl_agent {
         * *NOTICE: Only AcquirePerm NtoT & BtoT were possible to be issued,
         *          currently NtoB not utilized in L1.
         */
+
+        const bool miss_addr = !localBoard->haskey(address);
+        if (miss_addr && !try_evict_for_capacity(address, alias))
+            return ActionDenial::REJECTED_BY_INFLIGHT;
 
         if (pendingA.is_pending())
             return ActionDenial::CHANNEL_CONGESTION;

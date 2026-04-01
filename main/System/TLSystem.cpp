@@ -77,6 +77,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.cmoStart                      = TLTEST_DEFAULT_CMO_START;
     tlcfg.cmoEnd                        = TLTEST_DEFAULT_CMO_END;
     tlcfg.cmoParallelDepth              = TLTEST_DEFAULT_CMO_PARALLEL_DEPTH;
+    tlcfg.cAgentCacheSets               = TLTEST_DEFAULT_CAGENT_CACHE_SETS;
+    tlcfg.cAgentCacheWays               = TLTEST_DEFAULT_CAGENT_CACHE_WAYS;
 
     tlcfg.profileCycleUnit              = TLTEST_DEFAULT_PROFILE_CYCLE_UNIT;
 
@@ -179,6 +181,8 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.config", "cmo.start",                  tlcfg.cmoStart);
     INI_OVERRIDE_INT("tltest.config", "cmo.end",                    tlcfg.cmoEnd);
     INI_OVERRIDE_INT("tltest.config", "cmo.parallel.depth",         tlcfg.cmoParallelDepth);
+    INI_OVERRIDE_INT("tltest.config", "cache.cagent.sets",          tlcfg.cAgentCacheSets);
+    INI_OVERRIDE_INT("tltest.config", "cache.cagent.ways",          tlcfg.cAgentCacheWays);
 
     INI_OVERRIDE_INT("tltest.config", "error.hintInaccurate",       glbl.cfg.errorHintInaccurate);
 

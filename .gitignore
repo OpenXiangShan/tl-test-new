@@ -6,4 +6,11 @@ run
 .vscode
 .metals
 .scala-build
+compile_commands.json
+line_trace.txt
+run-bak/
+traces/
+see_bw.gtkw
+see_bw.sh
+configs/coupledL2-test-l2l3-full.tltest.ini
 .cache

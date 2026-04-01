@@ -149,7 +149,7 @@ void TraceDispatcher::send()
         // check whether all previous requests have been completed
         if (numReadSent == numReadReceived &&
             numWriteSent == numWriteReceived &&
-            numEvictSent == numEvictReceived) {
+            numEvictReceived >= numEvictSent) {
             // all previous requests completed, we can issue the fence
             LogX("%ld issue Fence(0x%lx)\n", *cycles/2, e.addr);
             entries.pop_front();
@@ -226,7 +226,7 @@ void TraceDispatcher::tick()
     if (empty() &&
         numReadSent == numReadReceived &&
         numWriteSent == numWriteReceived &&
-        numEvictSent == numEvictReceived)
+        numEvictReceived >= numEvictSent)
     {
         std::cout << "[TraceDispatcher] all requests completed at cycle " << (*cycles)/2 << std::endl;
         TLSystemFinishEvent().Fire();

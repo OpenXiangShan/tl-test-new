@@ -84,6 +84,9 @@ public:
     uint64_t            cmoEnd;                                 // CMO region end address
     uint64_t            cmoParallelDepth;                       // CMO parallel depth
 
+    uint64_t            cAgentCacheSets;                        // CAgent software cache sets, 0 means unlimited
+    uint64_t            cAgentCacheWays;                        // CAgent software cache ways, 0 means unlimited
+
     uint64_t            fuzzARIInterval;                        // Fuzz Auto Range Iteration interval
     uint64_t            fuzzARITarget;                          // Fuzz Auto Range Iteration target
 
