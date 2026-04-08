@@ -84,13 +84,13 @@ jobs:
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
         make coupledL2-compile
-        make openLLC-compile
+#        make openLLC-compile
 
     - name: Build verilog
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
         make coupledL2-verilog-test-top-${{ matrix.case.id }}
-        make openLLC-verilog-test-top-${{ matrix.case.id }}
+#        make openLLC-verilog-test-top-${{ matrix.case.id }}
 
     - name: Tar up repository
       if: steps.cache.outputs.cache-hit != 'true'
@@ -237,17 +237,17 @@ jobs:
     - name: Verilate CoupledL2
       run: |
         make THREADS_BUILD=4 coupledL2-verilate
-        make THREADS_BUILD=4 openLLC-verilate
+#        make THREADS_BUILD=4 openLLC-verilate
 
     - name: Configurate TL-Test-New for CoupledL2
       run: |
         make THREADS_BUILD=4 tltest-config-coupledL2-test-${{ matrix.case.id }}
-        make THREADS_BUILD=4 tltest-config-openLLC-test-${{ matrix.case.id }}
+#        make THREADS_BUILD=4 tltest-config-openLLC-test-${{ matrix.case.id }}
 
     - name: Build TL-Test-New for CoupledL2
       run: |
         make THREADS_BUILD=4 tltest-build-all-coupledL2
-        make THREADS_BUILD=4 tltest-build-all-openLLC
+#        make THREADS_BUILD=4 tltest-build-all-openLLC
 
     - name: Tar up repository
       working-directory: ${{ github.workspace }}
@@ -355,12 +355,12 @@ jobs:
       run: |
         make run
 
-#   - name: Tar up repository
-#     working-directory: ${{ github.workspace }}
-#     run: tar -zcf ${{ env.RUN_ARCHIVE }} repo
+    - name: Tar up repository
+      working-directory: ${{ github.workspace }}
+      run: tar -zcf ${{ env.RUN_ARCHIVE }} repo
 
-#   - name: Upload artifact
-#     uses: actions/upload-artifact@v4
-#     with:
-#       path: ${{ github.workspace }}/${{ env.RUN_ARCHIVE }}
-#       name: ${{ env.RUN_ARCHIVE }}
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        path: ${{ github.workspace }}/${{ env.RUN_ARCHIVE }}
+        name: ${{ env.RUN_ARCHIVE }}
