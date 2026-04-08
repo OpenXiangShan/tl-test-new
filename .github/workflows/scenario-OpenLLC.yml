@@ -40,19 +40,19 @@ jobs:
       OPENLLC_ARCHIVE: openLLC-${{ matrix.case.id }}-${{ github.sha }}.tar.gz
 
     steps:
-    
+
     - name: Checkout
       uses: actions/checkout@v4
       with:
         path: repo
 
-    - name: Checkout OpenLLC
-      run: git submodule update --init dut/OpenLLC
+    - name: Checkout CoupledL2
+      run: git submodule update --init dut/CoupledL2
 
     - name: Extract submodule SHA
-      id: get_sha_OpenLLC
+      id: get_sha_CoupledL2
       run: |
-        cd dut/OpenLLC
+        cd dut/CoupledL2
         CURRENT_HASH=$(git rev-parse HEAD)
         echo "${CURRENT_HASH}"
         echo "CURRENT_HASH=${CURRENT_HASH}" >> $GITHUB_ENV
@@ -84,7 +84,7 @@ jobs:
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
         make openLLC-compile
-  
+
     - name: Build verilog
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
@@ -93,7 +93,7 @@ jobs:
     - name: Tar up repository
       if: steps.cache.outputs.cache-hit != 'true'
       working-directory: ${{ github.workspace }}
-      run: tar -zcf ${{ env.OPENLLC_ARCHIVE }} repo/dut/OpenLLC/build
+      run: tar -zcf ${{ env.OPENLLC_ARCHIVE }} repo/dut/CoupledL2/build
 
   setup-verilator:
     strategy:
@@ -151,7 +151,7 @@ jobs:
       run: tar -zcf ${{ env.VERILATOR_ARCHIVE }} verilator
 
   build:
-    needs: 
+    needs:
       - prebuild-ootb-openLLC
       - setup-verilator
     strategy:
@@ -172,7 +172,7 @@ jobs:
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
       OPENLLC_ARCHIVE: openLLC-${{ matrix.case.id }}-${{ github.sha }}.tar.gz
-      TLTEST_ARCHIVE: tl-test-new-${{ matrix.case.id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
+      TLTEST_ARCHIVE: tl-test-new-openLLC-${{ matrix.case.id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
       VERILATOR_ARCHIVE: verilator-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
     steps:
 
@@ -181,8 +181,8 @@ jobs:
       with:
         path: repo
 
-    - name: Checkout OpenLLC
-      run: git submodule update --init dut/OpenLLC
+    - name: Checkout CoupledL2
+      run: git submodule update --init dut/CoupledL2
 
     - name: Setup Clang 16
       if: matrix.compiler.cc == 'clang-16'
@@ -210,10 +210,10 @@ jobs:
         verilator --version
 
     - name: Extract submodule SHA
-      id: get_sha_OpenLLC
+      id: get_sha_CoupledL2
       working-directory: ${{ github.workspace }}
       run: |
-        cd repo/dut/OpenLLC
+        cd repo/dut/CoupledL2
         CURRENT_HASH=$(git rev-parse HEAD)
         echo "${CURRENT_HASH}"
         echo "CURRENT_HASH=${CURRENT_HASH}" >> $GITHUB_ENV
@@ -278,8 +278,8 @@ jobs:
       CI_RUNS_ON: ${{ matrix.os }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      TLTEST_ARCHIVE: tl-test-new-${{ matrix.case.id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
-      RUN_ARCHIVE: tl-test-new-run-${{ matrix.case.id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
+      TLTEST_ARCHIVE: tl-test-new-openLLC-${{ matrix.case.id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
+      RUN_ARCHIVE: tl-test-new-openLLC-run-${{ matrix.case.id }}-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
     steps:
 
     - name: Download artifact

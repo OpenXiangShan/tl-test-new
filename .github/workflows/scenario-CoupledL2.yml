@@ -335,12 +335,12 @@ jobs:
       run: |
         make run
 
-#   - name: Tar up repository
-#     working-directory: ${{ github.workspace }}
-#     run: tar -zcf ${{ env.RUN_ARCHIVE }} repo
+    # - name: Tar up repository
+    #   working-directory: ${{ github.workspace }}
+    #   run: tar -zcf ${{ env.RUN_ARCHIVE }} repo
 
-#   - name: Upload artifact
-#     uses: actions/upload-artifact@v4
-#     with:
-#       path: ${{ github.workspace }}/${{ env.RUN_ARCHIVE }}
-#       name: ${{ env.RUN_ARCHIVE }}
+    # - name: Upload artifact
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     path: ${{ github.workspace }}/${{ env.RUN_ARCHIVE }}
+    #     name: ${{ env.RUN_ARCHIVE }}
