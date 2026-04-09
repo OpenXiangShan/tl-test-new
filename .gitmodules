@@ -1,3 +1,6 @@
 [submodule "dut/CoupledL2"]
 	path = dut/CoupledL2
 	url = https://github.com/OpenXiangShan/CoupledL2.git
+[submodule "dut/OpenLLC"]
+	path = dut/OpenLLC
+	url = https://github.com/OpenXiangShan/OpenLLC.git
