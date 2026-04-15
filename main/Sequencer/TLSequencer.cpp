@@ -24,6 +24,7 @@ TLSequencer::TLSequencer() noexcept
     , agents            (nullptr)
     , cAgents           (nullptr)
     , ulAgents          (nullptr)
+    , mAgents           (nullptr)
     , fuzzers           (nullptr)
     , unifiedFuzzer     (nullptr)
     , mmioGlobalStatus  (nullptr)
@@ -43,6 +44,7 @@ TLSequencer::~TLSequencer() noexcept
     delete[] agents;
     delete[] cAgents;
     delete[] ulAgents;
+    delete[] mAgents;
     delete[] mmioFuzzers;
     delete[] mmioAgents;
     delete[] memories;
@@ -84,6 +86,11 @@ size_t TLSequencer::GetCAgentCount() const noexcept
 size_t TLSequencer::GetULAgentCount() const noexcept
 {
     return config.GetULAgentCount();
+}
+
+size_t TLSequencer::GetMAgentCount() const noexcept
+{
+    return config.GetMAgentCount();
 }
 
 size_t TLSequencer::GetAgentCount() const noexcept
@@ -202,6 +209,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
         LogInfo("INIT", Append("TLSequencer::Initialize: core count: ", cfg.coreCount).EndLine());
         LogInfo("INIT", Append("TLSequencer::Initialize: TL-C Agent per-core count: ", cfg.masterCountPerCoreTLC).EndLine());
         LogInfo("INIT", Append("TLSequencer::Initialize: TL-UL Agent per-core count: ", cfg.masterCountPerCoreTLUL).EndLine());
+        LogInfo("INIT", Append("TLSequencer::Initialize: TL-M Agent per-core count: ", cfg.masterCountPerCoreTLM).EndLine());
         LogInfo("INIT", Append("TLSequencer::Initialize: Total agent count: ", GetAgentCount()).EndLine());
 
         size_t total_c_agents = GetCAgentCount();
@@ -214,6 +222,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
         
         cAgents     = new CAgent*       [GetCAgentCount()];
         ulAgents    = new ULAgent*      [GetULAgentCount()];
+        mAgents     = new MAgent*       [GetMAgentCount()];
 
         //
         mmio        = new MMIOPort*     [total_c_agents];
@@ -324,6 +333,23 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 i++;
             }
 
+            for (unsigned int k = 0; k < cfg.masterCountPerCoreTLM; k++)
+            {
+                io      [i] = new IOPort;
+                agents  [i] = new MAgent(&this->config, memories[0], globalBoard, uncachedBoard, j, i, cfg.seed, &cycles);
+                agents  [i]->connect(io[i]);
+
+                fuzzers [i] = new MFuzzer(static_cast<MAgent*>(agents[i]));
+                fuzzers [i]->set_cycles(&cycles);
+
+                mAgents[j * cfg.masterCountPerCoreTLM + k] = static_cast<MAgent*>(agents[i]);
+
+                LogInfo("INIT", Append("TLSequencer::Initialize: ")
+                    .Append("Instantiated TL-M Agent #", k, " with deviceId=", i, " for Core #", j).EndLine());
+
+                i++;
+            }
+
             //
             mmio        [j] = new MMIOPort;
             mmioAgents  [j] = new MMIOAgent(&this->config, mmioGlobalStatus, j, cfg.seed, &cycles);
@@ -350,6 +376,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             io[i]->a.data = make_shared_tldata<BEATSIZE>();
             io[i]->c.data = make_shared_tldata<BEATSIZE>();
             io[i]->d.data = make_shared_tldata<BEATSIZE>();
+            io[i]->m.data = make_shared_tldata<DATASIZE>();
         }
 
         for (size_t i = 0; i < total_c_agents; i++)
@@ -382,6 +409,9 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
             io[i]->e.ready = 0;
             io[i]->e.valid = 0;
+
+            io[i]->m.ready = 0;
+            io[i]->m.valid = 0;
         }
 
         for (size_t i = 0; i < total_c_agents; i++)

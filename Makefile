@@ -1,9 +1,15 @@
 THREADS_BUILD 	?= 1
+THREADS 		?= 1
 
 CMAKE_CXX_COMPILER :=
 ifneq ($(origin CXX_COMPILER), undefined)
 	CMAKE_CXX_COMPILER := -DCMAKE_CXX_COMPILER=$(CXX_COMPILER)
 endif
+
+TLTEST_COMMON_ARGS := -DDUT_PATH="$(CURDIR)/dut/CoupledL2" \
+	-DDUT_BUILD_PATH="$(CURDIR)/dut/CoupledL2/build" \
+	-DCHISELDB_PATH="$(CURDIR)/dut/CoupledL2/build" \
+	-DTLTEST_MEMORY=0
 
 
 init:
@@ -25,16 +31,13 @@ tltest-prepare-v3:
 
 
 tltest-prepare-all-coupledL2:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0
+	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS)
 
 tltest-prepare-dpi-coupledL2:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0
+	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS)
 
 tltest-prepare-v3-coupledL2:
-	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0
+	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS)
 
 
 tltest-prepare-all-openLLC:
@@ -74,6 +77,18 @@ tltest-config-coupledL2-test-l2l3l2: tltest-config-user
 	@echo ""
 	@cat ./configs/coupledL2-test-l2l3l2.tltest.ini >> ./main/build/tltest.ini
 	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-l2l3l2" > ./main/build/Makefile.config
+
+tltest-config-coupledL2-test-matrix-core-alone: tltest-config-user
+	@cat ./configs/coupledL2-test-matrix-core-alone.tltest.ini
+	@echo ""
+	@cat ./configs/coupledL2-test-matrix-core-alone.tltest.ini >> ./main/build/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-matrix-core-alone" > ./main/build/Makefile.config
+
+tltest-config-coupledL2-test-matrix-no-core: tltest-config-user
+	@cat ./configs/coupledL2-test-matrix-no-core.tltest.ini
+	@echo ""
+	@cat ./configs/coupledL2-test-matrix-no-core.tltest.ini >> ./main/build/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-matrix-no-core" > ./main/build/Makefile.config
 
 tltest-config-openLLC-test-l2l3: tltest-config-user
 	@cat ./configs/openLLC-test-l2l3.tltest.ini
@@ -115,6 +130,9 @@ coupledL2-verilog-test-top-l2l3:
 coupledL2-verilog-test-top-l2l3l2:
 	$(MAKE) -C ./dut/CoupledL2 test-top-l2l3l2
 
+coupledL2-verilog-test-top-matrix:
+	$(MAKE) -C ./dut/CoupledL2 test-top-matrix
+
 coupledL2-verilog-clean:
 	$(MAKE) -C ./dut/CoupledL2 clean
 
@@ -132,7 +150,11 @@ openLLC-verilog-clean:
 
 
 VERILATOR := verilator
-VERILATOR_COMMON_ARGS_COUPLEDL2 := ./dut/CoupledL2/build/*.*v \
+COUPLEDL2_ALL_V_FILES := $(shell find ./dut/CoupledL2/build -type f -name '*.*v' | sort)
+COUPLEDL2_VERILATOR_INC_DIRS := $(shell find ./dut/CoupledL2/build -type d | sort)
+COUPLEDL2_VERILATOR_INC := $(addprefix -I,$(COUPLEDL2_VERILATOR_INC_DIRS))
+VERILATOR_COMMON_ARGS_COUPLEDL2 := $(COUPLEDL2_ALL_V_FILES) \
+		$(COUPLEDL2_VERILATOR_INC) \
 		--Mdir ./verilated \
 		-O3 \
 		--trace-fst \
@@ -162,8 +184,8 @@ coupledL2-verilate-build:
 coupledL2-verilate:
 	rm -rf verilated
 	mkdir verilated
-	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/CoupledL2/build/*.*v -Wno-fatal \
-		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
+	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated $(COUPLEDL2_ALL_V_FILES) $(COUPLEDL2_VERILATOR_INC) -Wno-fatal \
+		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) --threads $(THREADS) -DSIM_TOP_MODULE_NAME=TestTop
 
 coupledL2-verilate-clean:
 	rm -rf verilated
@@ -207,6 +229,12 @@ coupledL2-test-l2l3l2-v3: coupledL2-compile coupledL2-verilog-test-top-l2l3l2 co
 coupledL2-test-l2l3l2-dpi: coupledL2-compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
 						   tltest-config-coupledL2-test-l2l3l2 tltest-build-dpi-coupledL2
 
+coupledL2-test-matrix-core-alone: coupledL2-compile coupledL2-verilog-test-top-matrix coupledL2-verilate \
+					  tltest-config-coupledL2-test-matrix-core-alone tltest-build-all-coupledL2
+
+coupledL2-test-matrix-no-core: coupledL2-compile coupledL2-verilog-test-top-matrix coupledL2-verilate \
+					  tltest-config-coupledL2-test-matrix-no-core tltest-build-all-coupledL2
+
 
 openLLC-test-l2l3: openLLC-compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
 				   tltest-config-openLLC-test-l2l3 tltest-build-all-openLLC
@@ -247,6 +275,22 @@ run_coupledL2-test-l2l3: FORCE tltest-config-coupledL2-test-l2l3
 	@bash ./scripts/run_v3lt.sh
 
 run_coupledL2-test-l2l3l2: FORCE tltest-config-coupledL2-test-l2l3l2
+	@rm -rf ./run
+	@mkdir ./run
+	@cp ./main/build/tltest_v3lt ./run/
+	@cp ./main/build/tltest_portgen.so ./run/
+	@cp ./main/build/tltest.ini ./run/
+	@bash ./scripts/run_v3lt.sh
+
+run_coupledL2-test-matrix-core-alone: FORCE tltest-config-coupledL2-test-matrix-core-alone
+	@rm -rf ./run
+	@mkdir ./run
+	@cp ./main/build/tltest_v3lt ./run/
+	@cp ./main/build/tltest_portgen.so ./run/
+	@cp ./main/build/tltest.ini ./run/
+	@bash ./scripts/run_v3lt.sh
+
+run_coupledL2-test-matrix-no-core: FORCE tltest-config-coupledL2-test-matrix-no-core
 	@rm -rf ./run
 	@mkdir ./run
 	@cp ./main/build/tltest_v3lt ./run/

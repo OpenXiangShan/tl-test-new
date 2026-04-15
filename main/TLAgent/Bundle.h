@@ -47,6 +47,8 @@ namespace tl_agent {
         Usr                 usr;
         Echo                echo;
         uint8_t             corrupt;
+        uint8_t             matrix;
+        uint8_t             ameIndex;
         uint8_t             needHint;
         paddr_t             vaddr;
         uint8_t             alias;
@@ -105,6 +107,12 @@ namespace tl_agent {
         uint8_t             alias;
     };
 
+    class BundleChannelM : public DecoupledBundle {
+    public:
+        uint64_t            source;
+        shared_tldata_t<DATASIZE> data;
+    };
+
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     class Bundle {
     public:
@@ -113,6 +121,7 @@ namespace tl_agent {
         BundleChannelC<ReqField, EchoField, N>  c;
         BundleChannelD<RespField, EchoField, N> d;
         BundleChannelE                          e;
+        BundleChannelM                          m;
     };
 
     //

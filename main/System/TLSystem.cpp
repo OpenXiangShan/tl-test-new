@@ -50,6 +50,7 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.coreCount                     = TLTEST_DEFAULT_CORE_COUNT;
     tlcfg.masterCountPerCoreTLC         = TLTEST_DEFAULT_MASTER_COUNT_PER_CORE_TLC;
     tlcfg.masterCountPerCoreTLUL        = TLTEST_DEFAULT_MASTER_COUNT_PER_CORE_TLUL;
+    tlcfg.masterCountPerCoreTLM         = TLTEST_DEFAULT_MASTER_COUNT_PER_CORE_TLM;
 
     tlcfg.startupCycle                  = TLTEST_DEFAULT_STARTUP_CYCLE;
     tlcfg.maximumCycle                  = TLTEST_DEFAULT_MAXIMUM_CYCLE;
@@ -138,6 +139,7 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.config", "core",                       tlcfg.coreCount);
     INI_OVERRIDE_INT("tltest.config", "core.tl_c",                  tlcfg.masterCountPerCoreTLC);
     INI_OVERRIDE_INT("tltest.config", "core.tl_ul",                 tlcfg.masterCountPerCoreTLUL);
+    INI_OVERRIDE_INT("tltest.config", "core.tl_m",                  tlcfg.masterCountPerCoreTLM);
 
     INI_OVERRIDE_INT("tltest.config", "startup.cycle",              tlcfg.startupCycle);
 
