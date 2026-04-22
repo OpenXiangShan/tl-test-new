@@ -27,10 +27,10 @@ namespace V3::PortGen {
             .ToString();
     }
 
-    std::string GenerateDataMPortName(int portId, std::string name)
+    std::string GenerateDataMPortName(int coreId, int portId, std::string name)
     {
         return Gravity::StringAppender()
-            .Append("matrix_data_out_", portId, "_", name)
+            .Append("matrix_data_out_", coreId, "_", portId, "_", name)
             .ToString();
     }
     static void GenerateInfo(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
@@ -348,17 +348,17 @@ namespace V3::PortGen {
 
                 cpp_file.Append("    std::memcpy(",
                         "port->m.data->data, ",
-                        "verilated->", GenerateDataMPortName(j,"bits_data_data"), ", ",
+                        "verilated->", GenerateDataMPortName(i, j, "bits_data_data"), ", ",
                         DATASIZE,
                     ");").EndLine();
                 cpp_file.Append("    port->", "m.source", " = verilated->",
-                        GenerateDataMPortName(j, "bits_sourceId"), ";")
+                        GenerateDataMPortName(i, j, "bits_sourceId"), ";")
                     .EndLine();
                 cpp_file.Append("    port->", "m.valid", " = verilated->",
-                        GenerateDataMPortName(j, "valid"), ";")
+                        GenerateDataMPortName(i, j, "valid"), ";")
                     .EndLine();
                 cpp_file.Append("    port->", "m.ready", " = verilated->",
-                        GenerateDataMPortName(j, "ready"), ";")
+                        GenerateDataMPortName(i, j, "ready"), ";")
                     .EndLine();
                 cpp_file.EndLine();
             }
@@ -399,7 +399,7 @@ namespace V3::PortGen {
 
                 cpp_file.Append("    port = &(tltest->IO(", deviceId, "));").EndLine();
                 PullMMasterPort(i, j,  "d_ready", "d.ready");
-                cpp_file.Append("    verilated->", GenerateDataMPortName(j, "ready"),
+                cpp_file.Append("    verilated->", GenerateDataMPortName(i, j, "ready"),
                         " = port->", "m.ready", ";").EndLine();
                 cpp_file.EndLine();
             }

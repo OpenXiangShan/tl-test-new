@@ -111,7 +111,7 @@ namespace tl_agent {
     }
 
     CAgent::CAgent(TLLocalConfig* cfg, MemoryBackend* mem, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ubs, int sys, int sysId, unsigned int seed, uint64_t *cycles) noexcept :
-        BaseAgent(cfg, mem, sys, sysId, seed), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(), probeIDpool(NR_SOURCEID, NR_SOURCEID+1)
+        BaseAgent(cfg, mem, sys, sysId, seed), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(), probeIDpool(NR_SOURCEID, NR_SOURCEID+1), readAckBeatCnt(0)
     {
         this->globalBoard = gb;
         this->uncachedBoards = ubs;
@@ -2389,6 +2389,36 @@ namespace tl_agent {
     ActionDenialEnum CAgent::do_cbo_inval(paddr_t address, bool alwaysHit)
     {
         return do_cbo(TLOpcodeA::CBOInval, address, alwaysHit);
+    }
+
+    bool CAgent::recv_readAck()
+    {
+        auto& chnD = this->port->d;
+
+        if (chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData))
+        {
+            if (readAckBeatCnt == (DATASIZE / BEATSIZE - 1))
+            {
+                readAckBeatCnt = 0;
+                return true;
+            }
+
+            readAckBeatCnt++;
+        }
+
+        return false;
+    }
+
+    bool CAgent::recv_writeAck()
+    {
+        auto& chnD = this->port->d;
+        return chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::Grant);
+    }
+
+    bool CAgent::recv_evictAck()
+    {
+        auto& chnD = this->port->d;
+        return chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::ReleaseAck);
     }
 
     void CAgent::timeout_check() {

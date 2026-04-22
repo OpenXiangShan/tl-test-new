@@ -18,8 +18,8 @@
 
 namespace tl_agent {
 
-    ULAgent::ULAgent(TLLocalConfig* cfg, MemoryBackend* mem, GlobalBoard<paddr_t> *gb, UncachedBoard<paddr_t>* ubs, int sys, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
-            BaseAgent(cfg, mem, sys, sysId, seed), pendingA(), pendingD()
+        ULAgent::ULAgent(TLLocalConfig* cfg, MemoryBackend* mem, GlobalBoard<paddr_t> *gb, UncachedBoard<paddr_t>* ubs, int sys, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
+            BaseAgent(cfg, mem, sys, sysId, seed), readAckBeatCnt(0), pendingA(), pendingD()
     {
         this->globalBoard = gb;
         this->uncachedBoards = ubs;
@@ -547,6 +547,30 @@ namespace tl_agent {
         Dump(EndLine());
 
         return ActionDenial::ACCEPTED;
+    }
+
+    bool ULAgent::recv_readAck()
+    {
+        auto& chnD = this->port->d;
+
+        if (chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData))
+        {
+            if (readAckBeatCnt == (DATASIZE / BEATSIZE - 1))
+            {
+                readAckBeatCnt = 0;
+                return true;
+            }
+
+            readAckBeatCnt++;
+        }
+
+        return false;
+    }
+
+    bool ULAgent::recv_writeAck()
+    {
+        auto& chnD = this->port->d;
+        return chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck);
     }
     
     void ULAgent::timeout_check() {

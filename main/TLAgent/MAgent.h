@@ -14,6 +14,7 @@ public:
 
 private:
     uint64_t* cycles;
+    uint32_t readAckBeatCnt;
     PendingTrans<BundleChannelA<ReqField, EchoField, DATASIZE>> pendingA;
     PendingTrans<BundleChannelD<RespField, EchoField, DATASIZE>> pendingD;
     LocalScoreBoard* localBoard;
@@ -46,6 +47,8 @@ public:
 
     bool is_d_fired();
     bool is_m_fired();
+    bool recv_readAck();
+    bool recv_writeAck();
 
     ActionDenialEnum do_getAuto(paddr_t address, bool modify = false);
     ActionDenialEnum do_get(paddr_t address, uint8_t size, uint32_t mask);

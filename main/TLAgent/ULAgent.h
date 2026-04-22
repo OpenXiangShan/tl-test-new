@@ -57,6 +57,7 @@ namespace tl_agent {
 
     private:
         uint64_t* cycles;
+        uint32_t readAckBeatCnt;
         PendingTrans<BundleChannelA<ReqField, EchoField, DATASIZE>> pendingA;
         PendingTrans<BundleChannelD<RespField, EchoField, DATASIZE>> pendingD;
         /* We only need a localBoard recording SourceID -> UL_SBEntry
@@ -85,6 +86,8 @@ namespace tl_agent {
         ActionDenialEnum do_get             (paddr_t address, uint8_t size, uint32_t mask);
         ActionDenialEnum do_putfulldata     (paddr_t address, shared_tldata_t<DATASIZE> data);
         ActionDenialEnum do_putpartialdata  (paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data);
+        bool recv_readAck();
+        bool recv_writeAck();
     };
 
 }

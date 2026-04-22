@@ -15,6 +15,7 @@ MAgent::MAgent(TLLocalConfig* cfg,
                unsigned int seed,
                uint64_t* cycles) noexcept
     : BaseAgent(cfg, mem, sys, sysId, seed)
+    , readAckBeatCnt(0)
     , pendingA()
     , pendingD() {
     this->globalBoard = gb;
@@ -233,6 +234,34 @@ bool MAgent::is_d_fired() {
 
 bool MAgent::is_m_fired() {
     return this->port->m.fire();
+}
+
+bool MAgent::recv_readAck()
+{
+    auto& chnD = this->port->d;
+    auto& chnM = this->port->m;
+
+    if (chnM.fire())
+        return true;
+
+    if (chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData, TLOpcodeD::GrantData))
+    {
+        if (readAckBeatCnt == (DATASIZE / BEATSIZE - 1))
+        {
+            readAckBeatCnt = 0;
+            return true;
+        }
+
+        readAckBeatCnt++;
+    }
+
+    return false;
+}
+
+bool MAgent::recv_writeAck()
+{
+    auto& chnD = this->port->d;
+    return chnD.fire() && TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck);
 }
 
 ActionDenialEnum MAgent::do_getAuto(paddr_t address, bool modify) {
