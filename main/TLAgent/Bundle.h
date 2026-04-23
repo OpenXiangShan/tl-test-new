@@ -139,6 +139,14 @@ namespace tl_agent {
         uint32_t            sourceId;
         uint8_t             isKeyword;
     };
+
+    //
+    class BundlePowerDown {
+    public:    
+        uint8_t             flushAll;
+        uint8_t             flushAllDone;
+        uint8_t             cpuHalt;
+    };
 }
 
 #endif //TLC_TEST_BUNDLE_H
