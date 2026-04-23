@@ -15,6 +15,10 @@
 #include "../PortGen/portgen_dynamic.hpp"
 #include "../Events/TLSystemEvent.hpp"
 
+#include "v3_conn_powerdown.hpp"
+#include "v3_conn_linkdown.hpp"
+#include "v3_conn_resetsep.hpp"
+
 #include <verilated_fst_c.h>
 
 #if TLTEST_MEMORY == 1
@@ -244,6 +248,21 @@ int main(int argc, char **argv)
     else
         std::cout << "[V3Main] \033[31mNot controlling Performance Logging of TestTop\033[0m." << std::endl;
 
+    if constexpr (has_port_power_down<VTestTop>::value)
+        std::cout << "[V3Main] \033[1;32mExisting Power Down control of TestTop\033[0m." << std::endl;
+    else
+        std::cout << "[V3Main] \033[31mNo existing Power Down control of TestTop\033[0m." << std::endl;
+
+    if constexpr (has_port_linkdown<VTestTop>::value)
+        std::cout << "[V3Main] \033[1;32mExisting Link Down feedback of TestTop\033[0m." << std::endl;
+    else
+        std::cout << "[V3Main] \033[31mNo existing Link Down feedback of TestTop\033[0m." << std::endl;
+
+    if constexpr (has_port_resetsep<VTestTop>::value)
+        std::cout << "[V3Main] \033[1;32mSeperate Reset supported by TestTop\033[0m." << std::endl;
+    else
+        std::cout << "[V3Main] \033[31mSeperate Reset not supported by TestTop\033[0m." << std::endl;
+
     //
     Verilated::commandArgs(argc, argv);
 
@@ -329,6 +348,8 @@ int main(int argc, char **argv)
         V3::PortGen::PushChannelD(top, tltest);
 
         V3PushL2ToL1Hint(top, tltest);
+        V3PushPowerDown(top, tltest);
+        V3PushLinkDown(top, tltest);
 
 #if TLTEST_MEMORY == 1
         V3::Memory::PushChannelAW(top, tltest);
@@ -343,6 +364,9 @@ int main(int argc, char **argv)
         V3::PortGen::PullChannelA(top, tltest);
         V3::PortGen::PullChannelC(top, tltest);
         V3::PortGen::PullChannelE(top, tltest);
+
+        V3PullPowerDown(top, tltest);
+        V3PullResetSep(top, tltest);
 
 #if TLTEST_MEMORY == 1
         V3::Memory::PullChannelB(top, tltest);
