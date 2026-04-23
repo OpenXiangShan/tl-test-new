@@ -5,6 +5,7 @@
 #include "../Base/TLEnum.hpp"
 
 #include "../Events/TLSystemEvent.hpp"
+#include "../Events/TLAgentEvent.hpp"
 #include "Fuzzer.h"
 
 #include <algorithm>
@@ -14,9 +15,9 @@
 
 
 static std::vector<CFuzzRange> FUZZ_ARI_RANGES = {
-    { .ordinal = 0, .maxTag = CFUZZER_RAND_RANGE_TAG,     .maxSet = CFUZZER_RAND_RANGE_SET,   .maxAlias = CFUZZER_RAND_RANGE_ALIAS    },
-    { .ordinal = 1, .maxTag = 0x1,                        .maxSet = 0x10,                     .maxAlias = 0x4                         },
-    { .ordinal = 2, .maxTag = 0x10,                       .maxSet = 0x1,                      .maxAlias = 0x4                         }
+//    { .ordinal = 0, .maxTag = CFUZZER_RAND_RANGE_TAG,     .maxSet = CFUZZER_RAND_RANGE_SET,   .maxAlias = CFUZZER_RAND_RANGE_ALIAS    },
+    { .ordinal = 0, .maxTag = 0x1,                        .maxSet = 0x80,                     .maxAlias = 0x1                         },
+//  { .ordinal = 2, .maxTag = 0x80,                       .maxSet = 0x2,                      .maxAlias = 0x4                         }
 };
 
 static CFuzzRange FUZZ_STREAM_RANGE = {
@@ -58,6 +59,9 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
     this->fuzzStreamStart               = cAgent->config().fuzzStreamStart;
     this->fuzzStreamEnd                 = cAgent->config().fuzzStreamEnd;
 
+    this->fuzzFillSet                   = 0;
+    this->fuzzFillTag                   = 0;
+
     this->bwprof.step                   = cAgent->config().fuzzStreamStep / BWPROF_STRIDE_ELEMENT;
     this->bwprof.addr                   = cAgent->config().fuzzStreamStart;
     this->bwprof.cycle                  = 0;
@@ -76,6 +80,9 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
     this->bwprof.distributionCycle      = 0;
     this->bwprof.distributionCount      = 0;
 
+    this->flushAllIntervalCounter = 0;
+    this->anyFlushAll = false;
+
     decltype(cAgent->config().sequenceModes.end()) modeInMap;
     if ((modeInMap = cAgent->config().sequenceModes.find(cAgent->sysId()))
             != cAgent->config().sequenceModes.end())
@@ -83,9 +90,16 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
     else
         this->mode = TLSequenceMode::FUZZ_ARI;
 
-    if (this->mode == TLSequenceMode::FUZZ_ARI)
+    if (this->mode == TLSequenceMode::FUZZ_ARI
+     || this->mode == TLSequenceMode::FUZZ_ARI_WITH_FLUSH_ALL
+     || this->mode == TLSequenceMode::FUZZ_ARI_ON_FLUSH_ALL)
     {
-        LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] in FUZZ_ARI mode").EndLine());
+        if (this->mode == TLSequenceMode::FUZZ_ARI_WITH_FLUSH_ALL)
+            LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] in FUZZ_ARI_WITH_FLUSH_ALL mode").EndLine());
+        else if (this->mode == TLSequenceMode::FUZZ_ARI_ON_FLUSH_ALL)
+            LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] in FUZZ_ARI_ON_FLUSH_ALL mode").EndLine());
+        else
+            LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] in FUZZ_ARI mode").EndLine());
 
         for (size_t i = 0; i < FUZZ_ARI_RANGES.size(); i++)
             this->fuzzARIRangeOrdinal.push_back(i);
@@ -112,6 +126,19 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
             .Hex().ShowBase().Append(this->fuzzStreamStart).EndLine());
         LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] stream ends at ")
             .Hex().ShowBase().Append(this->fuzzStreamEnd).EndLine());
+    }
+    else if (this->mode == TLSequenceMode::FUZZ_FILL
+          || this->mode == TLSequenceMode::FUZZ_FILL_WITH_FLUSH_ALL)
+    {
+        if (this->mode == TLSequenceMode::FUZZ_FILL_WITH_FLUSH_ALL)
+            LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] in FUZZ_FILL_WITH_FLUSH_ALL mode").EndLine());
+        else
+            LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] in FUZZ_FILL mode").EndLine());
+
+        LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] fill tag max = ")
+            .Hex().ShowBase().Append(CFUZZER_FILL_RANGE_TAG).EndLine());
+        LogInfo(this->cAgent->cycle(), Append("CFuzzer [", cAgent->sysId(), "] fill set max = ")
+            .Hex().ShowBase().Append(CFUZZER_FILL_RANGE_SET).EndLine());
     }
     else if (this->mode == TLSequenceMode::BWPROF_STREAM_STRIDE_READ)
     {
@@ -209,14 +236,45 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
             }
         )
     );
+
+    Gravity::RegisterListener(
+        Gravity::MakeListener<TLAgentFlushAllPhaseChangeEvent>(
+            Gravity::StringAppender("tltest.cfuzzer.flushallphasechange", uint64_t(this)).ToString(),
+            0,
+            [this] (TLAgentFlushAllPhaseChangeEvent& event) -> void {
+                if (event.nextPhase != 0)
+                    this->anyFlushAll = true;
+                else
+                    this->anyFlushAll = false;
+            }
+        )
+    );
 }
 
 void CFuzzer::randomTest(bool do_alias) {
     paddr_t addr;
     int     alias;
-    if (this->mode == TLSequenceMode::FUZZ_ARI || this->mode == TLSequenceMode::FUZZ_STREAM)
+    if (this->mode == TLSequenceMode::FUZZ_ARI
+     || this->mode == TLSequenceMode::FUZZ_ARI_WITH_FLUSH_ALL
+     || this->mode == TLSequenceMode::FUZZ_ARI_ON_FLUSH_ALL
+     || this->mode == TLSequenceMode::FUZZ_STREAM
+     || this->mode == TLSequenceMode::FUZZ_FILL
+     || this->mode == TLSequenceMode::FUZZ_FILL_WITH_FLUSH_ALL)
     {
-        if (this->mode == TLSequenceMode::FUZZ_ARI)
+        if (!anyFlushAll && this->mode == TLSequenceMode::FUZZ_ARI_ON_FLUSH_ALL)
+            return;
+
+        if (this->mode == TLSequenceMode::FUZZ_FILL
+         || this->mode == TLSequenceMode::FUZZ_FILL_WITH_FLUSH_ALL)
+        {
+            // Tag + Set + Offset
+            addr  = (this->fuzzFillTag << 13)
+                  + (this->fuzzFillSet << 6);
+            alias = 0;
+        }
+        else if (this->mode == TLSequenceMode::FUZZ_ARI
+              || this->mode == TLSequenceMode::FUZZ_ARI_ON_FLUSH_ALL
+              || this->mode == TLSequenceMode::FUZZ_ARI_WITH_FLUSH_ALL)
         {
             // Tag + Set + Offset
             addr  = ((CAGENT_RAND64(cAgent, "CFuzzer") % FUZZ_ARI_RANGES[fuzzARIRangeOrdinal[fuzzARIRangeIndex]].maxTag) << 13) 
@@ -238,24 +296,91 @@ void CFuzzer::randomTest(bool do_alias) {
             }
         }
 
-        if (CAGENT_RAND64(cAgent, "CFuzzer") % 4)
+        if (!cAgent->phaseFlushAll())
+            flushAllIntervalCounter++;
+
+        if ((this->mode == TLSequenceMode::FUZZ_ARI_WITH_FLUSH_ALL
+          || this->mode == TLSequenceMode::FUZZ_FILL_WITH_FLUSH_ALL)
+         && flushAllIntervalCounter > cAgent->config().fuzzARIFlushAllInterval)
+        {
+            if (CAGENT_RAND64(cAgent, "CFuzzer") % 1000000 > cAgent->config().fuzzARIFlushAllThreshold)
+            {
+                flushAllIntervalCounter = 0;
+                cAgent->do_flushAll(cAgent->config().fuzzARIFlushAllPhase);
+                return;
+            }
+        }
+
+        if ((this->mode == TLSequenceMode::FUZZ_FILL)
+         || (this->mode == TLSequenceMode::FUZZ_FILL_WITH_FLUSH_ALL)
+         || (CAGENT_RAND64(cAgent, "CFuzzer") % 4))
         {
             if (!cAgent->config().memoryEnable)
                 return;
 
             addr = remap_memory_address(addr);
 
-            if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
+            if (((this->mode == TLSequenceMode::FUZZ_FILL || this->mode == TLSequenceMode::FUZZ_FILL_WITH_FLUSH_ALL) && (CAGENT_RAND64(cAgent, "CFuzzer") % 8))
+            || CAGENT_RAND64(cAgent, "CFuzzer") % 2)
+            {
+                if (cAgent->phaseFlushAll() == 1 && cAgent->config().fuzzARIFlushAllPhase1NoAcquire)
+                    return;
+
+                if (cAgent->phaseFlushAll() == 2 && cAgent->config().fuzzARIFlushAllPhase2NoAcquire)
+                    return;
+
+                if (cAgent->phaseFlushAll() == 3 && cAgent->config().fuzzARIFlushAllPhase3NoAcquire)
+                    return;
+
+                if (cAgent->phaseFlushAll() >= 4)
+                    return;
+
+                tl_agent::ActionDenialEnum denial;
                 if (CAGENT_RAND64(cAgent, "CFuzzer") % 3) {
                     if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
-                        cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias); // AcquireBlock NtoT
+                        denial = cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias); // AcquireBlock NtoT
                     } else {
-                        cAgent->do_acquireBlock(addr, TLParamAcquire::NtoB, alias); // AcquireBlock NtoB
+                        denial = cAgent->do_acquireBlock(addr, TLParamAcquire::NtoB, alias); // AcquireBlock NtoB
                     }
                 } else {
-                    cAgent->do_acquirePerm(addr, TLParamAcquire::NtoT, alias); // AcquirePerm
+                    denial = cAgent->do_acquirePerm(addr, TLParamAcquire::NtoT, alias); // AcquirePerm
+                }
+
+                if (denial == tl_agent::ActionDenial::ACCEPTED)
+                {
+                    if (this->mode == TLSequenceMode::FUZZ_FILL
+                     || this->mode == TLSequenceMode::FUZZ_FILL_WITH_FLUSH_ALL)
+                    {
+                        if (this->fuzzFillSet == 0 && this->fuzzFillTag == 0)
+                            LogInfo(this->cAgent->cycle(), Append("A round trip of Fill started").EndLine());
+
+                        this->fuzzFillSet++;
+                        if (this->fuzzFillSet >= CFUZZER_FILL_RANGE_SET)
+                        {
+                            this->fuzzFillSet = 0;
+                            this->fuzzFillTag++;
+                            if (this->fuzzFillTag >= CFUZZER_FILL_RANGE_TAG)
+                            {
+                                this->fuzzFillTag = 0;
+                                LogInfo(this->cAgent->cycle(), Append("A round trip of Fill done").EndLine());
+                            }
+                        }
+                    }
                 }
             } else {
+
+                if (cAgent->phaseFlushAll() == 1 && cAgent->config().fuzzARIFlushAllPhase1NoRelease)
+                    return;
+
+                if (cAgent->phaseFlushAll() == 2 && cAgent->config().fuzzARIFlushAllPhase2NoRelease)
+                    return;
+
+                if (cAgent->phaseFlushAll() == 3 && cAgent->config().fuzzARIFlushAllPhase3NoRelease)
+                    return;
+
+                if (cAgent->phaseFlushAll() >= 4)
+                    return;
+
                 /*
                 uint8_t* putdata = new uint8_t[DATASIZE];
                 for (int i = 0; i < DATASIZE; i++) {
@@ -270,6 +395,18 @@ void CFuzzer::randomTest(bool do_alias) {
         }
         else if (cAgent->config().cmoEnable)
         {
+            if (cAgent->phaseFlushAll() == 1 && cAgent->config().fuzzARIFlushAllPhase1NoCBO)
+                return;
+
+            if (cAgent->phaseFlushAll() == 2 && cAgent->config().fuzzARIFlushAllPhase2NoCBO)
+                return;
+
+            if (cAgent->phaseFlushAll() == 3 && cAgent->config().fuzzARIFlushAllPhase3NoCBO)
+                return;
+
+            if (cAgent->phaseFlushAll() >= 4)
+                return;
+
             addr = remap_cmo_address(addr);
 
             bool alwaysHit = (CAGENT_RAND64(cAgent, "CFuzzer") % 8) == 0;
@@ -322,7 +459,11 @@ void CFuzzer::tick() {
         return;
     }
 
-    if (this->mode == TLSequenceMode::FUZZ_ARI)
+    if (this->mode == TLSequenceMode::FUZZ_ARI
+     || this->mode == TLSequenceMode::FUZZ_ARI_WITH_FLUSH_ALL
+     || this->mode == TLSequenceMode::FUZZ_ARI_ON_FLUSH_ALL
+     || this->mode == TLSequenceMode::FUZZ_FILL
+     || this->mode == TLSequenceMode::FUZZ_FILL_WITH_FLUSH_ALL)
     {
         this->randomTest(true);
 
@@ -331,7 +472,7 @@ void CFuzzer::tick() {
             this->fuzzARIRangeIterationTime += this->fuzzARIRangeIterationInterval;
             this->fuzzARIRangeIndex++;
 
-            if (this->fuzzARIRangeIndex == fuzzARIRangeOrdinal.size())
+            if (this->fuzzARIRangeIndex >= fuzzARIRangeOrdinal.size())
             {
                 this->fuzzARIRangeIndex = 0;
                 this->fuzzARIRangeIterationCount++;
