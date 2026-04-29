@@ -132,6 +132,12 @@ make tltest-build-all
 ```
 make run
 ```  
+&emsp;&emsp;To run OpenLLC and CoupledL2 in parallel, give each flow a different suffix so their outputs land in separate directories:  
+```bash
+make SUFFIX=coupledL2 coupledL2-test-l2l3 run
+make SUFFIX=openLLC openLLC-test-l2l3 run
+```
+&emsp;&emsp;With a suffix, the generated directories become `main/build_<suffix>`, `verilated_<suffix>`, and `run_<suffix>`. Without a suffix, the default `build`, `verilated`, and `run` directories are kept.  
 &emsp;&emsp;Build specified test case completely:  
 ```
 make <test_case_name>
@@ -242,6 +248,7 @@ make clean
 &emsp;&emsp;Specify the **verilator output path** of DUT.  
 * Configuring:  
     * ```cmake .. -DVERILATED_PATH=<dir>```  
+* When using `SUFFIX`, the top-level Makefile sets this to the matching `verilated_<suffix>` directory.  
 * Passing to compiler:  
     * ```-DVERILATED_PATH="${VERILATED_PATH}"``` as global macro ```VERILATED_PATH```  
     * ```-DVERILATED_PATH_TOKEN=${VERILATED_PATH}``` as global macro ```VERILATED_PATH_TOKEN```  
@@ -331,6 +338,7 @@ make clean
 ```bash
 ./tltest_v3lt
 ```  
+&emsp;&emsp;The helper script accepts an optional run directory argument and defaults to `./run` if not provided.  
 &emsp;&emsp;You could copy the binary **```tltest_v3lt```** with **```tltest_portgen.so```** (when compiled with **Static PortGen**) together to other directories or delivery to execute on demand.  
 &emsp;&emsp;When compiled with **Dynamic PortGen**, the binaries must be delivered with source code of TL-Test-New and verilator output.  
 
