@@ -4,3 +4,6 @@
 [submodule "dut/OpenLLC"]
 	path = dut/OpenLLC
 	url = https://github.com/OpenXiangShan/OpenLLC.git
+[submodule "dut/HBL2"]
+	path = dut/HBL2
+	url = https://github.com/OpenXiangShan/HBL2
