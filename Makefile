@@ -1,6 +1,18 @@
 THREADS_BUILD 	?= 1
 THREADS 		?= 1
 
+SUFFIX ?=
+
+define tltest_path_with_suffix
+$(if $(strip $(SUFFIX)),$1_$(SUFFIX),$1)
+endef
+
+TLTEST_BUILD_DIR := $(call tltest_path_with_suffix,./main/build)
+TLTEST_VERILATED_DIR := $(call tltest_path_with_suffix,./verilated)
+TLTEST_RUN_DIR := $(call tltest_path_with_suffix,./run)
+TLTEST_VERILATED_PATH := $(abspath $(TLTEST_VERILATED_DIR))
+TLTEST_VERILATED_CMAKE_ARG := -DVERILATED_PATH="$(TLTEST_VERILATED_PATH)"
+
 CMAKE_CXX_COMPILER :=
 ifneq ($(origin CXX_COMPILER), undefined)
 	CMAKE_CXX_COMPILER := -DCMAKE_CXX_COMPILER=$(CXX_COMPILER)
@@ -26,59 +38,59 @@ FORCE:
 
 
 tltest-prepare-all:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER)
+	cmake ./main -B $(TLTEST_BUILD_DIR) -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) $(TLTEST_VERILATED_CMAKE_ARG)
 
 tltest-prepare-dpi:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER)
+	cmake ./main -B $(TLTEST_BUILD_DIR) -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_VERILATED_CMAKE_ARG)
 
 tltest-prepare-v3:
-	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER)
+	cmake ./main -B $(TLTEST_BUILD_DIR) -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_VERILATED_CMAKE_ARG)
 
 
 tltest-prepare-all-coupledL2:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS)
+	cmake ./main -B $(TLTEST_BUILD_DIR) -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS) $(TLTEST_VERILATED_CMAKE_ARG)
 
 tltest-prepare-dpi-coupledL2:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS)
+	cmake ./main -B $(TLTEST_BUILD_DIR) -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS) $(TLTEST_VERILATED_CMAKE_ARG)
 
 tltest-prepare-v3-coupledL2:
-	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS)
+	cmake ./main -B $(TLTEST_BUILD_DIR) -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS) $(TLTEST_VERILATED_CMAKE_ARG)
 
 
 tltest-prepare-all-openLLC:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS_OPENLLC)
+	cmake ./main -B $(TLTEST_BUILD_DIR) -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS_OPENLLC) $(TLTEST_VERILATED_CMAKE_ARG)
 
 tltest-prepare-dpi-openLLC:
-	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS_OPENLLC)
+	cmake ./main -B $(TLTEST_BUILD_DIR) -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS_OPENLLC) $(TLTEST_VERILATED_CMAKE_ARG)
 
 tltest-prepare-v3-openLLC:
-	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS_OPENLLC)
+	cmake ./main -B $(TLTEST_BUILD_DIR) -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) $(TLTEST_COMMON_ARGS_OPENLLC) $(TLTEST_VERILATED_CMAKE_ARG)
 
 
 tltest-portgen:
-	$(MAKE) -C ./main/build portgen -j$(THREADS_BUILD) -s --always-make
+	$(MAKE) -C $(TLTEST_BUILD_DIR) portgen -j$(THREADS_BUILD) -s --always-make
 
 tltest-clean:
-	$(MAKE) -C ./main/build clean -s
+	$(MAKE) -C $(TLTEST_BUILD_DIR) clean -s
 
 tltest-config-user:
-	@test -d ./main/build || mkdir -p ./main/build
+	@test -d $(TLTEST_BUILD_DIR) || mkdir -p $(TLTEST_BUILD_DIR)
 	@cat ./configs/user.tltest.ini
 	@echo ""
-	@cat ./configs/user.tltest.ini > ./main/build/tltest.ini
-	@echo "" >> ./main/build/tltest.ini
+	@cat ./configs/user.tltest.ini > $(TLTEST_BUILD_DIR)/tltest.ini
+	@echo "" >> $(TLTEST_BUILD_DIR)/tltest.ini
 
 tltest-config-coupledL2-test-l2l3: tltest-config-user
 	@cat ./configs/coupledL2-test-l2l3.tltest.ini
 	@echo ""
-	@cat ./configs/coupledL2-test-l2l3.tltest.ini >> ./main/build/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-l2l3" > ./main/build/Makefile.config
+	@cat ./configs/coupledL2-test-l2l3.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-l2l3" > $(TLTEST_BUILD_DIR)/Makefile.config
 
 tltest-config-coupledL2-test-l2l3l2: tltest-config-user
 	@cat ./configs/coupledL2-test-l2l3l2.tltest.ini
 	@echo ""
-	@cat ./configs/coupledL2-test-l2l3l2.tltest.ini >> ./main/build/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-l2l3l2" > ./main/build/Makefile.config
+	@cat ./configs/coupledL2-test-l2l3l2.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-l2l3l2" > $(TLTEST_BUILD_DIR)/Makefile.config
 
 tltest-config-coupledL2-test-matrix-trace: tltest-config-user
 	@cat ./configs/coupledL2-test-matrix-trace.tltest.ini
@@ -89,8 +101,8 @@ tltest-config-coupledL2-test-matrix-trace: tltest-config-user
 tltest-config-openLLC-test-l2l3: tltest-config-user
 	@cat ./configs/openLLC-test-l2l3.tltest.ini
 	@echo ""
-	@cat ./configs/openLLC-test-l2l3.tltest.ini >> ./main/build/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-openLLC-test-l2l3" > ./main/build/Makefile.config
+	@cat ./configs/openLLC-test-l2l3.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-openLLC-test-l2l3" > $(TLTEST_BUILD_DIR)/Makefile.config
 
 tltest-config-openLLC-test-matrix-trace: tltest-config-user
 	@cat ./configs/openLLC-test-matrix-trace.tltest.ini
@@ -101,14 +113,14 @@ tltest-config-openLLC-test-matrix-trace: tltest-config-user
 tltest-config-openLLC-test-l2l3l2: tltest-config-user
 	@cat ./configs/openLLC-test-l2l3l2.tltest.ini
 	@echo ""
-	@cat ./configs/openLLC-test-l2l3l2.tltest.ini >> ./main/build/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-openLLC-test-l2l3l2" > ./main/build/Makefile.config
+	@cat ./configs/openLLC-test-l2l3l2.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-openLLC-test-l2l3l2" > $(TLTEST_BUILD_DIR)/Makefile.config
 
 tltest-config-postbuild:
 
 tltest-build:
-	$(MAKE) -C ./main/build -j$(THREADS_BUILD) -s
-	$(MAKE) -C ./main/build portgen -j$(THREADS_BUILD) -s --always-make
+	$(MAKE) -C $(TLTEST_BUILD_DIR) -j$(THREADS_BUILD) -s
+	$(MAKE) -C $(TLTEST_BUILD_DIR) portgen -j$(THREADS_BUILD) -s --always-make
 
 tltest-build-all-coupledL2: tltest-prepare-all-coupledL2 tltest-build
 
@@ -160,7 +172,7 @@ COUPLEDL2_VERILATOR_INC_DIRS := $(shell find ./dut/CoupledL2/build -type d | sor
 COUPLEDL2_VERILATOR_INC := $(addprefix -I,$(COUPLEDL2_VERILATOR_INC_DIRS))
 VERILATOR_COMMON_ARGS_COUPLEDL2 := $(COUPLEDL2_ALL_V_FILES) \
 		$(COUPLEDL2_VERILATOR_INC) \
-		--Mdir ./verilated \
+		--Mdir $(TLTEST_VERILATED_DIR) \
 		-O3 \
 		--trace-fst \
 		--top TestTop \
@@ -168,7 +180,7 @@ VERILATOR_COMMON_ARGS_COUPLEDL2 := $(COUPLEDL2_ALL_V_FILES) \
 		-DSIM_TOP_MODULE_NAME=TestTop \
 		-Wno-fatal
 VERILATOR_COMMON_ARGS_OPENLLC := ./dut/OpenLLC/build/*.*v \
-		--Mdir ./verilated \
+		--Mdir $(TLTEST_VERILATED_DIR) \
 		-O3 \
 		--trace-fst \
 		--top TestTop \
@@ -177,8 +189,8 @@ VERILATOR_COMMON_ARGS_OPENLLC := ./dut/OpenLLC/build/*.*v \
 		-Wno-fatal
 
 coupledL2-verilate-cc:
-	rm -rf verilated
-	mkdir verilated
+	rm -rf $(TLTEST_VERILATED_DIR)
+	mkdir -p $(TLTEST_VERILATED_DIR)
 	$(VERILATOR) $(VERILATOR_COMMON_ARGS_COUPLEDL2) --cc
 
 coupledL2-verilate-build:
@@ -187,17 +199,17 @@ coupledL2-verilate-build:
 		-LDFLAGS "-lsqlite3 -ldl" -CFLAGS "-rdynamic"
 
 coupledL2-verilate:
-	rm -rf verilated
-	mkdir verilated
-	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated $(COUPLEDL2_ALL_V_FILES) $(COUPLEDL2_VERILATOR_INC) -Wno-fatal \
+	rm -rf $(TLTEST_VERILATED_DIR)
+	mkdir -p $(TLTEST_VERILATED_DIR)
+	verilator --trace-fst --cc --build --lib-create vltdut --Mdir $(TLTEST_VERILATED_DIR) $(COUPLEDL2_ALL_V_FILES) $(COUPLEDL2_VERILATOR_INC) -Wno-fatal \
 		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) --threads $(THREADS) -DSIM_TOP_MODULE_NAME=TestTop
 
 coupledL2-verilate-clean:
-	rm -rf verilated
+	rm -rf $(TLTEST_VERILATED_DIR)
 
 openLLC-verilate-cc:
-	rm -rf verilated
-	mkdir verilated
+	rm -rf $(TLTEST_VERILATED_DIR)
+	mkdir -p $(TLTEST_VERILATED_DIR)
 	$(VERILATOR) $(VERILATOR_COMMON_ARGS_OPENLLC) --cc
 
 openLLC-verilate-build:
@@ -206,13 +218,13 @@ openLLC-verilate-build:
 		-LDFLAGS "-lsqlite3 -ldl" -CFLAGS "-rdynamic"
 
 openLLC-verilate:
-	rm -rf verilated
-	mkdir verilated
-	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/OpenLLC/build/*.*v -Wno-fatal \
+	rm -rf $(TLTEST_VERILATED_DIR)
+	mkdir -p $(TLTEST_VERILATED_DIR)
+	verilator --trace-fst --cc --build --lib-create vltdut --Mdir $(TLTEST_VERILATED_DIR) ./dut/OpenLLC/build/*.*v -Wno-fatal \
 		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
 
 openLLC-verilate-clean:
-	rm -rf verilated
+	rm -rf $(TLTEST_VERILATED_DIR)
 
 
 coupledL2-test-l2l3: coupledL2-compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
@@ -261,74 +273,76 @@ openLLC-test-l2l3l2-dpi: openLLC-compile openLLC-verilog-test-top-l2l3l2 openLLC
 				         tltest-config-openLLC-test-l2l3l2 tltest-build-dpi-openLLC
 
 
--include ./main/build/Makefile.config
+-include $(TLTEST_BUILD_DIR)/Makefile.config
 
 run: FORCE tltest-config-postbuild
-	@rm -rf ./run
-	@mkdir ./run
-	@cp ./main/build/tltest_v3lt ./run/
-	@cp ./main/build/tltest_portgen.so ./run/
-	@cp ./main/build/tltest.ini ./run/
-	@bash ./scripts/run_v3lt.sh
+	@rm -rf $(TLTEST_RUN_DIR)
+	@mkdir -p $(TLTEST_RUN_DIR)
+	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest_portgen.so $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest.ini $(TLTEST_RUN_DIR)/
+	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
 
 run_coupledL2-test-l2l3: FORCE tltest-config-coupledL2-test-l2l3
-	@rm -rf ./run
-	@mkdir ./run
-	@cp ./main/build/tltest_v3lt ./run/
-	@cp ./main/build/tltest_portgen.so ./run/
-	@cp ./main/build/tltest.ini ./run/
-	@bash ./scripts/run_v3lt.sh
+	@rm -rf $(TLTEST_RUN_DIR)
+	@mkdir -p $(TLTEST_RUN_DIR)
+	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest_portgen.so $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest.ini $(TLTEST_RUN_DIR)/
+	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
 
 run_coupledL2-test-l2l3l2: FORCE tltest-config-coupledL2-test-l2l3l2
-	@rm -rf ./run
-	@mkdir ./run
-	@cp ./main/build/tltest_v3lt ./run/
-	@cp ./main/build/tltest_portgen.so ./run/
-	@cp ./main/build/tltest.ini ./run/
-	@bash ./scripts/run_v3lt.sh
+	@rm -rf $(TLTEST_RUN_DIR)
+	@mkdir -p $(TLTEST_RUN_DIR)
+	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest_portgen.so $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest.ini $(TLTEST_RUN_DIR)/
+	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
 
 run_coupledL2-test-matrix-trace: FORCE tltest-config-coupledL2-test-matrix-trace
-	@rm -rf ./run
-	@mkdir ./run
-	@cp ./main/build/tltest_v3lt ./run/
-	@cp ./main/build/tltest_portgen.so ./run/
-	@cp ./main/build/tltest.ini ./run/
-	@bash ./scripts/run_v3lt.sh
+	@rm -rf $(TLTEST_RUN_DIR)
+	@mkdir -p $(TLTEST_RUN_DIR)
+	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest_portgen.so $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest.ini $(TLTEST_RUN_DIR)/
+	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
 
 run_openLLC-test-l2l3: FORCE tltest-config-openLLC-test-l2l3
-	@rm -rf ./run
-	@mkdir ./run
-	@cp ./main/build/tltest_v3lt ./run/
-	@cp ./main/build/tltest_portgen.so ./run/
-	@cp ./main/build/tltest.ini ./run/
-	@bash ./scripts/run_v3lt.sh
+	@rm -rf $(TLTEST_RUN_DIR)
+	@mkdir -p $(TLTEST_RUN_DIR)
+	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest_portgen.so $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest.ini $(TLTEST_RUN_DIR)/
+	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
 
 run_openLLC-test-matrix-trace: FORCE tltest-config-openLLC-test-matrix-trace
-	@rm -rf ./run
-	@mkdir ./run
-	@cp ./main/build/tltest_v3lt ./run/
-	@cp ./main/build/tltest_portgen.so ./run/
-	@cp ./main/build/tltest.ini ./run/
-	@bash ./scripts/run_v3lt.sh
+	@rm -rf $(TLTEST_RUN_DIR)
+	@mkdir -p $(TLTEST_RUN_DIR)
+	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest_portgen.so $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest.ini $(TLTEST_RUN_DIR)/
+	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
 
 run_openLLC-test-l2l3l2: FORCE tltest-config-openLLC-test-l2l3l2
-	@rm -rf ./run
-	@mkdir ./run
-	@cp ./main/build/tltest_v3lt ./run/
-	@cp ./main/build/tltest_portgen.so ./run/
-	@cp ./main/build/tltest.ini ./run/
-	@bash ./scripts/run_v3lt.sh
+	@rm -rf $(TLTEST_RUN_DIR)
+	@mkdir -p $(TLTEST_RUN_DIR)
+	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest_portgen.so $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest.ini $(TLTEST_RUN_DIR)/
+	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
 
 
 run-with-portgen: FORCE tltest-config-postbuild tltest-portgen
-	@rm -rf ./run
-	@mkdir ./run
-	@cp ./main/build/tltest_v3lt ./run/
-	@cp ./main/build/tltest_portgen.so ./run/
-	@cp ./main/build/tltest.ini ./run/
-	@bash ./scripts/run_v3lt.sh
+	@rm -rf $(TLTEST_RUN_DIR)
+	@mkdir -p $(TLTEST_RUN_DIR)
+	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest_portgen.so $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest.ini $(TLTEST_RUN_DIR)/
+	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
 
 
 clean: coupledL2-verilate-clean coupledL2-verilog-clean openLLC-verilate-clean openLLC-verilog-clean
-	rm -rf ./main/build
-	mkdir ./main/build
+	rm -rf ./main/build ./main/build_*
+	rm -rf ./verilated ./verilated_*
+	rm -rf ./run ./run_*
+	mkdir -p $(TLTEST_BUILD_DIR)
