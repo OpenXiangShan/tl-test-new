@@ -80,31 +80,11 @@ tltest-config-coupledL2-test-l2l3l2: tltest-config-user
 	@cat ./configs/coupledL2-test-l2l3l2.tltest.ini >> ./main/build/tltest.ini
 	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-l2l3l2" > ./main/build/Makefile.config
 
-tltest-config-coupledL2-test-matrix-core-alone: tltest-config-user
-	@cat ./configs/coupledL2-test-matrix-core-alone.tltest.ini
+tltest-config-coupledL2-test-matrix-trace: tltest-config-user
+	@cat ./configs/coupledL2-test-matrix-trace.tltest.ini
 	@echo ""
-	@cat ./configs/coupledL2-test-matrix-core-alone.tltest.ini >> ./main/build/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-matrix-core-alone" > ./main/build/Makefile.config
-
-tltest-config-coupledL2-test-matrix-no-core: tltest-config-user
-	@cat ./configs/coupledL2-test-matrix-no-core.tltest.ini
-	@echo ""
-	@cat ./configs/coupledL2-test-matrix-no-core.tltest.ini >> ./main/build/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-matrix-no-core" > ./main/build/Makefile.config
-
-tltest-config-coupledL2-test-trace:
-	@test -d ./main/build || mkdir -p ./main/build
-	@cat ./configs/coupledL2-test-trace.tltest.ini
-	@echo ""
-	@cat ./configs/coupledL2-test-trace.tltest.ini > ./main/build/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-trace" > ./main/build/Makefile.config
-
-tltest-config-coupledL2-test-trace-regress:
-	@test -d ./main/build || mkdir -p ./main/build
-	@cat ./configs/coupledL2-test-trace-regress.tltest.ini
-	@echo ""
-	@cat ./configs/coupledL2-test-trace-regress.tltest.ini > ./main/build/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-trace-regress" > ./main/build/Makefile.config
+	@cat ./configs/coupledL2-test-matrix-trace.tltest.ini >> ./main/build/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-matrix-trace" > ./main/build/Makefile.config
 
 tltest-config-openLLC-test-l2l3: tltest-config-user
 	@cat ./configs/openLLC-test-l2l3.tltest.ini
@@ -112,23 +92,11 @@ tltest-config-openLLC-test-l2l3: tltest-config-user
 	@cat ./configs/openLLC-test-l2l3.tltest.ini >> ./main/build/tltest.ini
 	@echo "tltest-config-postbuild: tltest-config-openLLC-test-l2l3" > ./main/build/Makefile.config
 
-tltest-config-openLLC-test-matrix-no-core: tltest-config-user
-	@cat ./configs/openLLC-test-matrix-no-core.tltest.ini
+tltest-config-openLLC-test-matrix-trace: tltest-config-user
+	@cat ./configs/openLLC-test-matrix-trace.tltest.ini
 	@echo ""
-	@cat ./configs/openLLC-test-matrix-no-core.tltest.ini >> ./main/build/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-openLLC-test-matrix-no-core" > ./main/build/Makefile.config
-
-tltest-config-openLLC-test-trace: tltest-config-user
-	@cat ./configs/openLLC-test-trace.tltest.ini
-	@echo ""
-	@cat ./configs/openLLC-test-trace.tltest.ini >> ./main/build/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-openLLC-test-trace" > ./main/build/Makefile.config
-
-tltest-config-openLLC-test-trace-regress: tltest-config-user
-	@cat ./configs/openLLC-test-trace-regress.tltest.ini
-	@echo ""
-	@cat ./configs/openLLC-test-trace-regress.tltest.ini >> ./main/build/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-openLLC-test-trace-regress" > ./main/build/Makefile.config
+	@cat ./configs/openLLC-test-matrix-trace.tltest.ini >> ./main/build/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-openLLC-test-matrix-trace" > ./main/build/Makefile.config
 
 tltest-config-openLLC-test-l2l3l2: tltest-config-user
 	@cat ./configs/openLLC-test-l2l3l2.tltest.ini
@@ -266,30 +234,15 @@ coupledL2-test-l2l3l2-v3: coupledL2-compile coupledL2-verilog-test-top-l2l3l2 co
 coupledL2-test-l2l3l2-dpi: coupledL2-compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
 						   tltest-config-coupledL2-test-l2l3l2 tltest-build-dpi-coupledL2
 
-coupledL2-test-matrix-core-alone: coupledL2-compile coupledL2-verilog-test-top-matrix coupledL2-verilate \
-					  tltest-config-coupledL2-test-matrix-core-alone tltest-build-all-coupledL2
-
-coupledL2-test-matrix-no-core: coupledL2-compile coupledL2-verilog-test-top-matrix coupledL2-verilate \
-					  tltest-config-coupledL2-test-matrix-no-core tltest-build-all-coupledL2
-
-coupledL2-test-trace: coupledL2-compile coupledL2-verilog-test-top-matrix coupledL2-verilate \
-					  tltest-config-coupledL2-test-trace tltest-build-all-coupledL2
-
-coupledL2-test-trace-regress: coupledL2-compile coupledL2-verilog-test-top-matrix coupledL2-verilate \
-					  tltest-config-coupledL2-test-trace-regress tltest-build-all-coupledL2
+coupledL2-test-matrix-trace: coupledL2-compile coupledL2-verilog-test-top-matrix coupledL2-verilate \
+					  tltest-config-coupledL2-test-matrix-trace tltest-build-all-coupledL2
 
 
 openLLC-test-l2l3: openLLC-compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
 				   tltest-config-openLLC-test-l2l3 tltest-build-all-openLLC
 
-openLLC-test-matrix-no-core: openLLC-compile openLLC-verilog-test-top-matrix openLLC-verilate \
-			   tltest-config-openLLC-test-matrix-no-core tltest-build-all-openLLC
-
-openLLC-test-trace: openLLC-compile openLLC-verilog-test-top-matrix openLLC-verilate \
-		   tltest-config-openLLC-test-trace tltest-build-all-openLLC
-
-openLLC-test-trace-regress: openLLC-compile openLLC-verilog-test-top-matrix openLLC-verilate \
-		   tltest-config-openLLC-test-trace-regress tltest-build-all-openLLC
+openLLC-test-matrix-trace: openLLC-compile openLLC-verilog-test-top-matrix openLLC-verilate \
+		   tltest-config-openLLC-test-matrix-trace tltest-build-all-openLLC
 
 openLLC-test-l2l3-v3: openLLC-compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
 				      tltest-config-openLLC-test-l2l3 tltest-build-v3-openLLC
@@ -334,31 +287,7 @@ run_coupledL2-test-l2l3l2: FORCE tltest-config-coupledL2-test-l2l3l2
 	@cp ./main/build/tltest.ini ./run/
 	@bash ./scripts/run_v3lt.sh
 
-run_coupledL2-test-matrix-core-alone: FORCE tltest-config-coupledL2-test-matrix-core-alone
-	@rm -rf ./run
-	@mkdir ./run
-	@cp ./main/build/tltest_v3lt ./run/
-	@cp ./main/build/tltest_portgen.so ./run/
-	@cp ./main/build/tltest.ini ./run/
-	@bash ./scripts/run_v3lt.sh
-
-run_coupledL2-test-matrix-no-core: FORCE tltest-config-coupledL2-test-matrix-no-core
-	@rm -rf ./run
-	@mkdir ./run
-	@cp ./main/build/tltest_v3lt ./run/
-	@cp ./main/build/tltest_portgen.so ./run/
-	@cp ./main/build/tltest.ini ./run/
-	@bash ./scripts/run_v3lt.sh
-
-run_coupledL2-test-trace: FORCE tltest-config-coupledL2-test-trace
-	@rm -rf ./run
-	@mkdir ./run
-	@cp ./main/build/tltest_v3lt ./run/
-	@cp ./main/build/tltest_portgen.so ./run/
-	@cp ./main/build/tltest.ini ./run/
-	@bash ./scripts/run_v3lt.sh
-
-run_coupledL2-test-trace-regress: FORCE tltest-config-coupledL2-test-trace-regress
+run_coupledL2-test-matrix-trace: FORCE tltest-config-coupledL2-test-matrix-trace
 	@rm -rf ./run
 	@mkdir ./run
 	@cp ./main/build/tltest_v3lt ./run/
@@ -374,23 +303,7 @@ run_openLLC-test-l2l3: FORCE tltest-config-openLLC-test-l2l3
 	@cp ./main/build/tltest.ini ./run/
 	@bash ./scripts/run_v3lt.sh
 
-run_openLLC-test-matrix-no-core: FORCE tltest-config-openLLC-test-matrix-no-core
-	@rm -rf ./run
-	@mkdir ./run
-	@cp ./main/build/tltest_v3lt ./run/
-	@cp ./main/build/tltest_portgen.so ./run/
-	@cp ./main/build/tltest.ini ./run/
-	@bash ./scripts/run_v3lt.sh
-
-run_openLLC-test-trace: FORCE tltest-config-openLLC-test-trace
-	@rm -rf ./run
-	@mkdir ./run
-	@cp ./main/build/tltest_v3lt ./run/
-	@cp ./main/build/tltest_portgen.so ./run/
-	@cp ./main/build/tltest.ini ./run/
-	@bash ./scripts/run_v3lt.sh
-
-run_openLLC-test-trace-regress: FORCE tltest-config-openLLC-test-trace-regress
+run_openLLC-test-matrix-trace: FORCE tltest-config-openLLC-test-matrix-trace
 	@rm -rf ./run
 	@mkdir ./run
 	@cp ./main/build/tltest_v3lt ./run/
