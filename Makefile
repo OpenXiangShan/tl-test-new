@@ -105,8 +105,8 @@ tltest-build-dpi-openLLC: tltest-prepare-dpi-openLLC tltest-build
 tltest-build-v3-openLLC: tltest-prepare-v3-openLLC tltest-build
 
 
-coupledL2-compile:
-	$(MAKE) -C ./dut/CoupledL2 compile-coupledl2
+compile:
+	$(MAKE) -C ./dut/CoupledL2 compile
 
 coupledL2-verilog-test-top-l2l3:
 	$(MAKE) -C ./dut/CoupledL2 test-top-l2l3-huancun
@@ -116,9 +116,6 @@ coupledL2-verilog-test-top-l2l3l2:
 
 coupledL2-verilog-clean:
 	$(MAKE) -C ./dut/CoupledL2 clean
-
-openLLC-compile:
-	$(MAKE) -C ./dut/CoupledL2 compile-openllc
 
 openLLC-verilog-test-top-l2l3:
 	$(MAKE) -C ./dut/CoupledL2 test-top-l2l3-openllc
