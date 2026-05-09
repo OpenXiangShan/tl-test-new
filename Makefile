@@ -184,43 +184,43 @@ openLLC-verilate-clean:
 	rm -rf verilated
 
 
-coupledL2-test-l2l3: coupledL2-compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
+coupledL2-test-l2l3: compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
 					 tltest-config-coupledL2-test-l2l3 tltest-build-all-coupledL2
 
-coupledL2-test-l2l3-v3: coupledL2-compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
+coupledL2-test-l2l3-v3: compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
 					    tltest-config-coupledL2-test-l2l3 tltest-build-v3-coupledL2
 
-coupledL2-test-l2l3-dpi: coupledL2-compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
+coupledL2-test-l2l3-dpi: compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
 						 tltest-config-coupledL2-test-l2l3 tltest-build-dpi-coupledL2
 
 
-coupledL2-test-l2l3l2: coupledL2-compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
+coupledL2-test-l2l3l2: compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
 					   tltest-config-coupledL2-test-l2l3l2 tltest-build-all-coupledL2
 
-coupledL2-test-l2l3l2-v3: coupledL2-compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
+coupledL2-test-l2l3l2-v3: compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
 						  tltest-config-coupledL2-test-l2l3l2 tltest-build-v3-coupledL2
 
-coupledL2-test-l2l3l2-dpi: coupledL2-compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
+coupledL2-test-l2l3l2-dpi: compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
 						   tltest-config-coupledL2-test-l2l3l2 tltest-build-dpi-coupledL2
 
 
-openLLC-test-l2l3: openLLC-compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
+openLLC-test-l2l3: compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
 				   tltest-config-openLLC-test-l2l3 tltest-build-all-openLLC
 
-openLLC-test-l2l3-v3: openLLC-compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
+openLLC-test-l2l3-v3: compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
 				      tltest-config-openLLC-test-l2l3 tltest-build-v3-openLLC
 
-openLLC-test-l2l3-dpi: openLLC-compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
+openLLC-test-l2l3-dpi: compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
 				       tltest-config-openLLC-test-l2l3 tltest-build-dpi-openLLC
 
 
-openLLC-test-l2l3l2: openLLC-compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate \
+openLLC-test-l2l3l2: compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate \
 				     tltest-config-openLLC-test-l2l3l2 tltest-build-all-openLLC
 
-openLLC-test-l2l3l2-v3: openLLC-compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate \
+openLLC-test-l2l3l2-v3: compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate \
 				        tltest-config-openLLC-test-l2l3l2 tltest-build-v3-openLLC
 
-openLLC-test-l2l3l2-dpi: openLLC-compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate \
+openLLC-test-l2l3l2-dpi: compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate \
 				         tltest-config-openLLC-test-l2l3l2 tltest-build-dpi-openLLC
 
 
