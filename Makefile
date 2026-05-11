@@ -8,8 +8,7 @@ endif
 
 init:
 	git submodule update --init --recursive
-	$(MAKE) -C ./dut/CoupledL2 init
-	$(MAKE) -C ./dut/OpenLLC init
+	$(MAKE) -C ./dut/XSCache init
 
 FORCE:
 
@@ -26,28 +25,28 @@ tltest-prepare-v3:
 
 tltest-prepare-all-coupledL2:
 	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0
+		-DDUT_PATH="${PWD}/dut/XSCache" -DTLTEST_MEMORY=0
 
 tltest-prepare-dpi-coupledL2:
 	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0
+		-DDUT_PATH="${PWD}/dut/XSCache" -DTLTEST_MEMORY=0
 
 tltest-prepare-v3-coupledL2:
 	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/CoupledL2" -DTLTEST_MEMORY=0
+		-DDUT_PATH="${PWD}/dut/XSCache" -DTLTEST_MEMORY=0
 
 
 tltest-prepare-all-openLLC:
 	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/OpenLLC"
+		-DDUT_PATH="${PWD}/dut/XSCache"
 
 tltest-prepare-dpi-openLLC:
 	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/OpenLLC"
+		-DDUT_PATH="${PWD}/dut/XSCache"
 
 tltest-prepare-v3-openLLC:
 	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) \
-		-DDUT_PATH="${PWD}/dut/OpenLLC"
+		-DDUT_PATH="${PWD}/dut/XSCache"
 
 
 tltest-portgen:
@@ -106,33 +105,30 @@ tltest-build-dpi-openLLC: tltest-prepare-dpi-openLLC tltest-build
 tltest-build-v3-openLLC: tltest-prepare-v3-openLLC tltest-build
 
 
-coupledL2-compile:
-	$(MAKE) -C ./dut/CoupledL2 compile
+compile:
+	$(MAKE) -C ./dut/XSCache compile
 
 coupledL2-verilog-test-top-l2l3:
-	$(MAKE) -C ./dut/CoupledL2 test-top-l2l3
+	$(MAKE) -C ./dut/XSCache test-top-l2l3-huancun
 
 coupledL2-verilog-test-top-l2l3l2:
-	$(MAKE) -C ./dut/CoupledL2 test-top-l2l3l2
+	$(MAKE) -C ./dut/XSCache test-top-l2l3l2-huancun
 
 coupledL2-verilog-clean:
-	$(MAKE) -C ./dut/CoupledL2 clean
-
-openLLC-compile:
-	$(MAKE) -C ./dut/OpenLLC compile
+	$(MAKE) -C ./dut/XSCache clean
 
 openLLC-verilog-test-top-l2l3:
-	$(MAKE) -C ./dut/OpenLLC test-top-l2l3
+	$(MAKE) -C ./dut/XSCache test-top-l2l3-openllc
 
 openLLC-verilog-test-top-l2l3l2:
-	$(MAKE) -C ./dut/OpenLLC test-top-l2l3l2
+	$(MAKE) -C ./dut/XSCache test-top-l2l3l2-openllc
 
 openLLC-verilog-clean:
-	$(MAKE) -C ./dut/OpenLLC clean
+	$(MAKE) -C ./dut/XSCache clean
 
 
 VERILATOR := verilator
-VERILATOR_COMMON_ARGS_COUPLEDL2 := ./dut/CoupledL2/build/*.*v \
+VERILATOR_COMMON_ARGS_COUPLEDL2 := ./dut/XSCache/build/coupledl2/*.*v \
 		--Mdir ./verilated \
 		-O3 \
 		--trace-fst \
@@ -140,7 +136,7 @@ VERILATOR_COMMON_ARGS_COUPLEDL2 := ./dut/CoupledL2/build/*.*v \
 		--build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) \
 		-DSIM_TOP_MODULE_NAME=TestTop \
 		-Wno-fatal
-VERILATOR_COMMON_ARGS_OPENLLC := ./dut/OpenLLC/build/*.*v \
+VERILATOR_COMMON_ARGS_OPENLLC := ./dut/XSCache/build/openllc/*.*v \
 		--Mdir ./verilated \
 		-O3 \
 		--trace-fst \
@@ -162,7 +158,7 @@ coupledL2-verilate-build:
 coupledL2-verilate:
 	rm -rf verilated
 	mkdir verilated
-	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/CoupledL2/build/*.*v -Wno-fatal \
+	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/XSCache/build/coupledl2/*.*v -Wno-fatal \
 		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
 
 coupledL2-verilate-clean:
@@ -181,50 +177,50 @@ openLLC-verilate-build:
 openLLC-verilate:
 	rm -rf verilated
 	mkdir verilated
-	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/OpenLLC/build/*.*v -Wno-fatal \
+	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/XSCache/build/openllc/*.*v -Wno-fatal \
 		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
 
 openLLC-verilate-clean:
 	rm -rf verilated
 
 
-coupledL2-test-l2l3: coupledL2-compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
+coupledL2-test-l2l3: compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
 					 tltest-config-coupledL2-test-l2l3 tltest-build-all-coupledL2
 
-coupledL2-test-l2l3-v3: coupledL2-compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
+coupledL2-test-l2l3-v3: compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
 					    tltest-config-coupledL2-test-l2l3 tltest-build-v3-coupledL2
 
-coupledL2-test-l2l3-dpi: coupledL2-compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
+coupledL2-test-l2l3-dpi: compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
 						 tltest-config-coupledL2-test-l2l3 tltest-build-dpi-coupledL2
 
 
-coupledL2-test-l2l3l2: coupledL2-compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
+coupledL2-test-l2l3l2: compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
 					   tltest-config-coupledL2-test-l2l3l2 tltest-build-all-coupledL2
 
-coupledL2-test-l2l3l2-v3: coupledL2-compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
+coupledL2-test-l2l3l2-v3: compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
 						  tltest-config-coupledL2-test-l2l3l2 tltest-build-v3-coupledL2
 
-coupledL2-test-l2l3l2-dpi: coupledL2-compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
+coupledL2-test-l2l3l2-dpi: compile coupledL2-verilog-test-top-l2l3l2 coupledL2-verilate \
 						   tltest-config-coupledL2-test-l2l3l2 tltest-build-dpi-coupledL2
 
 
-openLLC-test-l2l3: openLLC-compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
+openLLC-test-l2l3: compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
 				   tltest-config-openLLC-test-l2l3 tltest-build-all-openLLC
 
-openLLC-test-l2l3-v3: openLLC-compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
+openLLC-test-l2l3-v3: compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
 				      tltest-config-openLLC-test-l2l3 tltest-build-v3-openLLC
 
-openLLC-test-l2l3-dpi: openLLC-compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
+openLLC-test-l2l3-dpi: compile openLLC-verilog-test-top-l2l3 openLLC-verilate \
 				       tltest-config-openLLC-test-l2l3 tltest-build-dpi-openLLC
 
 
-openLLC-test-l2l3l2: openLLC-compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate \
+openLLC-test-l2l3l2: compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate \
 				     tltest-config-openLLC-test-l2l3l2 tltest-build-all-openLLC
 
-openLLC-test-l2l3l2-v3: openLLC-compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate \
+openLLC-test-l2l3l2-v3: compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate \
 				        tltest-config-openLLC-test-l2l3l2 tltest-build-v3-openLLC
 
-openLLC-test-l2l3l2-dpi: openLLC-compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate \
+openLLC-test-l2l3l2-dpi: compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate \
 				         tltest-config-openLLC-test-l2l3l2 tltest-build-dpi-openLLC
 
 
