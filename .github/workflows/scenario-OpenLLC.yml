@@ -46,13 +46,13 @@ jobs:
       with:
         path: repo
 
-    - name: Checkout CoupledL2
-      run: git submodule update --init dut/CoupledL2
+    - name: Checkout XSCache
+      run: git submodule update --init dut/XSCache
 
     - name: Extract submodule SHA
-      id: get_sha_CoupledL2
+      id: get_sha_XSCache
       run: |
-        cd dut/CoupledL2
+        cd dut/XSCache
         CURRENT_HASH=$(git rev-parse HEAD)
         echo "${CURRENT_HASH}"
         echo "CURRENT_HASH=${CURRENT_HASH}" >> $GITHUB_ENV
@@ -83,7 +83,7 @@ jobs:
     - name: Compile
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
-        make openLLC-compile
+        make compile
 
     - name: Build verilog
       if: steps.cache.outputs.cache-hit != 'true'
@@ -93,7 +93,7 @@ jobs:
     - name: Tar up repository
       if: steps.cache.outputs.cache-hit != 'true'
       working-directory: ${{ github.workspace }}
-      run: tar -zcf ${{ env.OPENLLC_ARCHIVE }} repo/dut/CoupledL2/build
+      run: tar -zcf ${{ env.OPENLLC_ARCHIVE }} repo/dut/XSCache/build
 
   setup-verilator:
     strategy:
@@ -181,8 +181,8 @@ jobs:
       with:
         path: repo
 
-    - name: Checkout CoupledL2
-      run: git submodule update --init dut/CoupledL2
+    - name: Checkout XSCache
+      run: git submodule update --init dut/XSCache
 
     - name: Setup Clang 16
       if: matrix.compiler.cc == 'clang-16'
@@ -210,10 +210,10 @@ jobs:
         verilator --version
 
     - name: Extract submodule SHA
-      id: get_sha_CoupledL2
+      id: get_sha_XSCache
       working-directory: ${{ github.workspace }}
       run: |
-        cd repo/dut/CoupledL2
+        cd repo/dut/XSCache
         CURRENT_HASH=$(git rev-parse HEAD)
         echo "${CURRENT_HASH}"
         echo "CURRENT_HASH=${CURRENT_HASH}" >> $GITHUB_ENV
