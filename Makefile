@@ -95,8 +95,8 @@ tltest-config-coupledL2-test-l2l3l2: tltest-config-user
 tltest-config-coupledL2-test-matrix-trace: tltest-config-user
 	@cat ./configs/coupledL2-test-matrix-trace.tltest.ini
 	@echo ""
-	@cat ./configs/coupledL2-test-matrix-trace.tltest.ini >> ./main/build/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-matrix-trace" > ./main/build/Makefile.config
+	@cat ./configs/coupledL2-test-matrix-trace.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-matrix-trace" > $(TLTEST_BUILD_DIR)/Makefile.config
 
 tltest-config-openLLC-test-l2l3: tltest-config-user
 	@cat ./configs/openLLC-test-l2l3.tltest.ini
@@ -107,8 +107,8 @@ tltest-config-openLLC-test-l2l3: tltest-config-user
 tltest-config-openLLC-test-matrix-trace: tltest-config-user
 	@cat ./configs/openLLC-test-matrix-trace.tltest.ini
 	@echo ""
-	@cat ./configs/openLLC-test-matrix-trace.tltest.ini >> ./main/build/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-openLLC-test-matrix-trace" > ./main/build/Makefile.config
+	@cat ./configs/openLLC-test-matrix-trace.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-openLLC-test-matrix-trace" > $(TLTEST_BUILD_DIR)/Makefile.config
 
 tltest-config-openLLC-test-l2l3l2: tltest-config-user
 	@cat ./configs/openLLC-test-l2l3l2.tltest.ini

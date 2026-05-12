@@ -37,7 +37,7 @@ if (NOT DEFINED VERILATOR_INCLUDE)
     SET(VERILATOR_INCLUDE "/usr/local/share/verilator/include")
 endif ()
 
-if (NOT DEFINED VERIALTED_PATH)
+if (NOT DEFINED VERILATED_PATH)
     SET(VERILATED_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../verilated")
 endif ()
 
