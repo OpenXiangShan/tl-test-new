@@ -30,7 +30,7 @@ namespace V3::PortGen {
     std::string GenerateDataMPortName(int coreId, int portId, std::string name)
     {
         return Gravity::StringAppender()
-            .Append("matrix_data_out_", coreId, "_", portId, "_", name)
+            .Append("matrixDataOut_", coreId, "_", portId, "_", name)
             .ToString();
     }
     static void GenerateInfo(Gravity::StringAppender& cpp_file, int coreCount, int tlULPerCore, int tlMPerCore)
