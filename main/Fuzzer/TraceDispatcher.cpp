@@ -207,23 +207,23 @@ void TraceDispatcher::send()
 
     if (entry.op == TraceOp::FENCE)
     {
-        std::cout << "[TraceDispatcher] fence waiting at cycle " << *cycles << std::endl;
+        if (*cycles % 1000 == 0)
+            std::cout << "[TraceDispatcher] fence waiting at cycle " << *cycles << std::endl;
 
         if (is_fence_drained())
             entries.pop_front();
         return;
     }
 
-    std::cout << "[TraceDispatcher] issue agent=" << entry.agentId
-              << " op=" << static_cast<unsigned>(entry.op)
-              << " addr=0x" << std::hex << entry.addr << std::dec
-              << " cycle=" << *cycles << std::endl;
-
     auto denial = send_single_request(entry);
 
     switch (denial.ordinal)
     {
         case tl_agent::ActionDenial::ACCEPTED.ordinal:
+            std::cout << "[TraceDispatcher] issue agent=" << entry.agentId
+                      << " op=" << static_cast<unsigned>(entry.op)
+                      << " addr=0x" << std::hex << entry.addr << std::dec
+                      << " cycle=" << *cycles << std::endl;
             if (entry.op == TraceOp::READ || entry.op == TraceOp::MODIFY)
                 numReadSent++;
             else if (entry.op == TraceOp::WRITE)

@@ -372,11 +372,10 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
         unifiedFuzzer->set_cycles(&cycles);
 
-        std::cout << "[TLSequencer] traceEnable=" << config.traceEnable
-                  << " traceFilepath=" << config.traceFilepath << std::endl;
-
         if (config.traceEnable)
         {
+            std::cout << "[TLSequencer] traceEnabld, traceFilepath=" << config.traceFilepath << std::endl;
+
             traceDispatcher = new TraceDispatcher(&this->config,
                 cAgents, GetCAgentCount(),
                 ulAgents, GetULAgentCount(),
