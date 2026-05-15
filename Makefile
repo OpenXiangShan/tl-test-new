@@ -166,7 +166,7 @@ openLLC-verilog-clean:
 	$(MAKE) -C ./dut/OpenLLC clean
 
 
-VERILATOR := verilator
+VERILATOR := ~/.local/bin/verilator
 COUPLEDL2_ALL_V_FILES := $(shell find ./dut/CoupledL2/build -type f -name '*.*v' | sort)
 COUPLEDL2_VERILATOR_INC_DIRS := $(shell find ./dut/CoupledL2/build -type d | sort)
 COUPLEDL2_VERILATOR_INC := $(addprefix -I,$(COUPLEDL2_VERILATOR_INC_DIRS))
@@ -201,7 +201,7 @@ coupledL2-verilate-build:
 coupledL2-verilate:
 	rm -rf $(TLTEST_VERILATED_DIR)
 	mkdir -p $(TLTEST_VERILATED_DIR)
-	verilator --trace-fst --cc --build --lib-create vltdut --Mdir $(TLTEST_VERILATED_DIR) $(COUPLEDL2_ALL_V_FILES) $(COUPLEDL2_VERILATOR_INC) -Wno-fatal \
+	$(VERILATOR) --trace-fst --cc --build --lib-create vltdut --Mdir $(TLTEST_VERILATED_DIR) $(COUPLEDL2_ALL_V_FILES) $(COUPLEDL2_VERILATOR_INC) -Wno-fatal \
 		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) --threads $(THREADS) -DSIM_TOP_MODULE_NAME=TestTop
 
 coupledL2-verilate-clean:
@@ -220,7 +220,7 @@ openLLC-verilate-build:
 openLLC-verilate:
 	rm -rf $(TLTEST_VERILATED_DIR)
 	mkdir -p $(TLTEST_VERILATED_DIR)
-	verilator --trace-fst --cc --build --lib-create vltdut --Mdir $(TLTEST_VERILATED_DIR) ./dut/OpenLLC/build/*.*v -Wno-fatal \
+	$(VERILATOR) --trace-fst --cc --build --lib-create vltdut --Mdir $(TLTEST_VERILATED_DIR) ./dut/OpenLLC/build/*.*v -Wno-fatal \
 		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
 
 openLLC-verilate-clean:
