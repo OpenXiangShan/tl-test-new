@@ -564,9 +564,13 @@ namespace tl_agent {
                     }
 
                 } else {
+                    auto globalEntry = globalBoard->query(this, b->address);
+                    auto sourceData = globalEntry->data != nullptr
+                        ? globalEntry->data
+                        : make_shared_tldata_zero<DATASIZE>();
                     std::memcpy(
-                        (req_c->data = make_shared_tldata<DATASIZE>())->data, 
-                        globalBoard->query(this, b->address)->data->data, 
+                        (req_c->data = make_shared_tldata<DATASIZE>())->data,
+                        sourceData->data,
                         DATASIZE);
 
                     if (glbl.cfg.verbose_agent_debug)
@@ -2597,4 +2601,3 @@ namespace tl_agent {
         // don't do timeout check currently
     }
 }
-
