@@ -21,7 +21,7 @@ private:
     enum TraceOp : uint8_t {
         READ = 0,
         WRITE,
-        MODIFY,
+        CREAD, // C Matrix Read, acquire write permisson
         EVICT,
         FENCE
     };

@@ -72,7 +72,7 @@ TraceDispatcher::TraceDispatcher(
         if (op == "LD" || op == "IF" || op == "MR")
             mappedOp = TraceOp::READ;
         else if (op == "CR")
-            mappedOp = TraceOp::MODIFY;
+            mappedOp = TraceOp::CREAD;
         else if (op == "ST" || op == "MW")
             mappedOp = TraceOp::WRITE;
         else if (op == "EV")
@@ -129,7 +129,7 @@ tl_agent::ActionDenialEnum TraceDispatcher::send_single_request(const TraceEntry
         if (entry.op == TraceOp::READ)
             return cAgent->do_acquireBlock(entry.addr, TLParamAcquire::NtoB, 0);
 
-        if (entry.op == TraceOp::WRITE || entry.op == TraceOp::MODIFY)
+        if (entry.op == TraceOp::WRITE)
             return cAgent->do_acquirePerm(entry.addr, TLParamAcquire::NtoT, 0);
 
         if (entry.op == TraceOp::EVICT)
@@ -156,10 +156,10 @@ tl_agent::ActionDenialEnum TraceDispatcher::send_single_request(const TraceEntry
             return tl_agent::ActionDenial::MISS;
         }
 
-        if (entry.op == TraceOp::MODIFY)
+        if (entry.op == TraceOp::CREAD)
         {
             std::cout << "[" << *cycles << "] [TRC] Skip CR on ULAgent (agentId="
-                      << entry.agentId << "), use MAgent for MR/CR/MW path"
+                      << entry.agentId << "), use MAgent for CR path"
                       << std::endl;
             return tl_agent::ActionDenial::MISS;
         }
@@ -174,7 +174,7 @@ tl_agent::ActionDenialEnum TraceDispatcher::send_single_request(const TraceEntry
         if (entry.op == TraceOp::READ)
             return mAgent->do_getAuto(entry.addr, false);
 
-        if (entry.op == TraceOp::MODIFY)
+        if (entry.op == TraceOp::CREAD)
             return mAgent->do_getAuto(entry.addr, true);
 
         if (entry.op == TraceOp::WRITE)
@@ -224,7 +224,7 @@ void TraceDispatcher::send()
                       << " op=" << static_cast<unsigned>(entry.op)
                       << " addr=0x" << std::hex << entry.addr << std::dec
                       << " cycle=" << *cycles << std::endl;
-            if (entry.op == TraceOp::READ || entry.op == TraceOp::MODIFY)
+            if (entry.op == TraceOp::READ || entry.op == TraceOp::CREAD)
                 numReadSent++;
             else if (entry.op == TraceOp::WRITE)
                 numWriteSent++;
