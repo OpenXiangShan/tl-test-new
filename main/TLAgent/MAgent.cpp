@@ -180,6 +180,9 @@ void MAgent::fire_d() {
         }
     }
 
+}
+
+void MAgent::fire_m() {
     if (this->port->m.fire()) {
         auto& chnM = this->port->m;
 
@@ -211,6 +214,7 @@ void MAgent::handle_b(std::shared_ptr<BundleChannelB>& b) {
 void MAgent::handle_channel() {
     fire_a();
     fire_d();
+    fire_m();
 }
 
 void MAgent::update_signal() {

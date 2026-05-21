@@ -41,6 +41,7 @@ public:
     void fire_b() override;
     void fire_c() override;
     void fire_d() override;
+    void fire_m();
     void fire_e() override;
     void handle_channel() override;
     void update_signal() override;
