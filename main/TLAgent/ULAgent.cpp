@@ -345,9 +345,9 @@ namespace tl_agent {
                 } else if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck)) 
                 { 
                     // finish pending status in GlobalBoard
+                    this->globalBoard->unpending(this, info->address);
                     uncachedBoards->appendAll(this, info->address, 
                         this->globalBoard->query(this, info->address)->data);
-                    this->globalBoard->unpending(this, info->address);
                 }
                 localBoard->erase(this, chnD.source);
                 if (hasData)
