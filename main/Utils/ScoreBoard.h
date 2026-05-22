@@ -187,7 +187,7 @@ private:
     std::unordered_map<T, GlobalMemoryAlternative>  memoryAlt;
 
 private:
-    int data_check(TLLocalContext* ctx, const uint8_t* dut, const uint8_t* ref, std::string assert_info);
+    int data_check(TLLocalContext* ctx, const T& key, const uint8_t* dut, const uint8_t* ref, std::string assert_info);
     uint8_t init_zeros[DATASIZE];
 public:
     GlobalBoard() noexcept;
@@ -270,9 +270,12 @@ GlobalBoard<T>::GlobalBoard() noexcept
 
 
 template<typename T>
-int GlobalBoard<T>::data_check(TLLocalContext* ctx, const uint8_t *dut, const uint8_t *ref, std::string assert_info) {
+int GlobalBoard<T>::data_check(TLLocalContext* ctx, const T& key, const uint8_t *dut, const uint8_t *ref, std::string assert_info) {
     for (int i = 0; i < DATASIZE; i++) {
         if (dut[i] != ref[i]) {
+            std::cout << Gravity::StringAppender().Hex().ShowBase()
+                .Append("@@@ addr: ", uint64_t(key))
+                .ToString() << std::endl;
             data_dump_on_verify<DATASIZE>(dut, ref);
             tlc_assert(false, ctx, assert_info.data());
             return -1;
@@ -284,7 +287,7 @@ int GlobalBoard<T>::data_check(TLLocalContext* ctx, const uint8_t *dut, const ui
 template<typename T>
 int GlobalBoard<T>::verify(TLLocalContext* ctx, MemoryBackend* mem, const T& key, shared_tldata_t<DATASIZE> data, bool* memoryAlted) {
     if (this->mapping.count(key) == 0) { // we assume data is all zero initially
-        return this->data_check(ctx, data->data, init_zeros, "Init data is non-zero!");
+        return this->data_check(ctx, key, data->data, init_zeros, "Init data is non-zero!");
     }
     tlc_assert(this->mapping.count(key) == 1, ctx, "Duplicate records found in GlobalBoard!");
 
@@ -309,7 +312,7 @@ int GlobalBoard<T>::verify(TLLocalContext* ctx, MemoryBackend* mem, const T& key
     Global_SBEntry value = *this->mapping.at(key).get();
     if (value.status == Global_SBEntry::SB_VALID) {
         tlc_assert(value.data != nullptr, ctx, "NULL occured in valid entry of GlobalBoard!");
-        return this->data_check(ctx, data->data, value.data->data, "Data mismatch from status SB_VALID!");
+        return this->data_check(ctx, key, data->data, value.data->data, "Data mismatch from status SB_VALID!");
     } else if (value.status == Global_SBEntry::SB_PENDING) {
         bool flag = true;
         if (value.data != nullptr) {
@@ -330,7 +333,7 @@ int GlobalBoard<T>::verify(TLLocalContext* ctx, MemoryBackend* mem, const T& key
             if (flag) return 0;
         }
         tlc_assert(value.pending_data != nullptr, ctx, "NULL occured in pending entry of GlobalBoard!");
-        this->data_check(ctx, data->data, value.pending_data->data, "Data mismatch from status SB_PENDING!");
+        this->data_check(ctx, key, data->data, value.pending_data->data, "Data mismatch from status SB_PENDING!");
         return 0;
     } else {
         // TODO: handle other status
