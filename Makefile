@@ -167,10 +167,10 @@ openLLC-verilog-clean:
 
 
 VERILATOR := ~/.local/bin/verilator
-COUPLEDL2_ALL_V_FILES := $(shell find ./dut/CoupledL2/build -type f -name '*.*v' | sort)
-COUPLEDL2_VERILATOR_INC_DIRS := $(shell find ./dut/CoupledL2/build -type d | sort)
-COUPLEDL2_VERILATOR_INC := $(addprefix -I,$(COUPLEDL2_VERILATOR_INC_DIRS))
-VERILATOR_COMMON_ARGS_COUPLEDL2 := $(COUPLEDL2_ALL_V_FILES) \
+COUPLEDL2_ALL_V_FILES = $(shell find ./dut/CoupledL2/build -type f -name '*.*v' | sort)
+COUPLEDL2_VERILATOR_INC_DIRS = $(shell find ./dut/CoupledL2/build -type d | sort)
+COUPLEDL2_VERILATOR_INC = $(addprefix -I,$(COUPLEDL2_VERILATOR_INC_DIRS))
+VERILATOR_COMMON_ARGS_COUPLEDL2 = $(COUPLEDL2_ALL_V_FILES) \
 		$(COUPLEDL2_VERILATOR_INC) \
 		--Mdir $(TLTEST_VERILATED_DIR) \
 		-O3 \
