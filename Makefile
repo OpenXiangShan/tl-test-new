@@ -49,6 +49,19 @@ tltest-prepare-v3-openLLC:
 		-DDUT_PATH="${PWD}/dut/XSCache"
 
 
+tltest-prepare-all-zhujiang:
+	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=ON $(CMAKE_CXX_COMPILER) \
+		-DDUT_PATH="${PWD}/dut/XSCache"
+
+tltest-prepare-dpi-zhujiang:
+	cmake ./main -B ./main/build -DBUILD_DPI=ON -DBUILD_V3=OFF $(CMAKE_CXX_COMPILER) \
+		-DDUT_PATH="${PWD}/dut/XSCache"
+
+tltest-prepare-v3-zhujiang:
+	cmake ./main -B ./main/build -DBUILD_V3=ON -DBUILD_DPI=OFF $(CMAKE_CXX_COMPILER) \
+		-DDUT_PATH="${PWD}/dut/XSCache"
+
+
 tltest-portgen:
 	$(MAKE) -C ./main/build portgen -j$(THREADS_BUILD) -s --always-make
 
@@ -86,6 +99,22 @@ tltest-config-openLLC-test-l2l3l2: tltest-config-user
 	@cat ./configs/openLLC-test-l2l3l2.tltest.ini >> ./main/build/tltest.ini
 	@echo "tltest-config-postbuild: tltest-config-openLLC-test-l2l3l2" > ./main/build/Makefile.config
 
+tltest-config-zhujiang-test-singlecore: tltest-config-user
+	@cat ./configs/zhujiang-test-singlecore.tltest.ini
+	@echo ""
+	@cat ./configs/zhujiang-test-singlecore.tltest.ini >> ./main/build/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-zhujiang-test-singlecore" > ./main/build/Makefile.config
+
+tltest-config-zhujiang-test-dualcore: tltest-config-user
+	@cat ./configs/zhujiang-test-dualcore.tltest.ini
+	@echo ""
+	@cat ./configs/zhujiang-test-dualcore.tltest.ini >> ./main/build/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-zhujiang-test-dualcore" > ./main/build/Makefile.config
+
+tltest-config-zhujiang-test-l2l3: tltest-config-zhujiang-test-singlecore
+
+tltest-config-zhujiang-test-l2l3l2: tltest-config-zhujiang-test-dualcore
+
 tltest-config-postbuild:
 
 tltest-build:
@@ -103,6 +132,12 @@ tltest-build-all-openLLC: tltest-prepare-all-openLLC tltest-build
 tltest-build-dpi-openLLC: tltest-prepare-dpi-openLLC tltest-build
 
 tltest-build-v3-openLLC: tltest-prepare-v3-openLLC tltest-build
+
+tltest-build-all-zhujiang: tltest-prepare-all-zhujiang tltest-build
+
+tltest-build-dpi-zhujiang: tltest-prepare-dpi-zhujiang tltest-build
+
+tltest-build-v3-zhujiang: tltest-prepare-v3-zhujiang tltest-build
 
 
 compile:
@@ -126,6 +161,19 @@ openLLC-verilog-test-top-l2l3l2:
 openLLC-verilog-clean:
 	$(MAKE) -C ./dut/XSCache clean
 
+zhujiang-verilog-test-top-singlecore:
+	$(MAKE) -C ./dut/XSCache test-top-zhujiang-singlecore
+
+zhujiang-verilog-test-top-dualcore:
+	$(MAKE) -C ./dut/XSCache test-top-zhujiang-dualcore
+
+zhujiang-verilog-test-top-l2l3: zhujiang-verilog-test-top-singlecore
+
+zhujiang-verilog-test-top-l2l3l2: zhujiang-verilog-test-top-dualcore
+
+zhujiang-verilog-clean:
+	$(MAKE) -C ./dut/XSCache clean
+
 
 VERILATOR := verilator
 VERILATOR_COMMON_ARGS_COUPLEDL2 := ./dut/XSCache/build/coupledl2/*.*v \
@@ -137,6 +185,22 @@ VERILATOR_COMMON_ARGS_COUPLEDL2 := ./dut/XSCache/build/coupledl2/*.*v \
 		-DSIM_TOP_MODULE_NAME=TestTop \
 		-Wno-fatal
 VERILATOR_COMMON_ARGS_OPENLLC := ./dut/XSCache/build/openllc/*.*v \
+		--Mdir ./verilated \
+		-O3 \
+		--trace-fst \
+		--top TestTop \
+		--build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) \
+		-DSIM_TOP_MODULE_NAME=TestTop \
+		-Wno-fatal
+VERILATOR_COMMON_ARGS_ZHUJIANG_SINGLECORE := ./dut/XSCache/build/zj_singlecore/*.*v \
+		--Mdir ./verilated \
+		-O3 \
+		--trace-fst \
+		--top TestTop \
+		--build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) \
+		-DSIM_TOP_MODULE_NAME=TestTop \
+		-Wno-fatal
+VERILATOR_COMMON_ARGS_ZHUJIANG_DUALCORE := ./dut/XSCache/build/zj_dualcore/*.*v \
 		--Mdir ./verilated \
 		-O3 \
 		--trace-fst \
@@ -183,6 +247,25 @@ openLLC-verilate:
 openLLC-verilate-clean:
 	rm -rf verilated
 
+zhujiang-verilate-singlecore:
+	rm -rf verilated
+	mkdir verilated
+	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/XSCache/build/zj_singlecore/*.*v -Wno-fatal \
+		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
+
+zhujiang-verilate-dualcore:
+	rm -rf verilated
+	mkdir verilated
+	verilator --trace-fst --cc --build --lib-create vltdut --Mdir ./verilated ./dut/XSCache/build/zj_dualcore/*.*v -Wno-fatal \
+		--top TestTop --build-jobs $(THREADS_BUILD) --verilate-jobs $(THREADS_BUILD) -DSIM_TOP_MODULE_NAME=TestTop
+
+zhujiang-verilate-l2l3: zhujiang-verilate-singlecore
+
+zhujiang-verilate-l2l3l2: zhujiang-verilate-dualcore
+
+zhujiang-verilate-clean:
+	rm -rf verilated
+
 
 coupledL2-test-l2l3: compile coupledL2-verilog-test-top-l2l3 coupledL2-verilate \
 					 tltest-config-coupledL2-test-l2l3 tltest-build-all-coupledL2
@@ -222,6 +305,29 @@ openLLC-test-l2l3l2-v3: compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate
 
 openLLC-test-l2l3l2-dpi: compile openLLC-verilog-test-top-l2l3l2 openLLC-verilate \
 				         tltest-config-openLLC-test-l2l3l2 tltest-build-dpi-openLLC
+
+
+zhujiang-test-singlecore: compile zhujiang-verilog-test-top-singlecore zhujiang-verilate-singlecore \
+						 tltest-config-zhujiang-test-singlecore tltest-build-all-zhujiang
+
+zhujiang-test-singlecore-v3: compile zhujiang-verilog-test-top-singlecore zhujiang-verilate-singlecore \
+						    tltest-config-zhujiang-test-singlecore tltest-build-v3-zhujiang
+
+zhujiang-test-singlecore-dpi: compile zhujiang-verilog-test-top-singlecore zhujiang-verilate-singlecore \
+						     tltest-config-zhujiang-test-singlecore tltest-build-dpi-zhujiang
+
+zhujiang-test-dualcore: compile zhujiang-verilog-test-top-dualcore zhujiang-verilate-dualcore \
+					   tltest-config-zhujiang-test-dualcore tltest-build-all-zhujiang
+
+zhujiang-test-dualcore-v3: compile zhujiang-verilog-test-top-dualcore zhujiang-verilate-dualcore \
+					      tltest-config-zhujiang-test-dualcore tltest-build-v3-zhujiang
+
+zhujiang-test-dualcore-dpi: compile zhujiang-verilog-test-top-dualcore zhujiang-verilate-dualcore \
+					       tltest-config-zhujiang-test-dualcore tltest-build-dpi-zhujiang
+
+zhujiang-test-l2l3: zhujiang-test-singlecore
+
+zhujiang-test-l2l3l2: zhujiang-test-dualcore
 
 
 -include ./main/build/Makefile.config
@@ -266,6 +372,26 @@ run_openLLC-test-l2l3l2: FORCE tltest-config-openLLC-test-l2l3l2
 	@cp ./main/build/tltest.ini ./run/
 	@bash ./scripts/run_v3lt.sh
 
+run_zhujiang-test-singlecore: FORCE tltest-config-zhujiang-test-singlecore
+	@rm -rf ./run
+	@mkdir -p ./run
+	@cp ./main/build/tltest_v3lt ./run/
+	@cp ./main/build/tltest_portgen.so ./run/
+	@cp ./main/build/tltest.ini ./run/
+	@bash ./scripts/run_v3lt.sh
+
+run_zhujiang-test-dualcore: FORCE tltest-config-zhujiang-test-dualcore
+	@rm -rf ./run
+	@mkdir -p ./run
+	@cp ./main/build/tltest_v3lt ./run/
+	@cp ./main/build/tltest_portgen.so ./run/
+	@cp ./main/build/tltest.ini ./run/
+	@bash ./scripts/run_v3lt.sh
+
+run_zhujiang-test-l2l3: run_zhujiang-test-singlecore
+
+run_zhujiang-test-l2l3l2: run_zhujiang-test-dualcore
+
 
 run-with-portgen: FORCE tltest-config-postbuild tltest-portgen
 	@rm -rf ./run
@@ -276,6 +402,6 @@ run-with-portgen: FORCE tltest-config-postbuild tltest-portgen
 	@bash ./scripts/run_v3lt.sh
 
 
-clean: coupledL2-verilate-clean coupledL2-verilog-clean openLLC-verilate-clean openLLC-verilog-clean
+clean: coupledL2-verilate-clean coupledL2-verilog-clean openLLC-verilate-clean openLLC-verilog-clean zhujiang-verilate-clean zhujiang-verilog-clean
 	rm -rf ./main/build
 	mkdir ./main/build
