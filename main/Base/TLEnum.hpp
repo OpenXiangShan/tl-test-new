@@ -6,6 +6,7 @@
 #ifndef TLC_TEST_TLENUM_H
 #define TLC_TEST_TLENUM_H
 
+#include <cstdint>
 #include <string>
 #include <cstdint>
 
