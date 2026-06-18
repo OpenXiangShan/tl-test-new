@@ -11,6 +11,7 @@
 #include "CAgent.h"
 
 #include "../Events/TLSystemEvent.hpp"
+#include "../Events/TLAgentEvent.hpp"
 
 
 /*
@@ -126,6 +127,13 @@ namespace tl_agent {
         this->lostOrLateL2ToL1Hints = 0;
         this->firstGrantDataCount = 0;
         this->totalL2ToL1Hints = 0;
+        this->flushAllPhase = 0;
+        this->resetSepCycleCount = 0;
+
+        this->l2ToL1HintPort = nullptr;
+        this->powerDownPort = nullptr;
+        this->linkDownPort = nullptr;
+        this->resetSepPort = nullptr;
 
         Gravity::RegisterListener(
             Gravity::MakeListener(
@@ -782,6 +790,40 @@ namespace tl_agent {
         this->port->e.sink = e->sink;
         this->port->e.valid = true;
         return OK;
+    }
+
+    Resp CAgent::send_flushAll() {
+        if (flushAllPhase == 2)
+        {
+            this->powerDownPort->flushAll = 1;
+            return OK;
+        }
+        else
+            return FAIL;
+    }
+
+    Resp CAgent::send_cpuHalt() {
+        if (flushAllPhase == 4)
+        {
+            this->powerDownPort->cpuHalt = 1;
+            return OK;
+        }
+        else
+            return FAIL;
+    }
+
+    Resp CAgent::send_resetSep() {
+        if (flushAllPhase == 6)
+        {
+            if (!idpool.empty())
+                return FAIL;
+
+            *this->resetSepPort = 1;
+            
+            return OK;
+        }
+        else
+            return FAIL;
     }
 
     void CAgent::fire_a() {
@@ -1784,6 +1826,131 @@ namespace tl_agent {
         }
     }
 
+    void CAgent::tick_flushAll() {
+        if (flushAllPhase == 1) 
+        {
+            if (idpool.empty())
+            {
+                TLAgentFlushAllPhaseChangeEvent(sys(), 1, 2).Fire();
+                flushAllPhase = 2;
+            }
+        }
+    }
+
+    void CAgent::fire_flushAll() {
+        if (this->powerDownPort)
+        {
+            if (this->powerDownPort->flushAll && flushAllPhase == 2)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Append("[fire FlushAll] asserted flushAll, starting L2 Flush All").EndLine());
+                }
+
+                TLAgentFlushAllPhaseChangeEvent(sys(), 2, 3).Fire();
+                flushAllPhase = 3;
+            }
+        }
+    }
+
+    void CAgent::fire_flushAllDone() {
+        if (this->powerDownPort)
+        {
+            if (this->powerDownPort->flushAllDone && flushAllPhase == 3)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Append("[fire FlushAllDone] observed flushAllDone, L2 Flush All done").EndLine());
+                }
+
+                if (cfg->flushAllPhase4Enable)
+                {
+                    TLAgentFlushAllPhaseChangeEvent(sys(), 3, 4).Fire();
+                    flushAllPhase = 4;
+                }
+                else
+                {
+                    TLAgentFlushAllPhaseChangeEvent(sys(), 3, 0).Fire();
+                    flushAllPhase = 0;
+                }
+
+                this->powerDownPort->flushAll = 0;
+            }
+        }
+    }
+
+    void CAgent::fire_cpuHalt() {
+        if (this->powerDownPort)
+        {
+            if (this->powerDownPort->cpuHalt && flushAllPhase == 4)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Append("[fire cpuHalt] asserted cpuHalt, starting L2 link disconnection").EndLine());
+                }
+
+                TLAgentFlushAllPhaseChangeEvent(sys(), 4, 5).Fire();
+                flushAllPhase = 5;
+            }
+        }
+    }
+
+    void CAgent::fire_linkDown() {
+        if (this->linkDownPort)
+        {
+            if (*this->linkDownPort && flushAllPhase == 5)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Append("[fire linkDown] observed linkDown, L2 link disconnected").EndLine());
+                }
+
+                TLAgentFlushAllPhaseChangeEvent(sys(), 5, 6).Fire();
+                flushAllPhase = 6;
+            }
+        }
+    }
+
+    void CAgent::fire_resetSep() {
+        if (this->resetSepPort)
+        {
+            if (*this->resetSepPort && flushAllPhase == 6)
+            {
+                if (!resetSepCycleCount)
+                {
+                    if (glbl.cfg.verbose_xact_fired)
+                    {
+                        Log(this, Append("[fire resetSep] \033[31m[Seperate Reset]\033[0m asserted reset, starting seperate L2 reset").EndLine());
+                    }
+                }
+
+                if (resetSepCycleCount >= cfg->flushAllPhase6HoldCycle)
+                {
+                    if (glbl.cfg.verbose_xact_fired)
+                    {
+                        Log(this, Append("[fire resetSep] \033[31m[Seperate Reset]\033[0m held for ").Append(resetSepCycleCount).Append(" cycles, finishing seperate L2 reset").EndLine());
+                    }
+
+                    TLAgentFlushAllPhaseChangeEvent(sys(), 6, 0).Fire();
+                    flushAllPhase = 0;
+                    resetSepCycleCount = 0;
+                }
+                else
+                {
+                    if (resetSepCycleCount)
+                    {
+                        if (glbl.cfg.verbose_xact_fired)
+                        {
+                            Log(this, Append("[fire resetSep] \033[31m[Seperate Reset]\033[0m held for ").Append(resetSepCycleCount).EndLine());
+                        }
+                    }
+
+                    resetSepCycleCount++;
+                }
+            }
+        }
+    }
+
     void CAgent::handle_channel() {
         // Constraint: fire_e > fire_d, otherwise concurrent D/E requests will disturb the pendingE
         fire_a();
@@ -1792,6 +1959,11 @@ namespace tl_agent {
         fire_e();
         fire_d();
         fire_l2ToL1Hint();
+        fire_flushAll();
+        fire_flushAllDone();
+        fire_cpuHalt();
+        fire_linkDown();
+        fire_resetSep();
 
         tick++;
     }
@@ -1813,6 +1985,16 @@ namespace tl_agent {
         if (pendingE.is_pending()) {
             send_e(pendingE.info);
         }
+        if (flushAllPhase == 2) {
+            send_flushAll();
+        }
+        if (flushAllPhase == 4) {
+            send_cpuHalt();
+        }
+        if (flushAllPhase == 6) {
+            send_resetSep();
+        }
+        tick_flushAll();
         // do timeout check lazily
         if (*this->cycles % TIMEOUT_INTERVAL == 0) {
             this->timeout_check();
@@ -1846,6 +2028,15 @@ namespace tl_agent {
     }
 
     ActionDenialEnum CAgent::do_acquireBlock(paddr_t address, TLParamAcquire param, int alias) {
+
+        if (flushAllPhase == 1 && cfg->flushAllPhase1NoAcquire)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
+
+        if (flushAllPhase == 2 && cfg->flushAllPhase2NoAcquire)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
+
+        if (flushAllPhase == 3 && cfg->flushAllPhase3NoAcquire)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
 
         if (pendingA.is_pending())
             return ActionDenial::CHANNEL_CONGESTION;
@@ -1924,6 +2115,15 @@ namespace tl_agent {
         *          currently NtoB not utilized in L1.
         */
 
+        if (flushAllPhase == 1 && cfg->flushAllPhase1NoAcquire)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
+
+        if (flushAllPhase == 2 && cfg->flushAllPhase2NoAcquire)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
+
+        if (flushAllPhase == 3 && cfg->flushAllPhase3NoAcquire)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
+
         if (pendingA.is_pending())
             return ActionDenial::CHANNEL_CONGESTION;
 
@@ -1997,6 +2197,15 @@ namespace tl_agent {
     }
 
     ActionDenialEnum CAgent::do_releaseData(paddr_t address, TLParamRelease param, shared_tldata_t<DATASIZE> data, int alias) {
+
+        if (flushAllPhase == 1 && cfg->flushAllPhase1NoRelease)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
+
+        if (flushAllPhase == 2 && cfg->flushAllPhase2NoRelease)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
+
+        if (flushAllPhase == 3 && cfg->flushAllPhase3NoRelease)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
         
         if (pendingC.is_pending())
             return ActionDenial::CHANNEL_CONGESTION;
@@ -2065,6 +2274,15 @@ namespace tl_agent {
 
     ActionDenialEnum CAgent::do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced)
     {
+        if (flushAllPhase == 1 && cfg->flushAllPhase1NoRelease)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
+
+        if (flushAllPhase == 2 && cfg->flushAllPhase2NoRelease)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
+
+        if (flushAllPhase == 3 && cfg->flushAllPhase3NoRelease)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
+
         if (forced)
         {
             auto& localMap = localBoard->get();
@@ -2304,6 +2522,15 @@ namespace tl_agent {
 
     ActionDenialEnum CAgent::do_cbo(TLOpcodeA opcode, paddr_t address, bool alwaysHit)
     {
+        if (flushAllPhase == 1 && cfg->flushAllPhase1NoCBO)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
+
+        if (flushAllPhase == 2 && cfg->flushAllPhase2NoCBO)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
+
+        if (flushAllPhase == 3 && cfg->flushAllPhase3NoCBO)
+            return ActionDenial::REJECTED_BY_FLUSH_ALL;
+
         if (localCMOStatus->isInflight(address))
             return ActionDenial::REJECTED_BY_INFLIGHT;
 
@@ -2391,6 +2618,20 @@ namespace tl_agent {
         return do_cbo(TLOpcodeA::CBOInval, address, alwaysHit);
     }
 
+    ActionDenialEnum CAgent::do_flushAll(int phase)
+    {
+        // TODO: remove this constraint with configuration
+        if (this->sysId() != 0)
+            return ActionDenial::DENIED;
+
+        if (flushAllPhase != 0)
+            return ActionDenial::LIMITED_OUTSTANDING;
+
+        flushAllPhase = phase;
+
+        return ActionDenial::ACCEPTED;
+    }
+
     void CAgent::timeout_check() {
         return;
         if (localBoard->get().empty()) {
@@ -2415,6 +2656,16 @@ namespace tl_agent {
               }
             }
         }
+    }
+
+    int CAgent::phaseFlushAll() const noexcept
+    {
+        return flushAllPhase;
+    }
+
+    bool CAgent::is_sep_reset_inflight() const noexcept
+    {
+        return flushAllPhase == 6;
     }
 
     bool CAgent::is_cmo_inflight(paddr_t address) const noexcept

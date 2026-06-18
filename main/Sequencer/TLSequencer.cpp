@@ -224,6 +224,11 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
         l2ToL1Hint  = new L2ToL1HintPort*[total_c_agents];
 
         //
+        powerDown   = new PowerDownPort* [total_c_agents];
+        linkDown    = new LinkDownPort*  [total_c_agents];
+        resetSep    = new ResetSepPort*  [total_c_agents];
+
+        //
         pmem        = new uint8_t       [cfg.memoryEnd - cfg.memoryStart];
         memoryAXI   = new MemoryAXIPort*[cfg.memoryPortCount];
         memories    = new MemoryAgent*  [cfg.memoryPortCount];
@@ -286,10 +291,16 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
                 //
                 io      [i] = new IOPort;
                 l2ToL1Hint[j * cfg.masterCountPerCoreTLC + k] = new L2ToL1HintPort;
+                powerDown[j * cfg.masterCountPerCoreTLC + k] = new PowerDownPort;
+                linkDown[j * cfg.masterCountPerCoreTLC + k] = new LinkDownPort;
+                resetSep[j * cfg.masterCountPerCoreTLC + k] = new ResetSepPort;
 
                 agents  [i] = new CAgent(&this->config, memories[0], globalBoard, uncachedBoard, j, i, cfg.seed, &cycles);
                 agents  [i]->connect(io[i]);
                 agents  [i]->connect(l2ToL1Hint[j * cfg.masterCountPerCoreTLC + k]);
+                agents  [i]->connect(powerDown[j * cfg.masterCountPerCoreTLC + k]);
+                agents  [i]->connectLinkDown(linkDown[j * cfg.masterCountPerCoreTLC + k]);
+                agents  [i]->connectResetSep(resetSep[j * cfg.masterCountPerCoreTLC + k]);
 
                 fuzzers [i] = new CFuzzer(static_cast<CAgent*>(agents[i]));
                 fuzzers [i]->set_cycles(&cycles);
@@ -407,6 +418,17 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             l2ToL1Hint[i]->valid = 0;
         }
 
+        for (size_t i = 0; i < total_c_agents; i++)
+        {
+            powerDown[i]->flushAll = 0;
+            powerDown[i]->flushAllDone = 0;
+            powerDown[i]->cpuHalt = 0;
+
+            *linkDown[i] = 0;
+
+            *resetSep[i] = 0;
+        }
+
         for (size_t i = 0; i < cfg.memoryPortCount; i++)
         {
             memoryAXI[i]->aw.ready  = 0;
@@ -497,6 +519,24 @@ void TLSequencer::Finalize() noexcept
             {
                 delete l2ToL1Hint[i];
                 l2ToL1Hint[i] = nullptr;
+            }
+
+            if (powerDown[i])
+            {
+                delete powerDown[i];
+                powerDown[i] = nullptr;
+            }
+
+            if (linkDown[i])
+            {
+                delete linkDown[i];
+                linkDown[i] = nullptr;
+            }
+
+            if (resetSep[i])
+            {
+                delete resetSep[i];
+                resetSep[i] = nullptr;
             }
         }
 
@@ -638,6 +678,36 @@ TLSequencer::L2ToL1HintPort* TLSequencer::L2ToL1Hint() noexcept
 TLSequencer::L2ToL1HintPort& TLSequencer::L2ToL1Hint(int deviceId) noexcept
 {
     return *(l2ToL1Hint[deviceId]);
+}
+
+TLSequencer::PowerDownPort* TLSequencer::PowerDown() noexcept
+{
+    return *powerDown;
+}
+
+TLSequencer::PowerDownPort& TLSequencer::PowerDown(int deviceId) noexcept
+{
+    return *(powerDown[deviceId]);
+}
+
+TLSequencer::LinkDownPort* TLSequencer::LinkDown() noexcept
+{
+    return *linkDown;
+}
+
+TLSequencer::LinkDownPort& TLSequencer::LinkDown(int deviceId) noexcept
+{
+    return *(linkDown[deviceId]);
+}
+
+TLSequencer::ResetSepPort* TLSequencer::ResetSep() noexcept
+{
+    return *resetSep;
+}
+
+TLSequencer::ResetSepPort& TLSequencer::ResetSep(int deviceId) noexcept
+{
+    return *(resetSep[deviceId]);
 }
 
 TLSequencer::MemoryAXIPort* TLSequencer::MemoryAXI() noexcept
