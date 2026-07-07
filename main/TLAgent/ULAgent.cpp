@@ -88,6 +88,8 @@ namespace tl_agent {
         this->port->a.mask     = a->mask;
         this->port->a.source   = a->source;
         this->port->a.param    = 0;
+        this->port->a.matrix   = a->matrix;
+        this->port->a.ameIndex = a->ameIndex;
         this->port->a.valid    = true;
         return OK;
     }
@@ -396,6 +398,8 @@ namespace tl_agent {
         req_a->mask     = 0xffffffffUL;
         req_a->source   = this->idpool.getid();
         req_a->vaddr    = address;
+        req_a->matrix   = 1;
+        req_a->ameIndex = req_a->source;
 #ifdef ULAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
@@ -430,6 +434,8 @@ namespace tl_agent {
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
         req_a->vaddr    = address;
+        req_a->matrix   = 1;
+        req_a->ameIndex = req_a->source;
 #ifdef ULAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
@@ -468,6 +474,8 @@ namespace tl_agent {
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
         req_a->vaddr    = address;
+        req_a->matrix   = 1;
+        req_a->ameIndex = req_a->source;
 #ifdef ULAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else
@@ -507,6 +515,8 @@ namespace tl_agent {
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
         req_a->vaddr    = address;
+        req_a->matrix   = 1;
+        req_a->ameIndex = req_a->source;
 #ifdef ULAGENT_TRAIN_PREFETCH
         req_a->needHint = 1;
 #else

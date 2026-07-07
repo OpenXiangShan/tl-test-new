@@ -272,7 +272,8 @@ int main(int argc, char **argv)
                 VERILATOR_INCLUDE
             },
             tltest->GetLocalConfig().coreCount,
-            tltest->GetLocalConfig().masterCountPerCoreTLUL
+            tltest->GetLocalConfig().masterCountPerCoreTLUL,
+            tltest->GetLocalConfig().masterCountPerCoreTLM
         );
 #   else
         V3::PortGen::LoadStatic();
@@ -297,6 +298,17 @@ int main(int argc, char **argv)
             ") != ",
             "LocalConfig.ulPortCountPerCore(",
                 tltest->GetLocalConfig().masterCountPerCoreTLUL
+            ,"), "
+            "please re-compile PortGen components or check dynamic generation")
+            .ToString());
+
+    tlsys_assert(V3::PortGen::GetMPortCountPerCore() == tltest->GetLocalConfig().masterCountPerCoreTLM,
+        Gravity::StringAppender()
+            .Append("PortGen inconsistent: PortGen.mPortCountPerCore(",
+                V3::PortGen::GetMPortCountPerCore(),
+            ") != "
+            "LocalConfig.mPortCountPerCore(",
+                tltest->GetLocalConfig().masterCountPerCoreTLM
             ,"), "
             "please re-compile PortGen components or check dynamic generation")
             .ToString());

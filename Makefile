@@ -87,6 +87,18 @@ tltest-config-coupledL2-test-l2l3l2: tltest-config-user
 	@cat ./configs/coupledL2-test-l2l3l2.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
 	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-l2l3l2" > $(TLTEST_BUILD_DIR)/Makefile.config
 
+tltest-config-coupledL2-test-matrix-core-alone: tltest-config-user
+	@cat ./configs/coupledL2-test-matrix-core-alone.tltest.ini
+	@echo ""
+	@cat ./configs/coupledL2-test-matrix-core-alone.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-matrix-core-alone" > $(TLTEST_BUILD_DIR)/Makefile.config
+
+tltest-config-coupledL2-test-matrix-no-core: tltest-config-user
+	@cat ./configs/coupledL2-test-matrix-no-core.tltest.ini
+	@echo ""
+	@cat ./configs/coupledL2-test-matrix-no-core.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-matrix-no-core" > $(TLTEST_BUILD_DIR)/Makefile.config
+
 tltest-config-openLLC-test-l2l3: tltest-config-user
 	@cat ./configs/openLLC-test-l2l3.tltest.ini
 	@echo ""
@@ -126,6 +138,9 @@ coupledL2-verilog-test-top-l2l3:
 
 coupledL2-verilog-test-top-l2l3l2:
 	$(MAKE) -C ./dut/XSCache gen-test-top-chi SYSTEM=CHIL2 NUM_CORE=2 NUM_TL_UL=0
+
+openLLC-verilog-test-top-matrix:
+	$(MAKE) -C ./dut/XSCache test-top-matrix
 
 coupledL2-verilog-clean:
 	$(MAKE) -C ./dut/XSCache clean
@@ -264,6 +279,22 @@ run_coupledL2-test-l2l3: FORCE tltest-config-coupledL2-test-l2l3
 	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
 
 run_coupledL2-test-l2l3l2: FORCE tltest-config-coupledL2-test-l2l3l2
+	@rm -rf $(TLTEST_RUN_DIR)
+	@mkdir -p $(TLTEST_RUN_DIR)
+	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest_portgen.so $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest.ini $(TLTEST_RUN_DIR)/
+	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
+
+run_coupledL2-test-matrix-core-alone: FORCE tltest-config-coupledL2-test-matrix-core-alone
+	@rm -rf $(TLTEST_RUN_DIR)
+	@mkdir -p $(TLTEST_RUN_DIR)
+	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest_portgen.so $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest.ini $(TLTEST_RUN_DIR)/
+	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
+
+run_coupledL2-test-matrix-no-core: FORCE tltest-config-coupledL2-test-matrix-no-core
 	@rm -rf $(TLTEST_RUN_DIR)
 	@mkdir -p $(TLTEST_RUN_DIR)
 	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/

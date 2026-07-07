@@ -7,6 +7,7 @@
 
 #include "../Base/TLLocal.hpp"
 #include "../TLAgent/ULAgent.h"
+#include "../TLAgent/MAgent.h"
 #include "../TLAgent/CAgent.h"
 #include "../TLAgent/MMIOAgent.h"
 
@@ -111,6 +112,27 @@ public:
     void randomTest(bool put);
     void caseTest();
     void caseTest2();
+    void tick();
+};
+
+class MFuzzer: public Fuzzer {
+private:
+    enum class PutCoverageState {
+        NEED_GET,
+        WAIT_GET_RESP,
+        NEED_PUT,
+        WAIT_PUT_ACK,
+        DONE
+    };
+
+    tl_agent::MAgent *mAgent;
+    PutCoverageState putCoverageState;
+    paddr_t putCoverageAddr;
+    size_t putCoverageWaitCycles;
+public:
+    MFuzzer(tl_agent::MAgent *mAgent) noexcept;
+    virtual ~MFuzzer() noexcept = default;
+    void randomTest(bool put);
     void tick();
 };
 

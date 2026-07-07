@@ -140,8 +140,8 @@ namespace tl_agent {
         }
         ~PendingTrans() = default;
 
-        bool is_multiBeat() { return (this->nr_beat != 1); };
-        bool is_pending() { return (beat_cnt != 0); }
+        bool is_multiBeat() const { return (this->nr_beat != 1); };
+        bool is_pending() const { return (beat_cnt != 0); }
         void init(std::shared_ptr<T> &info, int nr_beat) {
             this->info = info;
             this->nr_beat = nr_beat;
