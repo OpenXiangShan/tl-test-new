@@ -319,6 +319,7 @@ namespace tl_agent {
         std::unordered_map<uint64_t, uint64_t> latencyMapC[16];
 
         std::map<uint64_t, uint64_t> latencyMapL2ToL1Hint;
+        uint32_t readAckBeatCnt;
 
     public:
         CAgent(TLLocalConfig* cfg, MemoryBackend* mem, GlobalBoard<paddr_t>* gb, UncachedBoard<paddr_t>* ub, int sys, int id, unsigned int seed, uint64_t* cycles) noexcept;
@@ -354,6 +355,9 @@ namespace tl_agent {
         ActionDenialEnum do_cbo_inval(paddr_t address, bool alwaysHit);
 
         bool is_cmo_inflight(paddr_t address) const noexcept;
+        bool recv_readAck();
+        bool recv_writeAck();
+        bool recv_evictAck();
 
         LocalScoreBoard*        local() noexcept;
         const LocalScoreBoard*  local() const noexcept;

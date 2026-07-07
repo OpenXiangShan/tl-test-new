@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <string>
 #include <unordered_map>
 
 
@@ -16,7 +17,8 @@ enum class TLSequenceMode {
     FUZZ_COUNTER_SYNC,
     STREAM_COPY2,
     STREAM_MULTI,
-    BWPROF_STREAM_STRIDE_READ
+    BWPROF_STREAM_STRIDE_READ,
+    TRACE_WITH_FENCE
 };
 
 enum class TLUnifiedSequenceMode {
@@ -104,6 +106,9 @@ public:
         uint64_t                thresholdB;
         uint64_t                noise;
     }                       unifiedSequenceModeAnvil;
+
+    bool                traceEnable;
+    std::string         traceFilepath;
 
 public:
     size_t                          GetAgentCount() const noexcept;

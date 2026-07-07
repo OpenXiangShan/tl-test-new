@@ -87,23 +87,23 @@ tltest-config-coupledL2-test-l2l3l2: tltest-config-user
 	@cat ./configs/coupledL2-test-l2l3l2.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
 	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-l2l3l2" > $(TLTEST_BUILD_DIR)/Makefile.config
 
-tltest-config-coupledL2-test-matrix-core-alone: tltest-config-user
-	@cat ./configs/coupledL2-test-matrix-core-alone.tltest.ini
+tltest-config-coupledL2-test-matrix-trace: tltest-config-user
+	@cat ./configs/coupledL2-test-matrix-trace.tltest.ini
 	@echo ""
-	@cat ./configs/coupledL2-test-matrix-core-alone.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-matrix-core-alone" > $(TLTEST_BUILD_DIR)/Makefile.config
-
-tltest-config-coupledL2-test-matrix-no-core: tltest-config-user
-	@cat ./configs/coupledL2-test-matrix-no-core.tltest.ini
-	@echo ""
-	@cat ./configs/coupledL2-test-matrix-no-core.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
-	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-matrix-no-core" > $(TLTEST_BUILD_DIR)/Makefile.config
+	@cat ./configs/coupledL2-test-matrix-trace.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-coupledL2-test-matrix-trace" > $(TLTEST_BUILD_DIR)/Makefile.config
 
 tltest-config-openLLC-test-l2l3: tltest-config-user
 	@cat ./configs/openLLC-test-l2l3.tltest.ini
 	@echo ""
 	@cat ./configs/openLLC-test-l2l3.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
 	@echo "tltest-config-postbuild: tltest-config-openLLC-test-l2l3" > $(TLTEST_BUILD_DIR)/Makefile.config
+
+tltest-config-openLLC-test-matrix-trace: tltest-config-user
+	@cat ./configs/openLLC-test-matrix-trace.tltest.ini
+	@echo ""
+	@cat ./configs/openLLC-test-matrix-trace.tltest.ini >> $(TLTEST_BUILD_DIR)/tltest.ini
+	@echo "tltest-config-postbuild: tltest-config-openLLC-test-matrix-trace" > $(TLTEST_BUILD_DIR)/Makefile.config
 
 tltest-config-openLLC-test-l2l3l2: tltest-config-user
 	@cat ./configs/openLLC-test-l2l3l2.tltest.ini
@@ -286,15 +286,7 @@ run_coupledL2-test-l2l3l2: FORCE tltest-config-coupledL2-test-l2l3l2
 	@cp $(TLTEST_BUILD_DIR)/tltest.ini $(TLTEST_RUN_DIR)/
 	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
 
-run_coupledL2-test-matrix-core-alone: FORCE tltest-config-coupledL2-test-matrix-core-alone
-	@rm -rf $(TLTEST_RUN_DIR)
-	@mkdir -p $(TLTEST_RUN_DIR)
-	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/
-	@cp $(TLTEST_BUILD_DIR)/tltest_portgen.so $(TLTEST_RUN_DIR)/
-	@cp $(TLTEST_BUILD_DIR)/tltest.ini $(TLTEST_RUN_DIR)/
-	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
-
-run_coupledL2-test-matrix-no-core: FORCE tltest-config-coupledL2-test-matrix-no-core
+run_coupledL2-test-matrix-trace: FORCE tltest-config-coupledL2-test-matrix-trace
 	@rm -rf $(TLTEST_RUN_DIR)
 	@mkdir -p $(TLTEST_RUN_DIR)
 	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/
@@ -303,6 +295,14 @@ run_coupledL2-test-matrix-no-core: FORCE tltest-config-coupledL2-test-matrix-no-
 	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
 
 run_openLLC-test-l2l3: FORCE tltest-config-openLLC-test-l2l3
+	@rm -rf $(TLTEST_RUN_DIR)
+	@mkdir -p $(TLTEST_RUN_DIR)
+	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest_portgen.so $(TLTEST_RUN_DIR)/
+	@cp $(TLTEST_BUILD_DIR)/tltest.ini $(TLTEST_RUN_DIR)/
+	@bash ./scripts/run_v3lt.sh $(TLTEST_RUN_DIR)
+
+run_openLLC-test-matrix-trace: FORCE tltest-config-openLLC-test-matrix-trace
 	@rm -rf $(TLTEST_RUN_DIR)
 	@mkdir -p $(TLTEST_RUN_DIR)
 	@cp $(TLTEST_BUILD_DIR)/tltest_v3lt $(TLTEST_RUN_DIR)/

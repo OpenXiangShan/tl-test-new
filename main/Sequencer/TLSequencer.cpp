@@ -27,6 +27,7 @@ TLSequencer::TLSequencer() noexcept
     , mAgents           (nullptr)
     , fuzzers           (nullptr)
     , unifiedFuzzer     (nullptr)
+    , traceDispatcher   (nullptr)
     , mmioGlobalStatus  (nullptr)
     , mmioAgents        (nullptr)
     , mmioFuzzers       (nullptr)
@@ -39,6 +40,7 @@ TLSequencer::TLSequencer() noexcept
 
 TLSequencer::~TLSequencer() noexcept
 {
+    delete traceDispatcher;
     delete[] pmem;
     delete[] fuzzers;
     delete[] agents;
@@ -370,6 +372,17 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
         unifiedFuzzer->set_cycles(&cycles);
 
+        if (config.traceEnable)
+        {
+            std::cout << "[TLSequencer] traceEnabld, traceFilepath=" << config.traceFilepath << std::endl;
+
+            traceDispatcher = new TraceDispatcher(&this->config,
+                cAgents, GetCAgentCount(),
+                ulAgents, GetULAgentCount(),
+                mAgents, GetMAgentCount(),
+                &cycles, config.traceFilepath);
+        }
+
         // IO data field pre-allocation
         for (size_t i = 0; i < total_n_agents; i++)
         {
@@ -551,6 +564,12 @@ void TLSequencer::Finalize() noexcept
             unifiedFuzzer = nullptr;
         }
 
+        if (traceDispatcher)
+        {
+            delete traceDispatcher;
+            traceDispatcher = nullptr;
+        }
+
         delete globalBoard;
         globalBoard = nullptr;
 
@@ -606,7 +625,25 @@ void TLSequencer::Tock() noexcept
         for (size_t i = 0; i < total_c_agents; i++)
             mmioAgents[i]->handle_channel();
 
-        if (!config.unifiedSequenceEnable)
+        if (config.traceEnable)
+        {
+            if (config.unifiedSequenceEnable)
+            {
+                LogFatal(cycles, Append("Trace mode and unified sequence mode cannot be enabled together").EndLine());
+                this->state = State::FAILED;
+                return;
+            }
+
+            if (traceDispatcher == nullptr)
+            {
+                LogFatal(cycles, Append("Trace mode is enabled but TraceDispatcher is not initialized").EndLine());
+                this->state = State::FAILED;
+                return;
+            }
+
+            traceDispatcher->tick();
+        }
+        else if (!config.unifiedSequenceEnable)
         {
             for (size_t i = 0; i < total_n_agents; i++)
                 fuzzers[i]->tick();

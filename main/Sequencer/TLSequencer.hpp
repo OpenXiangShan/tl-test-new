@@ -17,6 +17,7 @@
 #include "../TLAgent/MMIOAgent.h"
 #include "../Memory/MemoryAgent.hpp"
 #include "../Fuzzer/Fuzzer.h"
+#include "../Fuzzer/TraceDispatcher.hpp"
 
 /*
 * Procedure sequence of a TileLink cycle:
@@ -79,6 +80,7 @@ private:
 
     Fuzzer**                fuzzers;
     UnifiedFuzzer*          unifiedFuzzer;
+    TraceDispatcher*        traceDispatcher;
 
     MMIOGlobalStatus*       mmioGlobalStatus;
 
