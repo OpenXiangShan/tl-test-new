@@ -34,7 +34,7 @@ if (NOT DEFINED CHISELDB_PATH)
 endif ()
 
 if (NOT DEFINED VERILATOR_INCLUDE)
-    SET(VERILATOR_INCLUDE "/usr/local/share/verilator/include")
+    SET(VERILATOR_INCLUDE "$ENV{HOME}/.local/share/verilator/include")
 endif ()
 
 if (NOT DEFINED VERILATED_PATH)
