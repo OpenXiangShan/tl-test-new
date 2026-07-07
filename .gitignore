@@ -1,7 +1,10 @@
 build
+main/build_*
 cmake-build-debug
 verilated
+verilated_*
 run
+run_*
 .idea
 .vscode
 .metals

@@ -279,8 +279,16 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     (*tltest)->Initialize(tlcfg);
 
     (*plugins) = new PluginManager;
-    (*plugins)->EnablePlugin(new ChiselDB::PluginInstance);
-    (*plugins)->EnablePlugin(new CHIron::CLogB::PluginInstance);
+
+    {
+        auto psec = ini["tltest.plugin"];
+
+        if (!psec.isKeyExist("chiseldb.enable") || psec.toInt("chiseldb.enable"))
+            (*plugins)->EnablePlugin(new ChiselDB::PluginInstance);
+
+        if (!psec.isKeyExist("clog.enable") || psec.toInt("clog.enable"))
+            (*plugins)->EnablePlugin(new CHIron::CLogB::PluginInstance);
+    }
 }
 
 void TLFinalize(TLSequencer** tltest, PluginManager** plugins)
