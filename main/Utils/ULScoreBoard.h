@@ -327,6 +327,7 @@ int UncachedBoard<Tk>::verify(TLLocalContext* ctx, size_t sysId, const Tk& key, 
 
     if (!hit)
     {
+        printf("@@@ addr: 0x%lx\n", key);
         data_dump_multiple_on_verify<DATASIZE>(data->data, entry);
         tlc_assert(false, ctx, "Data mismatch");
     }
