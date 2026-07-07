@@ -171,8 +171,8 @@ void MAgent::fire_d() {
                 uncachedBoards->verify(this, id, info->address, pendingD.info->source, pendingD.info->data);
                 uncachedBoards->finish(this, id, info->address, pendingD.info->source);
             } else if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck)) {
-                uncachedBoards->appendAll(this, info->address, this->globalBoard->query(this, info->address)->data);
                 this->globalBoard->unpending(this, info->address);
+                uncachedBoards->appendAll(this, info->address, this->globalBoard->query(this, info->address)->data);
             }
 
             localBoard->erase(this, chnD.source);

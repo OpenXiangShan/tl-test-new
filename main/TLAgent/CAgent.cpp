@@ -564,9 +564,13 @@ namespace tl_agent {
                     }
 
                 } else {
+                    auto globalEntry = globalBoard->query(this, b->address);
+                    auto sourceData = globalEntry->data != nullptr
+                        ? globalEntry->data
+                        : make_shared_tldata_zero<DATASIZE>();
                     std::memcpy(
-                        (req_c->data = make_shared_tldata<DATASIZE>())->data, 
-                        globalBoard->query(this, b->address)->data->data, 
+                        (req_c->data = make_shared_tldata<DATASIZE>())->data,
+                        sourceData->data,
                         DATASIZE);
 
                     if (glbl.cfg.verbose_agent_debug)
@@ -1162,7 +1166,15 @@ namespace tl_agent {
                 if (TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAckData)) {
                     auto global_SBEntry = std::make_shared<Global_SBEntry>();
                     global_SBEntry->data = pendingC.info->data;
+                    global_SBEntry->pending_data = nullptr;
                     global_SBEntry->status = Global_SBEntry::SB_VALID;
+                    if (this->globalBoard->haskey(pendingC.info->address)) {
+                        auto existing = this->globalBoard->query(this, pendingC.info->address);
+                        if (existing->status == Global_SBEntry::SB_PENDING) {
+                            global_SBEntry->pending_data = existing->pending_data;
+                            global_SBEntry->status = Global_SBEntry::SB_PENDING;
+                        }
+                    }
                     this->globalBoard->update(this, pendingC.info->address, global_SBEntry);
 
                     uncachedBoards->appendAll(this, pendingC.info->address, global_SBEntry->data);
@@ -2597,4 +2609,3 @@ namespace tl_agent {
         // don't do timeout check currently
     }
 }
-
