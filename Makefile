@@ -109,10 +109,10 @@ compile:
 	$(MAKE) -C ./dut/XSCache compile
 
 coupledL2-verilog-test-top-l2l3:
-	$(MAKE) -C ./dut/XSCache test-top-l2l3-huancun
+	$(MAKE) -C ./dut/XSCache gen-test-top-chi SYSTEM=CHIL2 NUM_CORE=1 NUM_TL_UL=0
 
 coupledL2-verilog-test-top-l2l3l2:
-	$(MAKE) -C ./dut/XSCache test-top-l2l3l2-huancun
+	$(MAKE) -C ./dut/XSCache gen-test-top-chi SYSTEM=CHIL2 NUM_CORE=2 NUM_TL_UL=0
 
 coupledL2-verilog-clean:
 	$(MAKE) -C ./dut/XSCache clean
