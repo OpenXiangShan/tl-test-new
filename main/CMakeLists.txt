@@ -34,7 +34,14 @@ if (NOT DEFINED CHISELDB_PATH)
 endif ()
 
 if (NOT DEFINED VERILATOR_INCLUDE)
-    SET(VERILATOR_INCLUDE "/usr/local/share/verilator/include")
+    execute_process(
+        COMMAND verilator --getenv VERILATOR_ROOT
+        OUTPUT_VARIABLE VERILATOR_ROOT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+
+    set(VERILATOR_INCLUDE "${VERILATOR_ROOT}/include")
 endif ()
 
 if (NOT DEFINED VERILATED_PATH)
