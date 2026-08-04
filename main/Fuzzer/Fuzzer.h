@@ -29,6 +29,15 @@
 #endif
 
 
+#ifndef CFUZZER_FILL_RANGE_TAG
+#   define CFUZZER_FILL_RANGE_TAG           0x1
+#endif
+
+#ifndef CFUZZER_FILL_RANGE_SET
+#   define CFUZZER_FILL_RANGE_SET           0x80
+#endif
+
+
 #ifndef CFUZZER_RANGE_ITERATE_INTERVAL
 #   define CFUZZER_RANGE_ITERATE_INTERVAL   (5 * 1000 * 1000)
 #endif
@@ -84,6 +93,8 @@ public:
     size_t              fuzzStreamStep;
     size_t              fuzzStreamStart;
     size_t              fuzzStreamEnd;
+    size_t              fuzzFillSet;
+    size_t              fuzzFillTag;
 public:
     Fuzzer() noexcept = default;
     virtual ~Fuzzer() noexcept = default;
@@ -169,6 +180,8 @@ private:
 private:
     tl_agent::CAgent*       cAgent;
     bool                    flagDone;
+    uint64_t                flushAllIntervalCounter;
+    bool                    anyFlushAll;
 
     BandwidthProfilerStatus bwprof;
 

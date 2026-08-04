@@ -59,6 +59,10 @@ public:
 
     using L2ToL1HintPort    = tl_agent::BundleL2ToL1Hint;
 
+    using PowerDownPort     = tl_agent::BundlePowerDown;
+    using LinkDownPort      = uint8_t;
+    using ResetSepPort      = uint8_t;
+
     using MemoryAgent       = axi_agent::MemoryAgent;
     using MemoryAXIPort     = axi_agent::Bundle<BEATSIZE_MEMORY>;
 
@@ -89,6 +93,9 @@ private:
     IOPort**                io;
     MMIOPort**              mmio;
     L2ToL1HintPort**        l2ToL1Hint;
+    PowerDownPort**         powerDown;
+    LinkDownPort**          linkDown;
+    ResetSepPort**          resetSep;
     MemoryAXIPort**         memoryAXI;
 
     uint64_t                cycles;
@@ -121,6 +128,15 @@ public:
 
     L2ToL1HintPort* L2ToL1Hint() noexcept;
     L2ToL1HintPort& L2ToL1Hint(int deviceId) noexcept;
+
+    PowerDownPort*  PowerDown() noexcept;
+    PowerDownPort&  PowerDown(int deviceId) noexcept;
+
+    LinkDownPort*   LinkDown() noexcept;
+    LinkDownPort&   LinkDown(int deviceId) noexcept;
+
+    ResetSepPort*   ResetSep() noexcept;
+    ResetSepPort&   ResetSep(int deviceId) noexcept;
 
     MemoryAXIPort*  MemoryAXI() noexcept;
     MemoryAXIPort&  MemoryAXI(int deviceId) noexcept;

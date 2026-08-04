@@ -30,7 +30,7 @@ namespace tl_agent {
         inline constexpr bool operator!=(const ActionDenialEnumBack& obj) const noexcept { return !(*this == obj); }
     };
 
-    using ActionDenialEnum = ActionDenialEnumBack;
+    using ActionDenialEnum = const ActionDenialEnumBack*;
 
     namespace ActionDenial {
         inline constexpr ActionDenialEnumBack ACCEPTED                  (true   , 0);
@@ -44,6 +44,7 @@ namespace tl_agent {
         inline constexpr ActionDenialEnumBack LIMITED_OUTSTANDING       (false  , 8);
         inline constexpr ActionDenialEnumBack PERMISSION                (false  , 9);
         inline constexpr ActionDenialEnumBack REJECTED_BY_INFLIGHT      (false  , 10);
+        inline constexpr ActionDenialEnumBack REJECTED_BY_FLUSH_ALL     (false  , 11);
     }
 
     enum Resp {OK, FAIL};
@@ -194,6 +195,9 @@ namespace tl_agent {
         bool full() {
             return idle_ids->empty();
         }
+        bool empty() {
+            return used_ids->empty();
+        }
     };
 
     template<size_t BeatSize = BEATSIZE, size_t DataSize = DATASIZE> 
@@ -201,6 +205,9 @@ namespace tl_agent {
     public:
         using tlport_t = Bundle<ReqField, RespField, EchoField, BeatSize>;
         using l1hintport_t = BundleL2ToL1Hint;
+        using powerdownport_t = BundlePowerDown;
+        using linkdownport_t = uint8_t;
+        using resetsepport_t = uint8_t;
 
     protected:
         TLLocalConfig*              cfg;
@@ -208,6 +215,9 @@ namespace tl_agent {
         const int                   id;
         tlport_t*                   port;
         l1hintport_t*               l2ToL1HintPort;
+        powerdownport_t*            powerDownPort;
+        linkdownport_t*             linkDownPort;
+        resetsepport_t*             resetSepPort;
         GlobalBoard<paddr_t>*       globalBoard;
         UncachedBoard<paddr_t>*     uncachedBoards;
         MemoryBackend*              mem;
@@ -249,6 +259,9 @@ namespace tl_agent {
 
         inline void  connect(tlport_t* p){ this->port = p; }
         inline void  connect(l1hintport_t* p) { this->l2ToL1HintPort = p; }
+        inline void  connect(powerdownport_t* p) { this->powerDownPort = p; }
+        inline void  connectLinkDown(linkdownport_t* p) { this->linkDownPort = p; }
+        inline void  connectResetSep(resetsepport_t* p) { this->resetSepPort = p; }
 
         inline uint64_t rand64() noexcept { return rand(); }
     };

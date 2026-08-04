@@ -78,10 +78,37 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     tlcfg.cmoEnd                        = TLTEST_DEFAULT_CMO_END;
     tlcfg.cmoParallelDepth              = TLTEST_DEFAULT_CMO_PARALLEL_DEPTH;
 
+    tlcfg.flushAllPhase1NoRelease       = TLTEST_DEFAULT_FLUSHALL_PHASE_1_NO_RELEASE;
+    tlcfg.flushAllPhase1NoAcquire       = TLTEST_DEFAULT_FLUSHALL_PHASE_1_NO_ACQUIRE;
+    tlcfg.flushAllPhase1NoCBO           = TLTEST_DEFAULT_FLUSHALL_PHASE_1_NO_CBO;
+    tlcfg.flushAllPhase2NoRelease       = TLTEST_DEFAULT_FLUSHALL_PHASE_2_NO_RELEASE;
+    tlcfg.flushAllPhase2NoAcquire       = TLTEST_DEFAULT_FLUSHALL_PHASE_2_NO_ACQUIRE;
+    tlcfg.flushAllPhase2NoCBO           = TLTEST_DEFAULT_FLUSHALL_PHASE_2_NO_CBO;
+    tlcfg.flushAllPhase3NoRelease       = TLTEST_DEFAULT_FLUSHALL_PHASE_3_NO_RELEASE;
+    tlcfg.flushAllPhase3NoAcquire       = TLTEST_DEFAULT_FLUSHALL_PHASE_3_NO_ACQUIRE;
+    tlcfg.flushAllPhase3NoCBO           = TLTEST_DEFAULT_FLUSHALL_PHASE_3_NO_CBO;
+
+    tlcfg.flushAllPhase4Enable          = TLTEST_DEFAULT_FLUSHALL_PHASE_4_ENABLE;
+    tlcfg.flushAllPhase6HoldCycle       = TLTEST_DEFAULT_FLUSHALL_PHASE_6_HOLD_CYCLE;
+
     tlcfg.profileCycleUnit              = TLTEST_DEFAULT_PROFILE_CYCLE_UNIT;
 
     tlcfg.fuzzARIInterval               = CFUZZER_RANGE_ITERATE_INTERVAL;
     tlcfg.fuzzARITarget                 = CFUZZER_RANGE_ITERATE_TARGET;
+
+    tlcfg.fuzzARIFlushAllPhase1NoRelease    = TLTEST_DEFAULT_FUZZ_ARI_FLUSHALL_PHASE_1_NO_RELEASE;
+    tlcfg.fuzzARIFlushAllPhase1NoAcquire    = TLTEST_DEFAULT_FUZZ_ARI_FLUSHALL_PHASE_1_NO_ACQUIRE;
+    tlcfg.fuzzARIFlushAllPhase1NoCBO        = TLTEST_DEFAULT_FUZZ_ARI_FLUSHALL_PHASE_1_NO_CBO;
+    tlcfg.fuzzARIFlushAllPhase2NoRelease    = TLTEST_DEFAULT_FUZZ_ARI_FLUSHALL_PHASE_2_NO_RELEASE;
+    tlcfg.fuzzARIFlushAllPhase2NoAcquire    = TLTEST_DEFAULT_FUZZ_ARI_FLUSHALL_PHASE_2_NO_ACQUIRE;
+    tlcfg.fuzzARIFlushAllPhase2NoCBO        = TLTEST_DEFAULT_FUZZ_ARI_FLUSHALL_PHASE_2_NO_CBO;
+    tlcfg.fuzzARIFlushAllPhase3NoRelease    = TLTEST_DEFAULT_FUZZ_ARI_FLUSHALL_PHASE_3_NO_RELEASE;
+    tlcfg.fuzzARIFlushAllPhase3NoAcquire    = TLTEST_DEFAULT_FUZZ_ARI_FLUSHALL_PHASE_3_NO_ACQUIRE;
+    tlcfg.fuzzARIFlushAllPhase3NoCBO        = TLTEST_DEFAULT_FUZZ_ARI_FLUSHALL_PHASE_3_NO_CBO;
+
+    tlcfg.fuzzARIFlushAllPhase          = TLTEST_DEFAULT_FUZZ_ARI_FLUSH_ALL_PHASE;
+    tlcfg.fuzzARIFlushAllInterval       = TLTEST_DEFAULT_FUZZ_ARI_FLUSH_ALL_INTERVAL;
+    tlcfg.fuzzARIFlushAllThreshold      = TLTEST_DEFAULT_FUZZ_ARI_FLUSH_ALL_THRESHOLD;
 
     tlcfg.fuzzStreamInterval            = CFUZZER_FUZZ_STREAM_INTERVAL;
     tlcfg.fuzzStreamStep                = CFUZZER_FUZZ_STREAM_STEP;
@@ -167,7 +194,18 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.config", "cmo.end",                    tlcfg.cmoEnd);
     INI_OVERRIDE_INT("tltest.config", "cmo.parallel.depth",         tlcfg.cmoParallelDepth);
 
-    INI_OVERRIDE_INT("tltest.config", "error.hintInaccurate",       glbl.cfg.errorHintInaccurate);
+    INI_OVERRIDE_INT("tltest.config", "agent.flushall.phase_1.no_release",  tlcfg.flushAllPhase1NoRelease);
+    INI_OVERRIDE_INT("tltest.config", "agent.flushall.phase_1.no_acquire",  tlcfg.flushAllPhase1NoAcquire);
+    INI_OVERRIDE_INT("tltest.config", "agent.flushall.phase_1.no_cbo",      tlcfg.flushAllPhase1NoCBO);
+    INI_OVERRIDE_INT("tltest.config", "agent.flushall.phase_2.no_release",  tlcfg.flushAllPhase2NoRelease);
+    INI_OVERRIDE_INT("tltest.config", "agent.flushall.phase_2.no_acquire",  tlcfg.flushAllPhase2NoAcquire);
+    INI_OVERRIDE_INT("tltest.config", "agent.flushall.phase_2.no_cbo",      tlcfg.flushAllPhase2NoCBO);
+    INI_OVERRIDE_INT("tltest.config", "agent.flushall.phase_3.no_release",  tlcfg.flushAllPhase3NoRelease);
+    INI_OVERRIDE_INT("tltest.config", "agent.flushall.phase_3.no_acquire",  tlcfg.flushAllPhase3NoAcquire);
+    INI_OVERRIDE_INT("tltest.config", "agent.flushall.phase_3.no_cbo",      tlcfg.flushAllPhase3NoCBO);
+
+    INI_OVERRIDE_INT("tltest.config", "agent.flushall.phase_4.enable",      tlcfg.flushAllPhase4Enable);
+    INI_OVERRIDE_INT("tltest.config", "agent.flushall.phase_6.hold_cycle",  tlcfg.flushAllPhase6HoldCycle);
 
     INI_OVERRIDE_INT("tltest.fuzzer", "seed",                       tlcfg.seed);
     INI_OVERRIDE_INT("tltest.fuzzer", "ari.interval",               tlcfg.fuzzARIInterval);
@@ -176,6 +214,20 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
     INI_OVERRIDE_INT("tltest.fuzzer", "stream.step",                tlcfg.fuzzStreamStep);
     INI_OVERRIDE_INT("tltest.fuzzer", "stream.start",               tlcfg.fuzzStreamStart);
     INI_OVERRIDE_INT("tltest.fuzzer", "stream.end",                 tlcfg.fuzzStreamEnd);
+
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.flushall.phase_1.no_release",    tlcfg.fuzzARIFlushAllPhase1NoRelease);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.flushall.phase_1.no_acquire",    tlcfg.fuzzARIFlushAllPhase1NoAcquire);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.flushall.phase_1.no_cbo",        tlcfg.fuzzARIFlushAllPhase1NoCBO);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.flushall.phase_2.no_release",    tlcfg.fuzzARIFlushAllPhase2NoRelease);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.flushall.phase_2.no_acquire",    tlcfg.fuzzARIFlushAllPhase2NoAcquire);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.flushall.phase_2.no_cbo",        tlcfg.fuzzARIFlushAllPhase2NoCBO);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.flushall.phase_3.no_release",    tlcfg.fuzzARIFlushAllPhase3NoRelease);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.flushall.phase_3.no_acquire",    tlcfg.fuzzARIFlushAllPhase3NoAcquire);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.flushall.phase_3.no_cbo",        tlcfg.fuzzARIFlushAllPhase3NoCBO);
+
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.flushall.phase",         tlcfg.fuzzARIFlushAllPhase);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.flushall.interval",      tlcfg.fuzzARIFlushAllInterval);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.flushall.threshold",     tlcfg.fuzzARIFlushAllThreshold);
 
     INI_OVERRIDE_INT("tltest.profile", "cycle_unit",                tlcfg.profileCycleUnit);
 
@@ -212,8 +264,16 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
                     tlcfg.sequenceModes[i] = TLSequenceMode::PASSIVE;
                 else if (mode.compare("fuzz_ari") == 0)
                     tlcfg.sequenceModes[i] = TLSequenceMode::FUZZ_ARI;
+                else if (mode.compare("fuzz_ari_with_flush_all") == 0)
+                    tlcfg.sequenceModes[i] = TLSequenceMode::FUZZ_ARI_WITH_FLUSH_ALL;
+                else if (mode.compare("fuzz_ari_on_flush_all") == 0)
+                    tlcfg.sequenceModes[i] = TLSequenceMode::FUZZ_ARI_ON_FLUSH_ALL;
                 else if (mode.compare("fuzz_stream") == 0)
                     tlcfg.sequenceModes[i] = TLSequenceMode::FUZZ_STREAM;
+                else if (mode.compare("fuzz_fill") == 0)
+                    tlcfg.sequenceModes[i] = TLSequenceMode::FUZZ_FILL;
+                else if (mode.compare("fuzz_fill_with_flush_all") == 0)
+                    tlcfg.sequenceModes[i] = TLSequenceMode::FUZZ_FILL_WITH_FLUSH_ALL;
                 else if (mode.compare("fuzz_counter") == 0)
                     tlcfg.sequenceModes[i] = TLSequenceMode::FUZZ_COUNTER;
                 else if (mode.compare("stream_copy2") == 0)

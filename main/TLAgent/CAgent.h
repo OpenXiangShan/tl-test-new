@@ -303,6 +303,7 @@ namespace tl_agent {
         bool                    lastProbeAfterRelease;
         paddr_t                 lastProbeAfterReleaseAddress;
         AcquirePermScoreBoard*  acquirePermBoard;
+        int                     flushAllPhase;
         IDPool probeIDpool;
         void timeout_check() override;
 
@@ -311,6 +312,7 @@ namespace tl_agent {
         uint64_t                     lostOrLateL2ToL1Hints;
         uint64_t                     firstGrantDataCount;
         uint64_t                     totalL2ToL1Hints;
+        uint64_t                     resetSepCycleCount;
 
     public:
         std::unordered_map<paddr_t, InflightTimeStampA> inflightTimeStampsA;
@@ -330,12 +332,21 @@ namespace tl_agent {
         void handle_b   (std::shared_ptr<BundleChannelB>&                                   b) override;
         Resp send_c     (std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>>&    c) override;
         Resp send_e     (std::shared_ptr<BundleChannelE>&                                   e);
+        Resp send_flushAll();
+        Resp send_cpuHalt();
+        Resp send_resetSep();
         void fire_a() override;
         void fire_b() override;
         void fire_c() override;
         void fire_d() override;
         void fire_e() override;
         void fire_l2ToL1Hint();
+        void tick_flushAll();
+        void fire_flushAll();
+        void fire_flushAllDone();
+        void fire_cpuHalt();
+        void fire_linkDown();
+        void fire_resetSep();
         void handle_channel() override;
         void update_signal() override;
 
@@ -352,6 +363,12 @@ namespace tl_agent {
         ActionDenialEnum do_cbo_clean(paddr_t address, bool alwaysHit);
         ActionDenialEnum do_cbo_flush(paddr_t address, bool alwaysHit);
         ActionDenialEnum do_cbo_inval(paddr_t address, bool alwaysHit);
+
+        ActionDenialEnum do_flushAll(int phase);
+        bool             wait_flushAll();
+
+        int              phaseFlushAll() const noexcept;
+        bool             is_sep_reset_inflight() const noexcept;
 
         bool is_cmo_inflight(paddr_t address) const noexcept;
 

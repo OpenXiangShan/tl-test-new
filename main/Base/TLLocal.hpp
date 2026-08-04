@@ -11,7 +11,11 @@
 enum class TLSequenceMode {
     PASSIVE         = 0,
     FUZZ_ARI,
+    FUZZ_ARI_WITH_FLUSH_ALL,
+    FUZZ_ARI_ON_FLUSH_ALL,
     FUZZ_STREAM,
+    FUZZ_FILL,
+    FUZZ_FILL_WITH_FLUSH_ALL,
     FUZZ_COUNTER,
     FUZZ_COUNTER_SYNC,
     STREAM_COPY2,
@@ -83,8 +87,36 @@ public:
     uint64_t            cmoEnd;                                 // CMO region end address
     uint64_t            cmoParallelDepth;                       // CMO parallel depth
 
+    uint64_t            flushAllPhase1NoRelease;                // L2 Flush All Phase 1, rejecting all Release*
+    uint64_t            flushAllPhase1NoAcquire;                // L2 Flush All Phase 1, rejecting all Acquire*
+    uint64_t            flushAllPhase1NoCBO;                    // L2 Flush All Phase 1, rejecting all CBO*
+    uint64_t            flushAllPhase2NoRelease;                // L2 Flush All Phase 2, rejecting all Release*
+    uint64_t            flushAllPhase2NoAcquire;                // L2 Flush All Phase 2, rejecting all Acquire*
+    uint64_t            flushAllPhase2NoCBO;                    // L2 Flush All Phase 2, rejecting all CBO*
+    uint64_t            flushAllPhase3NoRelease;                // L2 Flush All Phase 3, rejecting all Release*
+    uint64_t            flushAllPhase3NoAcquire;                // L2 Flush All Phase 3, rejecting all Acquire*
+    uint64_t            flushAllPhase3NoCBO;                    // L2 Flush All Phase 3, rejecting all CBO*
+
+    uint64_t            flushAllPhase4Enable;                   // Enable L2 Flush All Phase 4 and later
+
+    uint64_t            flushAllPhase6HoldCycle;                // Hold Cycle count of Seperate Reset in Flush All Phase 6
+
     uint64_t            fuzzARIInterval;                        // Fuzz Auto Range Iteration interval
     uint64_t            fuzzARITarget;                          // Fuzz Auto Range Iteration target
+
+    uint64_t            fuzzARIFlushAllPhase1NoRelease;         // L2 Flush All Phase 1, ARI fuzzer not spawning any Release*
+    uint64_t            fuzzARIFlushAllPhase1NoAcquire;         // L2 Flush All Phase 1, ARI fuzzer not spawning any Acquire*
+    uint64_t            fuzzARIFlushAllPhase1NoCBO;             // L2 Flush All Phase 1, ARI fuzzer not spawning any CBO*
+    uint64_t            fuzzARIFlushAllPhase2NoRelease;         // L2 Flush All Phase 2, ARI fuzzer not spawning any Release*
+    uint64_t            fuzzARIFlushAllPhase2NoAcquire;         // L2 Flush All Phase 2, ARI fuzzer not spawning any Acquire*
+    uint64_t            fuzzARIFlushAllPhase2NoCBO;             // L2 Flush All Phase 2, ARI fuzzer not spawning any CBO*
+    uint64_t            fuzzARIFlushAllPhase3NoRelease;         // L2 Flush All Phase 3, ARI fuzzer not spawning any Release*
+    uint64_t            fuzzARIFlushAllPhase3NoAcquire;         // L2 Flush All Phase 3, ARI fuzzer not spawning any Acquire*
+    uint64_t            fuzzARIFlushAllPhase3NoCBO;             // L2 Flush All Phase 3, ARI fuzzer not spawning any CBO*
+
+    uint64_t            fuzzARIFlushAllPhase;                   // 0 for no flush all, 1 for phase 1, 2 for phase 2, 3 for phase 3
+    uint64_t            fuzzARIFlushAllInterval;                // Minimal interval before the first and between two Flush All operations in fuzz ARI
+    uint64_t            fuzzARIFlushAllThreshold;               // Threshold for Flush All in fuzz ARI (based on 1000000)
 
     uint64_t            fuzzStreamInterval;                     // Fuzz Stream interval
     uint64_t            fuzzStreamStep;                         // Fuzz Stream step
