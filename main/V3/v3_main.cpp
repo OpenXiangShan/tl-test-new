@@ -59,6 +59,16 @@ inline static std::string GetFstFileName()
         .ToString();
 }
 
+// --lib-create marks VTestTop as a trace library instance.  Give it a root
+// trace callback so its declarations are initialized while the FST is opened.
+inline static void V3TraceInitLibrary(void* userp, VerilatedFst* tracep, uint32_t)
+{
+    auto* const model = static_cast<VTestTop*>(userp);
+    tracep->pushPrefix(model->name(), VerilatedTracePrefixType::SCOPE_MODULE);
+    tracep->initLib(model->name());
+    tracep->popPrefix();
+}
+
 inline static void V3Reset(uint64_t& time, VTestTop* top, uint64_t n)
 {
     for (uint64_t i = 0; i < n; i++)
@@ -301,15 +311,22 @@ int main(int argc, char **argv)
             "please re-compile PortGen components or check dynamic generation")
             .ToString());
 
-    //
+    // FST model registration is serial.  Keep the Verilator context serial too,
+    // rather than creating the host-sized default worker pool before trace setup.
+    if (wave_enable)
+    {
+        Verilated::threadContextp()->threads(1);
+        Verilated::traceEverOn(true);
+    }
+
     fst = nullptr;
     top = new VTestTop;
 
     if (wave_enable)
     {
-        Verilated::traceEverOn(true);
         fst = new VerilatedFstC;
         top->trace(fst, 99);
+        fst->spTrace()->addInitCb(&V3TraceInitLibrary, top, "", false, 0);
         fst->open(GetFstFileName().c_str());
     }
 
