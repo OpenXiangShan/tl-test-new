@@ -1,0 +1,4 @@
+begin
+  line+cond+fsm+tgl
+  +tree tltest_vcs_tb.dut 0
+end

@@ -469,6 +469,84 @@ extern "C" void TileLinkPullChannelE(
 
 
 /*
+* DPI function to export the matrix-specific user fields of Channel A
+* (TestTop matrix master port: a_bits_user_matrix / a_bits_user_AmeIndex).
+* The generic TileLinkPullChannelA does not carry them, so a guest-mode
+* testbench pulls them through this extra entry (mirrors what the static
+* PortGen does for the Verilator host mode).
+*/
+extern "C" void TileLinkMatrixPullChannelAUser(
+    const int           deviceId,
+    uint8_t*            matrix,
+    uint8_t*            ameIndex)
+{
+    if (!passive)
+    {
+        *matrix     = 0;
+        *ameIndex   = 0;
+        return;
+    }
+
+    TLSequencer::IOPort& port = passive->IO(deviceId);
+    *matrix     = port.a.matrix;
+    *ameIndex   = port.a.ameIndex;
+}
+//
+
+
+/*
+* DPI functions to connect the matrix data-return channel of the TestTop
+* matrix master port (matrixDataOut_*: a Decoupled 512-bit output beside the
+* TileLink channels). The MAgent consumes one beat per fired cycle; without
+* the ready feedback the DUT-side queue backs up and the matrix unit stalls.
+* Mirrors the portgen PushChannelD/PullChannelD handling of port->m.
+*/
+extern "C" void TileLinkMatrixPushChannelM(
+    const int           deviceId,
+    const uint8_t       valid,
+    const uint64_t      source,
+    const uint64_t      data0,
+    const uint64_t      data1,
+    const uint64_t      data2,
+    const uint64_t      data3,
+    const uint64_t      data4,
+    const uint64_t      data5,
+    const uint64_t      data6,
+    const uint64_t      data7)
+{
+    if (!passive)
+        return;
+
+    TLSequencer::IOPort& port = passive->IO(deviceId);
+    const uint64_t beats[8] = {data0, data1, data2, data3, data4, data5, data6, data7};
+    port.m.valid            = valid;
+    port.m.source           = source;
+    for (int i = 0; i < 8; i++)
+    {
+        for (int j = 0; j < 8; j++)
+        {
+            port.m.data->data[i * 8 + j] = (beats[i] >> (j * 8)) & 0xFF;
+        }
+    }
+}
+
+extern "C" void TileLinkMatrixPullChannelMReady(
+    const int           deviceId,
+    uint8_t*            ready)
+{
+    if (!passive)
+    {
+        *ready = 0;
+        return;
+    }
+
+    TLSequencer::IOPort& port = passive->IO(deviceId);
+    *ready = port.m.ready;
+}
+//
+
+
+/*
 * DPI function to connect TileLink MMIO Channel A
 */
 extern "C" void TileLinkMMIOPushChannelA(

@@ -9,3 +9,8 @@ run_*
 .vscode
 .metals
 .scala-build
+# VCS backend products
+build_vcs/
+run/vcs_run*
+# the run_* rule above must not swallow the backend script itself
+!vcs/run_vcs.sh
