@@ -471,6 +471,12 @@ matrix-trace-vcs:
 	$(MAKE) -C ./dut/XSCache test-top-matrix NUM_CORE=1 NUM_SLICE=1
 	$(MAKE) tltest-config-coupledL2-test-matrix-trace tltest-build-dpi-openLLC
 
+vcs-setup:
+	$(MAKE) -C ./dut/XSCache test-top-matrix NUM_CORE=1 NUM_SLICE=1
+	$(MAKE) tltest-config-openLLC-test-matrix-trace
+	$(MAKE) tltest-build-dpi-openLLC
+	rm -rf ./build_vcs
+
 vcs-build:
 	bash ./vcs/run_vcs.sh build
 

@@ -14,3 +14,4 @@ build_vcs/
 run/vcs_run*
 # the run_* rule above must not swallow the backend script itself
 !vcs/run_vcs.sh
+!vcs/run_vcs_remote.sh
