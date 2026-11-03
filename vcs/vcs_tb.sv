@@ -28,6 +28,7 @@ module tltest_vcs_tb;
 
   localparam int DEV_L1D    = 0;
   localparam int DEV_MATRIX = 1;
+  localparam int DEV_MMIO   = 0;   // MMIO agents are indexed by core
   localparam int MEM_PORT   = 0;
 
   // Matrix user fields of Channel A are not part of the generic DPI
@@ -161,6 +162,35 @@ module tltest_vcs_tb;
   wire          hint_valid;
   wire          hint_isKeyword;
 
+  // MMIO uncached client port (exposed by TestTopMatrix.scala). Only A/D are
+  // present; the DPI MMIO agent drives A and sinks D.
+  logic         mmio_a_valid;
+  logic  [3:0]  mmio_a_opcode;
+  logic  [2:0]  mmio_a_param;
+  logic  [1:0]  mmio_a_size;
+  logic         mmio_a_source;
+  logic  [47:0] mmio_a_address;
+  logic  [7:0]  mmio_a_mask;
+  logic  [63:0] mmio_a_data;
+  logic         mmio_a_corrupt;
+  wire          mmio_a_ready;
+  logic         mmio_d_ready;
+  wire          mmio_d_valid;
+  wire  [3:0]   mmio_d_opcode;
+  wire  [1:0]   mmio_d_param;
+  wire          mmio_d_size;
+  wire          mmio_d_source;
+  wire          mmio_d_sink;
+  wire          mmio_d_denied;
+  wire  [63:0]  mmio_d_data;
+  wire          mmio_d_corrupt;
+
+  // The MMIO bridge has no traffic until the first DPI request; its idle
+  // valid/ready can still be X out of reset. Present a clean idle value to
+  // the DPI guards; real transfers are only accepted once both are known.
+  wire          mmio_a_ready_v = $isunknown(mmio_a_ready) ? 1'b0 : mmio_a_ready;
+  wire          mmio_d_valid_v = $isunknown(mmio_d_valid) ? 1'b0 : mmio_d_valid;
+
   // =====================================================================
   // Memory backend AXI port (mem_axi_0)
   // =====================================================================
@@ -284,6 +314,27 @@ module tltest_vcs_tb;
     .matrixDataOut_0_0_bits_sourceId      (mdat_sourceId),
     .matrixDataOut_0_0_bits_data_data     (mdat_data),
     .matrixDataOut_0_0_bits_channel       (mdat_channel),
+    // MMIO uncached client (A/D only)
+    .mmio_port_0_0_a_ready                 (mmio_a_ready),
+    .mmio_port_0_0_a_valid                 (mmio_a_valid),
+    .mmio_port_0_0_a_bits_opcode           (mmio_a_opcode),
+    .mmio_port_0_0_a_bits_param            (mmio_a_param),
+    .mmio_port_0_0_a_bits_size             (mmio_a_size),
+    .mmio_port_0_0_a_bits_source           (mmio_a_source),
+    .mmio_port_0_0_a_bits_address          (mmio_a_address),
+    .mmio_port_0_0_a_bits_mask             (mmio_a_mask),
+    .mmio_port_0_0_a_bits_data             (mmio_a_data),
+    .mmio_port_0_0_a_bits_corrupt          (mmio_a_corrupt),
+    .mmio_port_0_0_d_ready                 (mmio_d_ready),
+    .mmio_port_0_0_d_valid                 (mmio_d_valid),
+    .mmio_port_0_0_d_bits_opcode           (mmio_d_opcode),
+    .mmio_port_0_0_d_bits_param            (mmio_d_param),
+    .mmio_port_0_0_d_bits_size             (mmio_d_size),
+    .mmio_port_0_0_d_bits_source           (mmio_d_source),
+    .mmio_port_0_0_d_bits_sink             (mmio_d_sink),
+    .mmio_port_0_0_d_bits_denied           (mmio_d_denied),
+    .mmio_port_0_0_d_bits_data             (mmio_d_data),
+    .mmio_port_0_0_d_bits_corrupt          (mmio_d_corrupt),
     // Memory backend AXI port
     .mem_axi_0_aw_ready                   (axi_aw_ready),
     .mem_axi_0_aw_valid                   (axi_aw_valid),
@@ -349,6 +400,9 @@ module tltest_vcs_tb;
     p2_a_source = 0; p2_a_address = 0; p2_a_ameIndex = 0; p2_a_matrix = 0;
     p2_a_mask = 0; p2_a_data = 0; p2_a_corrupt = 0;
     p2_d_ready = 0;
+    mmio_a_valid = 0; mmio_a_opcode = 0; mmio_a_param = 0; mmio_a_size = 0;
+    mmio_a_source = 0; mmio_a_address = 0; mmio_a_mask = 0; mmio_a_data = 0;
+    mmio_a_corrupt = 0; mmio_d_ready = 0;
     axi_aw_ready = 0;
     axi_w_ready = 0;
     axi_b_valid = 0; axi_b_id = 0; axi_b_resp = 0;
@@ -388,6 +442,18 @@ module tltest_vcs_tb;
   byte          pu_ameIndex;
   byte          pu_m_ready;
 
+  // MMIO pull holders (MMIOAgent A/D only). Match the DPI-C scalar types
+  // exactly so VCS copies every output back.
+  byte          mmio_pu_valid;
+  byte          mmio_pu_opcode;
+  byte          mmio_pu_param;
+  byte          mmio_pu_size;
+  byte          mmio_pu_mask;
+  longint       mmio_pu_source;
+  longint       mmio_pu_address;
+  longint       mmio_pu_data;
+  byte          mmio_pu_corrupt;
+
   // AXI scratch holders (the memory Sv* wrappers use 11-bit id fields)
   logic [10:0]  axi_pu_id;
   logic [47:0]  axi_pu_addr;
@@ -415,6 +481,14 @@ module tltest_vcs_tb;
       SvTileLinkPushChannelD(DEV_MATRIX, 1'b1, p2_d_valid, p2_d_opcode, p2_d_param,
                              p2_d_size, {{59{1'b0}}, p2_d_source},
                              {{56{1'b0}}, p2_d_sink}, p2_d_denied, p2_d_data, p2_d_corrupt);
+
+      // MMIO client: A ready and D response are DUT outputs.
+      SvTileLinkMMIOPushChannelA(DEV_MMIO, !reset, mmio_a_ready_v);
+      SvTileLinkMMIOPushChannelD(DEV_MMIO, !reset, mmio_d_valid_v, mmio_d_opcode,
+                                 mmio_d_param, {2'b0, mmio_d_size},
+                                 {{63{1'b0}}, mmio_d_source},
+                                 {{63{1'b0}}, mmio_d_sink},
+                                 mmio_d_denied, mmio_d_data, mmio_d_corrupt);
       TileLinkMatrixPushChannelM(DEV_MATRIX, mdat_valid,
                                  {{57{1'b0}}, mdat_sourceId},
                                  mdat_data[63:0],   mdat_data[127:64], mdat_data[191:128],
@@ -475,6 +549,24 @@ module tltest_vcs_tb;
       SvTileLinkPullChannelD(DEV_MATRIX, 1'b1, p2_d_ready);
       TileLinkMatrixPullChannelMReady(DEV_MATRIX, pu_m_ready);
       mdat_ready <= pu_m_ready;
+
+      // Call the imported DPI function directly: the SV wrapper's
+      // multi-output copy-back is unreliable for the byte-wide fields here.
+      TileLinkMMIOPullChannelA(DEV_MMIO, mmio_pu_valid, mmio_pu_opcode,
+                               mmio_pu_param, mmio_pu_size, mmio_pu_source,
+                               mmio_pu_address, mmio_pu_mask, mmio_pu_data,
+                               mmio_pu_corrupt);
+      mmio_a_valid   <= mmio_pu_valid[0];
+      mmio_a_opcode  <= mmio_pu_opcode[3:0];
+      mmio_a_param   <= mmio_pu_param[2:0];
+      mmio_a_size    <= mmio_pu_size[1:0];
+      mmio_a_source  <= mmio_pu_source[0];
+      mmio_a_address <= mmio_pu_address;
+      mmio_a_mask    <= mmio_pu_mask;
+      mmio_a_data    <= mmio_pu_data;
+      mmio_a_corrupt <= mmio_pu_corrupt[0];
+
+      SvTileLinkMMIOPullChannelD(DEV_MMIO, !reset, mmio_d_ready);
 
       // ---- Pull memory responses (AXI backend -> DUT inputs), like
       //      v3_main's V3::Memory::PullChannel{B,R} ----

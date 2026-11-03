@@ -9,6 +9,7 @@
 #include "../TLAgent/CAgent.h"
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/MAgent.h"
+#include "../TLAgent/MMIOAgent.h"
 
 struct TraceEntry {
     int         agentId;
@@ -23,7 +24,9 @@ private:
         WRITE,
         CREAD, // C Matrix Read, acquire write permisson
         EVICT,
-        FENCE
+        FENCE,
+        MMIO_GET,
+        MMIO_PUT
     };
 
 private:
@@ -32,10 +35,12 @@ private:
     tl_agent::CAgent**  cAgents;
     tl_agent::ULAgent** ulAgents;
     tl_agent::MAgent**  mAgents;
+    tl_agent::MMIOAgent** mmioAgents;
 
     size_t              cAgentCount;
     size_t              ulAgentCount;
     size_t              mAgentCount;
+    size_t              mmioAgentCount;
 
     uint64_t*           cycles;
 
@@ -66,6 +71,8 @@ public:
         size_t              ulAgentCount,
         tl_agent::MAgent**  mAgents,
         size_t              mAgentCount,
+        tl_agent::MMIOAgent** mmioAgents,
+        size_t              mmioAgentCount,
         uint64_t*           cycles,
         const std::string&  tracePath);
 
