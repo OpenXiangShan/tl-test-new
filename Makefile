@@ -1,4 +1,4 @@
-THREADS_BUILD 	?= 1
+THREADS_BUILD 	?= 8
 THREADS 		?= 1
 
 SUFFIX ?=
@@ -142,25 +142,28 @@ tltest-config-zhujiang-test-l2l3l2: tltest-config-zhujiang-test-dualcore
 
 tltest-config-postbuild:
 
+tltest-build-lib:
+	$(MAKE) -C $(TLTEST_BUILD_DIR) -j$(THREADS_BUILD) -s
+
 tltest-build:
 	$(MAKE) -C $(TLTEST_BUILD_DIR) -j$(THREADS_BUILD) -s
 	$(MAKE) -C $(TLTEST_BUILD_DIR) portgen -j$(THREADS_BUILD) -s --always-make
 
 tltest-build-all-coupledL2: tltest-prepare-all-coupledL2 tltest-build
 
-tltest-build-dpi-coupledL2: tltest-prepare-dpi-coupledL2 tltest-build
+tltest-build-dpi-coupledL2: tltest-prepare-dpi-coupledL2 tltest-build-lib
 
 tltest-build-v3-coupledL2: tltest-prepare-v3-coupledL2 tltest-build
 
 tltest-build-all-openLLC: tltest-prepare-all-openLLC tltest-build
 
-tltest-build-dpi-openLLC: tltest-prepare-dpi-openLLC tltest-build
+tltest-build-dpi-openLLC: tltest-prepare-dpi-openLLC tltest-build-lib
 
 tltest-build-v3-openLLC: tltest-prepare-v3-openLLC tltest-build
 
 tltest-build-all-zhujiang: tltest-prepare-all-zhujiang tltest-build
 
-tltest-build-dpi-zhujiang: tltest-prepare-dpi-zhujiang tltest-build
+tltest-build-dpi-zhujiang: tltest-prepare-dpi-zhujiang tltest-build-lib
 
 tltest-build-v3-zhujiang: tltest-prepare-v3-zhujiang tltest-build
 

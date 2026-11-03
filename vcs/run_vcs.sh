@@ -152,7 +152,7 @@ run_simv() {
   local ini_file="${TLTEST_VCS_INI:-$project_root/main/build/tltest.ini}"
 
   require_dpi_lib
-  rm -rf "$this_run_root"
+  rm -rf "$this_run_root" 2>/dev/null || true
   mkdir -p "$this_run_root"
   # TileLinkSystemInitialize() reads tltest.ini from the working directory;
   # the trace path inside may be relative to the repo root, so rewrite it to
@@ -185,8 +185,7 @@ run_simv() {
   fi
 
   echo "VCS run in $this_run_root (log: $log_file)"
-  (cd "$this_run_root" && "$simv" "${run_args[@]}") > "$log_file" 2>&1 || {
-    tail -n 80 "$log_file" >&2
+  (cd "$this_run_root" && "$simv" "${run_args[@]}") 2>&1 | tee "$log_file" || {
     echo "error: VCS exited unsuccessfully; see $log_file" >&2
     exit 1
   }
@@ -194,12 +193,10 @@ run_simv() {
   # This VCS version reports $fatal with a zero process exit status, so the
   # simulator log is the authoritative result.
   if grep -q 'Fatal:' "$log_file"; then
-    tail -n 80 "$log_file" >&2
     echo "error: VCS test failed; see $log_file" >&2
     exit 1
   fi
   if ! grep -q 'FINISHED' "$log_file"; then
-    tail -n 80 "$log_file" >&2
     echo "error: replay did not reach FINISHED; see $log_file" >&2
     exit 1
   fi
