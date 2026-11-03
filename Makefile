@@ -459,3 +459,26 @@ clean: coupledL2-verilate-clean coupledL2-verilog-clean openLLC-verilate-clean o
 	rm -rf ./verilated ./verilated_*
 	rm -rf ./run ./run_*
 	mkdir -p $(TLTEST_BUILD_DIR)
+
+
+# Requires VCS locally (VCS_HOME) and a license (LM_LICENSE_FILE); see vcs/run_vcs.sh.
+# The matrix-trace TestTop (openLLC build dir) with the port counts of
+# configs/coupledL2-test-matrix-trace.tltest.ini (core=1 tl_c=1 tl_ul=0 tl_m=1).
+matrix-trace-vcs:
+	$(MAKE) -C ./dut/XSCache test-top-matrix NUM_CORE=1 NUM_SLICE=1
+	$(MAKE) tltest-config-coupledL2-test-matrix-trace tltest-build-dpi-openLLC
+
+vcs-build:
+	bash ./vcs/run_vcs.sh build
+
+vcs-run:
+	bash ./vcs/run_vcs.sh run
+
+vcs-coverage:
+	bash ./vcs/run_vcs.sh coverage $(TRACE)
+
+vcs-coverage-fuzz:
+	bash ./vcs/run_vcs.sh coverage-fuzz $(NAME) $(INI)
+
+vcs-coverage-merge:
+	bash ./vcs/run_vcs.sh coverage-merge

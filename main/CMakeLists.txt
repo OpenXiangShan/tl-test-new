@@ -99,7 +99,7 @@ if (BUILD_DPI)
 
     ADD_LIBRARY(tltest_dpi SHARED Base Sequencer Memory TLAgent Fuzzer Events System CHIron Plugins DPI)
     TARGET_LINK_LIBRARIES(tltest_dpi PUBLIC
-        Base DPI Sequencer Memory TLAgent Fuzzer Events System Plugins sqlite3)
+        Base DPI Sequencer Memory TLAgent Fuzzer Events System CHIron Plugins sqlite3)
 endif ()
 
 #
