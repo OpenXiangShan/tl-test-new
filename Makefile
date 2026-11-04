@@ -2,6 +2,8 @@ THREADS_BUILD 	?= 8
 THREADS 		?= 1
 
 SUFFIX ?=
+SUITE ?= vcs/suites/full.json
+SUITE_JOBS ?= 8
 
 define tltest_path_with_suffix
 $(if $(strip $(SUFFIX)),$1_$(SUFFIX),$1)
@@ -496,6 +498,11 @@ vcs-coverage-case: export INI := $(INI)
 vcs-coverage-case: export TRACE_FILE := $(TRACE_FILE)
 vcs-coverage-case:
 	bash ./vcs/run_vcs.sh coverage-case "$$NAME" "$$INI" "$$TRACE_FILE"
+
+vcs-coverage-suite: export SUITE := $(SUITE)
+vcs-coverage-suite: export SUITE_JOBS := $(SUITE_JOBS)
+vcs-coverage-suite:
+	python3 ./vcs/run_coverage_suite.py "$$SUITE" --jobs "$$SUITE_JOBS"
 
 vcs-coverage-prepare:
 	bash ./vcs/run_vcs.sh coverage-prepare

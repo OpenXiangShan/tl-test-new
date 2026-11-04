@@ -69,9 +69,24 @@ vcs/run_vcs_remote.sh vcs-coverage TRACE=directed3-hit-grant-backpressure
 后续运行去掉 `TLTEST_VCS_REBUILD=1` 即可复用。
 
 复现覆盖率时，应同时指定 trace 和该次测试的 INI。`TRACE` 不会自动加载背压配置。
-以下两条示例启用背压：
+套件中启用背压的两项如下：
 
 | trace | INI | period / low / start（拍） |
 |---|---|---|
 | `directed3-hit-grant-backpressure` | `configs/directed3-d-backpressure.tltest.ini` | 256 / 192 / 0 |
 | `directed3-grant-probe-backpressure` | `configs/directed3-d-backpressure-probe.tltest.ini` | 257 / 193 / 23 |
+
+完整 trace / INI 对应关系见 [套件清单](suites/full.json)。每次执行保存输入 SHA256 和实际背压参数，详见 [套件说明](COVERAGE_SUITES.md)。
+
+## 批量覆盖率套件
+
+清单按运行名列出每项 trace 与 INI，一条命令执行并汇总：
+
+```bash
+python3 vcs/run_coverage_suite.py vcs/suites/full.json
+```
+
+脚本默认最多 8 项并发，可用 `--jobs 4`（或 `-j 4`）调整，`-j 1` 串行运行。
+脚本自动走 eda01；输出各项及合并的 Line/Condition/Toggle，显式记录背压配置，并隔离失败 VDB。
+支持同一 trace 搭配不同 INI。合并范围仅为本次套件的通过项。
+清单格式、短测试与输出结构见 [COVERAGE_SUITES.md](COVERAGE_SUITES.md)。

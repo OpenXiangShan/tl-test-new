@@ -37,3 +37,20 @@ vcs/run_vcs_remote.sh vcs-coverage-merge
 - `TLTEST_*` 变量自动转发；退出码原样返回
 - 不要在本地编译，产物 ABI 与 eda01 不兼容
 - 换 trace 见 [README.md](README.md)（它的「环境」一节只在 eda01 本机需要）
+
+## 批量执行 trace / INI 清单
+
+```bash
+python3 vcs/run_coverage_suite.py vcs/suites/full.json
+# 或者通过远端 make 入口启动整个套件：
+vcs/run_vcs_remote.sh vcs-coverage-suite SUITE=vcs/suites/full.json
+```
+
+每项显式选择自己的 trace 和 INI；日志、背压参数、失败原因和覆盖率汇总保存在独立的
+`build_vcs/suites/` 目录。详见 [测试套件说明](COVERAGE_SUITES.md)。
+
+套件默认 8 路并行。Python 入口使用 `--jobs N` / `-j N`；远端 make 入口使用：
+
+```bash
+vcs/run_vcs_remote.sh vcs-coverage-suite SUITE_JOBS=4
+```

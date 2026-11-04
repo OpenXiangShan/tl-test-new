@@ -1,0 +1,292 @@
+{
+  "version": 1,
+  "name": "full",
+  "description": "L2 coverage regression: 43 distinct trace/configuration jobs and 4 bounded fuzz jobs. Two legacy toggle scenarios use documented restored inputs.",
+  "defaults": {
+    "timeout_seconds": 600,
+    "run_args": [
+      "+vcd_start=0",
+      "+vcd_stop=0"
+    ]
+  },
+  "jobs": [
+    {
+      "name": "cache-mmio-contention",
+      "mode": "trace",
+      "trace": "traces/directed2-cache-mmio-contention.ops",
+      "ini": "configs/directed3-mmio-base.tltest.ini"
+    },
+    {
+      "name": "cdir-pressure",
+      "mode": "trace",
+      "trace": "traces/directed-cdir-pressure.ops",
+      "ini": "configs/directed-coverage-delayed.tltest.ini"
+    },
+    {
+      "name": "cdir-tag-sweep",
+      "mode": "trace",
+      "trace": "traces/directed-cdir-tag-sweep.ops",
+      "ini": "configs/directed-coverage-address.tltest.ini"
+    },
+    {
+      "name": "clean-snoop",
+      "mode": "trace",
+      "trace": "traces/directed2-clean-snoop.ops",
+      "ini": "configs/directed3-base.tltest.ini"
+    },
+    {
+      "name": "clean-snoop-extra",
+      "mode": "trace",
+      "trace": "traces/directed2-clean-snoop-extra.ops",
+      "ini": "configs/directed2-seed1001.tltest.ini"
+    },
+    {
+      "name": "clean-snoop-lowfill",
+      "mode": "trace",
+      "trace": "traces/directed2-clean-snoop-lowfill.ops",
+      "ini": "configs/directed2-seed42.tltest.ini"
+    },
+    {
+      "name": "dirty-snoop",
+      "mode": "trace",
+      "trace": "traces/directed2-dirty-snoop.ops",
+      "ini": "configs/directed3-base.tltest.ini"
+    },
+    {
+      "name": "grant-probe-backpressure",
+      "mode": "trace",
+      "trace": "traces/directed3-grant-probe-backpressure.ops",
+      "ini": "configs/directed3-d-backpressure-probe.tltest.ini"
+    },
+    {
+      "name": "grant-probe-races",
+      "mode": "trace",
+      "trace": "traces/directed3-grant-probe-races.ops",
+      "ini": "configs/directed3-base.tltest.ini"
+    },
+    {
+      "name": "high-concurrency-nofence-1000",
+      "mode": "trace",
+      "ini": "configs/coverage/cache-trace.tltest.ini",
+      "trace": "traces/high-concurrency-nofence-1000.ops"
+    },
+    {
+      "name": "high-mshr-put",
+      "mode": "trace",
+      "trace": "traces/directed2-high-mshr-put.ops",
+      "ini": "configs/directed3-base.tltest.ini"
+    },
+    {
+      "name": "high-probe-arb",
+      "mode": "trace",
+      "trace": "traces/directed2-high-probe-arb.ops",
+      "ini": "configs/directed3-base.tltest.ini"
+    },
+    {
+      "name": "high-refill-data",
+      "mode": "trace",
+      "trace": "traces/directed2-high-refill-data.ops",
+      "ini": "configs/directed3-base.tltest.ini"
+    },
+    {
+      "name": "hit-grant-backpressure",
+      "mode": "trace",
+      "trace": "traces/directed3-hit-grant-backpressure.ops",
+      "ini": "configs/directed3-d-backpressure.tltest.ini"
+    },
+    {
+      "name": "hit-grant-burst",
+      "mode": "trace",
+      "trace": "traces/directed3-hit-grant-burst.ops",
+      "ini": "configs/directed3-base.tltest.ini"
+    },
+    {
+      "name": "hit-grant-observe",
+      "mode": "trace",
+      "trace": "traces/directed3-hit-grant-observe.ops",
+      "ini": "configs/directed3-base.tltest.ini"
+    },
+    {
+      "name": "matrix-trace-64sets",
+      "mode": "trace",
+      "ini": "configs/coverage/cache-trace.tltest.ini",
+      "trace": "traces/matrix-trace-64sets.ops"
+    },
+    {
+      "name": "mmio-address-read",
+      "mode": "trace",
+      "trace": "traces/directed-mmio-address-read.ops",
+      "ini": "configs/directed-coverage-mmio.tltest.ini"
+    },
+    {
+      "name": "mmio-address-write",
+      "mode": "trace",
+      "trace": "traces/directed-mmio-address-write.ops",
+      "ini": "configs/directed-coverage-mmio.tltest.ini"
+    },
+    {
+      "name": "mmio-mixed-contention",
+      "mode": "trace",
+      "trace": "traces/directed3-mmio-mixed-contention.ops",
+      "ini": "configs/directed3-mmio-base.tltest.ini"
+    },
+    {
+      "name": "mmio-mixed-fast",
+      "mode": "trace",
+      "trace": "traces/directed3-mmio-mixed-contention.ops",
+      "ini": "configs/directed3-mmio-fast.tltest.ini"
+    },
+    {
+      "name": "mmio-read",
+      "mode": "trace",
+      "ini": "configs/tltest-mmio.tltest.ini",
+      "trace": "traces/mmio-read.ops"
+    },
+    {
+      "name": "mmio-read-burst",
+      "mode": "trace",
+      "trace": "traces/directed3-mmio-read-burst.ops",
+      "ini": "configs/directed3-mmio-read-slow.tltest.ini"
+    },
+    {
+      "name": "mmio-read-fast",
+      "mode": "trace",
+      "trace": "traces/directed3-mmio-read-burst.ops",
+      "ini": "configs/directed3-mmio-fast.tltest.ini"
+    },
+    {
+      "name": "mmio-write",
+      "mode": "trace",
+      "ini": "configs/tltest-mmio.tltest.ini",
+      "trace": "traces/mmio-write.ops"
+    },
+    {
+      "name": "mmio-write-burst",
+      "mode": "trace",
+      "trace": "traces/directed3-mmio-write-burst.ops",
+      "ini": "configs/directed3-mmio-fast.tltest.ini"
+    },
+    {
+      "name": "mmio-write-slow",
+      "mode": "trace",
+      "trace": "traces/directed3-mmio-write-burst.ops",
+      "ini": "configs/directed3-mmio-write-slow.tltest.ini"
+    },
+    {
+      "name": "mshr-contention",
+      "mode": "trace",
+      "trace": "traces/directed-mshr-contention.ops",
+      "ini": "configs/directed-coverage-delayed.tltest.ini"
+    },
+    {
+      "name": "nested-release",
+      "mode": "trace",
+      "trace": "traces/directed2-nested-release.ops",
+      "ini": "configs/directed2-write-slow.tltest.ini"
+    },
+    {
+      "name": "nested-window-fast",
+      "mode": "trace",
+      "trace": "traces/directed2-nested-window-sweep.ops",
+      "ini": "configs/directed2-write-slow.tltest.ini"
+    },
+    {
+      "name": "nested-window-sweep",
+      "mode": "trace",
+      "trace": "traces/directed2-nested-window-sweep.ops",
+      "ini": "configs/directed3-base.tltest.ini"
+    },
+    {
+      "name": "newdata-fast",
+      "mode": "trace",
+      "trace": "traces/directed2-newdata-release.ops",
+      "ini": "configs/directed2-fast.tltest.ini"
+    },
+    {
+      "name": "newdata-release",
+      "mode": "trace",
+      "trace": "traces/directed2-newdata-release.ops",
+      "ini": "configs/directed2-write-slow.tltest.ini"
+    },
+    {
+      "name": "probe-release-races",
+      "mode": "trace",
+      "trace": "traces/directed-probe-release-races.ops",
+      "ini": "configs/directed-coverage-address.tltest.ini"
+    },
+    {
+      "name": "random-chaos-1000",
+      "mode": "trace",
+      "ini": "configs/coverage/cache-trace.tltest.ini",
+      "trace": "traces/random-chaos-1000.ops"
+    },
+    {
+      "name": "random-seed-1000",
+      "mode": "fuzz",
+      "ini": "configs/coverage/random-seed-1000.tltest.ini"
+    },
+    {
+      "name": "random-seed-1000-large-memory",
+      "mode": "fuzz",
+      "ini": "configs/coverage/random-seed-1000-large-memory.tltest.ini"
+    },
+    {
+      "name": "random-seed-1001-no-cmo",
+      "mode": "fuzz",
+      "ini": "configs/coverage/random-seed-1001-no-cmo.tltest.ini"
+    },
+    {
+      "name": "random-seed-1002",
+      "mode": "fuzz",
+      "ini": "configs/coverage/random-seed-1002.tltest.ini"
+    },
+    {
+      "name": "replacement-mix",
+      "mode": "trace",
+      "trace": "traces/directed-replacement-mix.ops",
+      "ini": "configs/directed-coverage-delayed.tltest.ini"
+    },
+    {
+      "name": "reserved-mshr",
+      "mode": "trace",
+      "trace": "traces/directed-reserved-mshr.ops",
+      "ini": "configs/directed-coverage-delayed.tltest.ini"
+    },
+    {
+      "name": "same-set-overlap",
+      "mode": "trace",
+      "trace": "traces/directed-same-set-overlap.ops",
+      "ini": "configs/directed-coverage-fast.tltest.ini"
+    },
+    {
+      "name": "snoop-mshr-spread",
+      "mode": "trace",
+      "trace": "traces/directed-snoop-mshr-spread.ops",
+      "ini": "configs/directed-coverage-address.tltest.ini"
+    },
+    {
+      "name": "st16-mr16-ev-mw-repeat8",
+      "mode": "trace",
+      "ini": "configs/coverage/cache-trace.tltest.ini",
+      "trace": "traces/st16_mr16_ev_mw_repeat8.trace"
+    },
+    {
+      "name": "tag-data-sweep",
+      "mode": "trace",
+      "trace": "traces/directed-tag-data-sweep.ops",
+      "ini": "configs/directed-coverage-address.tltest.ini"
+    },
+    {
+      "name": "toggle-address-32bit",
+      "mode": "trace",
+      "ini": "configs/coverage/toggle-address-32bit.tltest.ini",
+      "trace": "traces/coverage/toggle-address-32bit.ops"
+    },
+    {
+      "name": "toggle-data-writes",
+      "mode": "trace",
+      "ini": "configs/coverage/cache-trace.tltest.ini",
+      "trace": "traces/coverage/toggle-data-writes.ops"
+    }
+  ]
+}
