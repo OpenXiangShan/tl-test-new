@@ -486,8 +486,19 @@ vcs-run:
 vcs-coverage:
 	bash ./vcs/run_vcs.sh coverage $(TRACE)
 
+vcs-coverage-fuzz: export NAME := $(NAME)
+vcs-coverage-fuzz: export INI := $(INI)
 vcs-coverage-fuzz:
-	bash ./vcs/run_vcs.sh coverage-fuzz $(NAME) $(INI)
+	bash ./vcs/run_vcs.sh coverage-fuzz "$$NAME" "$$INI"
+
+vcs-coverage-case: export NAME := $(NAME)
+vcs-coverage-case: export INI := $(INI)
+vcs-coverage-case: export TRACE_FILE := $(TRACE_FILE)
+vcs-coverage-case:
+	bash ./vcs/run_vcs.sh coverage-case "$$NAME" "$$INI" "$$TRACE_FILE"
+
+vcs-coverage-prepare:
+	bash ./vcs/run_vcs.sh coverage-prepare
 
 vcs-coverage-merge:
 	bash ./vcs/run_vcs.sh coverage-merge
