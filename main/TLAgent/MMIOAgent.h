@@ -66,6 +66,7 @@ namespace tl_agent {
         void                            update(const TLLocalContext* ctx, uint64_t source, std::shared_ptr<InflightMMIO> mmio) noexcept;
         std::shared_ptr<InflightMMIO>   query(const TLLocalContext* ctx, uint64_t source) const;
         bool                            contains(const TLLocalContext* ctx, uint64_t source) const noexcept;
+        bool                            empty() const noexcept { return inflight.empty(); }
         void                            erase(const TLLocalContext* ctx, uint64_t source);
         void                            clear() noexcept;
     };
@@ -79,7 +80,7 @@ namespace tl_agent {
         MMIOLocalStatus* localStatus;
 
     public:
-        MMIOAgent(TLLocalConfig* cfg, MMIOGlobalStatus* globalStatus, int id, unsigned int seed, uint64_t* cycles) noexcept;
+        MMIOAgent(TLLocalConfig* cfg, MMIOGlobalStatus* globalStatus, int id, unsigned int seed, uint64_t* cycles, unsigned limitSource = NR_SOURCEID_MMIO) noexcept;
         virtual ~MMIOAgent() noexcept;
 
         uint64_t    cycle() const noexcept override;
@@ -100,6 +101,9 @@ namespace tl_agent {
     
         void timeout_check() override;
         bool mainSys() const noexcept override;
+
+        // True when no MMIO A request or D response is still outstanding.
+        bool idle() const noexcept { return !pendingA.is_pending() && localStatus->empty(); }
     };
 }
 

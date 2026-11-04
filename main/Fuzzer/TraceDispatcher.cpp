@@ -17,6 +17,14 @@ inline shared_tldata_t<DATASIZE> BuildTraceWriteData(uint64_t addr)
         data->data[i] = static_cast<uint8_t>((addr >> (i % 8)) + i);
     return data;
 }
+
+inline shared_tldata_t<DATASIZE_MMIO> BuildTraceMMIOData(uint64_t addr)
+{
+    auto data = make_shared_tldata<DATASIZE_MMIO>();
+    for (int i = 0; i < DATASIZE_MMIO; i++)
+        data->data[i] = static_cast<uint8_t>((addr >> (i % 8)) + 0x5a + i);
+    return data;
+}
 }
 
 TraceDispatcher::TraceDispatcher(
@@ -27,15 +35,19 @@ TraceDispatcher::TraceDispatcher(
     size_t              ulAgentCount,
     tl_agent::MAgent**  mAgents,
     size_t              mAgentCount,
+    tl_agent::MMIOAgent** mmioAgents,
+    size_t              mmioAgentCount,
     uint64_t*           cycles,
     const std::string&  tracePath)
     : cfg               (cfg)
     , cAgents           (cAgents)
     , ulAgents          (ulAgents)
     , mAgents           (mAgents)
+    , mmioAgents        (mmioAgents)
     , cAgentCount       (cAgentCount)
     , ulAgentCount      (ulAgentCount)
     , mAgentCount       (mAgentCount)
+    , mmioAgentCount    (mmioAgentCount)
     , cycles            (cycles)
     , numReadSent       (0)
     , numWriteSent      (0)
@@ -79,6 +91,10 @@ TraceDispatcher::TraceDispatcher(
             mappedOp = TraceOp::EVICT;
         else if (op == "FE")
             mappedOp = TraceOp::FENCE;
+        else if (op == "MG" || op == "MGR")
+            mappedOp = TraceOp::MMIO_GET;
+        else if (op == "MP" || op == "MPF")
+            mappedOp = TraceOp::MMIO_PUT;
         else
             continue;
 
@@ -94,6 +110,12 @@ TraceDispatcher::TraceDispatcher(
 
 bool TraceDispatcher::is_fence_drained() const noexcept
 {
+    for (size_t i = 0; i < mmioAgentCount; i++)
+    {
+        if (!mmioAgents[i]->idle())
+            return false;
+    }
+
     return numReadSent == numReadReceived
         && numWriteSent == numWriteReceived
         && numEvictSent == numEvictReceived;
@@ -121,6 +143,26 @@ tl_agent::ActionDenialEnum TraceDispatcher::send_single_request(const TraceEntry
     }
 
     const size_t agentId = static_cast<size_t>(entry.agentId);
+
+    // MMIO ops use their own core-indexed agent namespace.
+    if (entry.op == TraceOp::MMIO_GET)
+    {
+        if (agentId >= mmioAgentCount)
+            return tl_agent::ActionDenial::MISS;
+        return mmioAgents[agentId]->do_get(entry.addr & ~uint64_t(0x7), 3, 0xff)
+             ? tl_agent::ActionDenial::ACCEPTED
+             : tl_agent::ActionDenial::CHANNEL_RESOURCE;
+    }
+
+    if (entry.op == TraceOp::MMIO_PUT)
+    {
+        if (agentId >= mmioAgentCount)
+            return tl_agent::ActionDenial::MISS;
+        return mmioAgents[agentId]->do_putfulldata(entry.addr & ~uint64_t(0x7),
+                                                   BuildTraceMMIOData(entry.addr))
+             ? tl_agent::ActionDenial::ACCEPTED
+             : tl_agent::ActionDenial::CHANNEL_RESOURCE;
+    }
 
     if (agentId < ulBase)
     {

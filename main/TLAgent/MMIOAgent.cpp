@@ -221,8 +221,8 @@ namespace tl_agent {
 // Implementation of: class MMIOAgent
 namespace tl_agent {
 
-    MMIOAgent::MMIOAgent(TLLocalConfig* cfg, MMIOGlobalStatus* globalStatus, int sysId, unsigned int seed, uint64_t* cycles) noexcept
-        : BaseAgent (cfg, nullptr, sysId, sysId, seed, NR_SOURCEID_MMIO)
+    MMIOAgent::MMIOAgent(TLLocalConfig* cfg, MMIOGlobalStatus* globalStatus, int sysId, unsigned int seed, uint64_t* cycles, unsigned limitSource) noexcept
+        : BaseAgent (cfg, nullptr, sysId, sysId, seed, limitSource)
         , pendingA  ()
         , pendingD  ()
     {
