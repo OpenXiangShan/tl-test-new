@@ -466,7 +466,7 @@ clean: coupledL2-verilate-clean coupledL2-verilog-clean openLLC-verilate-clean o
 	mkdir -p $(TLTEST_BUILD_DIR)
 
 
-# Requires VCS locally (VCS_HOME) and a license (LM_LICENSE_FILE); see vcs/run_vcs.sh.
+# Requires VCS locally (VCS_HOME) and a license (LM_LICENSE_FILE); see vcs/scripts/run_vcs.sh.
 # The matrix-trace TestTop (openLLC build dir) with the port counts of
 # configs/coupledL2-test-matrix-trace.tltest.ini (core=1 tl_c=1 tl_ul=0 tl_m=1).
 matrix-trace-vcs:
@@ -480,32 +480,32 @@ vcs-setup:
 	rm -rf ./build_vcs
 
 vcs-build:
-	bash ./vcs/run_vcs.sh build
+	bash ./vcs/scripts/run_vcs.sh build
 
 vcs-run:
-	bash ./vcs/run_vcs.sh run
+	bash ./vcs/scripts/run_vcs.sh run
 
 vcs-coverage:
-	bash ./vcs/run_vcs.sh coverage $(TRACE)
+	bash ./vcs/scripts/run_vcs.sh coverage $(TRACE)
 
 vcs-coverage-fuzz: export NAME := $(NAME)
 vcs-coverage-fuzz: export INI := $(INI)
 vcs-coverage-fuzz:
-	bash ./vcs/run_vcs.sh coverage-fuzz "$$NAME" "$$INI"
+	bash ./vcs/scripts/run_vcs.sh coverage-fuzz "$$NAME" "$$INI"
 
 vcs-coverage-case: export NAME := $(NAME)
 vcs-coverage-case: export INI := $(INI)
 vcs-coverage-case: export TRACE_FILE := $(TRACE_FILE)
 vcs-coverage-case:
-	bash ./vcs/run_vcs.sh coverage-case "$$NAME" "$$INI" "$$TRACE_FILE"
+	bash ./vcs/scripts/run_vcs.sh coverage-case "$$NAME" "$$INI" "$$TRACE_FILE"
 
 vcs-coverage-suite: export SUITE := $(SUITE)
 vcs-coverage-suite: export SUITE_JOBS := $(SUITE_JOBS)
 vcs-coverage-suite:
-	python3 ./vcs/run_coverage_suite.py "$$SUITE" --jobs "$$SUITE_JOBS"
+	python3 ./vcs/scripts/run_coverage_suite.py "$$SUITE" --jobs "$$SUITE_JOBS"
 
 vcs-coverage-prepare:
-	bash ./vcs/run_vcs.sh coverage-prepare
+	bash ./vcs/scripts/run_vcs.sh coverage-prepare
 
 vcs-coverage-merge:
-	bash ./vcs/run_vcs.sh coverage-merge
+	bash ./vcs/scripts/run_vcs.sh coverage-merge

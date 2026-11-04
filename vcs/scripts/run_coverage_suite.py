@@ -17,7 +17,7 @@ import time
 import uuid
 import xml.etree.ElementTree as ET
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 IDENTIFIER = re.compile(r'[A-Za-z0-9][A-Za-z0-9_.-]*\Z')
 FAILURE = re.compile(r'Fatal:|Assertion failed|assertion failure|Data mismatch|tl-test-new-FATAL|\bFAILED\b', re.I)
 METRICS = ('Line', 'Cond', 'Toggle')
@@ -157,7 +157,7 @@ def run_command(command, env, log_path, timeout):
 
 
 def command_for(target, local, **variables):
-    prefix = ['make', '-C', str(PROJECT_ROOT)] if local else [str(PROJECT_ROOT / 'vcs/run_vcs_remote.sh')]
+    prefix = ['make', '-C', str(PROJECT_ROOT)] if local else [str(PROJECT_ROOT / 'vcs/scripts/run_vcs_remote.sh')]
     return prefix + [target] + [key + '=' + str(value) for key, value in variables.items()]
 
 
@@ -213,7 +213,7 @@ def build_fingerprints(env):
     if not cache.is_absolute():
         cache = PROJECT_ROOT / cache
     paths = [cache / 'coverage/simv', PROJECT_ROOT / 'main/build/libtltest_dpi.so',
-             PROJECT_ROOT / 'vcs/vcs_tb.sv', PROJECT_ROOT / 'vcs/coverage.hier']
+             PROJECT_ROOT / 'vcs/tb/vcs_tb.sv', PROJECT_ROOT / 'vcs/config/coverage.hier']
     return {str(path): sha256(path) for path in paths if path.is_file()}
 
 

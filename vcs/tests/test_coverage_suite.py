@@ -15,7 +15,7 @@ import unittest
 
 
 VCS_DIR = Path(__file__).resolve().parents[1]
-RUNNER = VCS_DIR / "run_coverage_suite.py"
+RUNNER = VCS_DIR / "scripts/run_coverage_suite.py"
 
 
 FAKE_LAUNCHER = r'''#!/usr/bin/env python3
@@ -28,7 +28,7 @@ import re
 import sys
 import time
 
-root = Path(__file__).resolve().parents[1]
+root = Path(__file__).resolve().parents[2]
 args = sys.argv[1:]
 values = dict(a.split("=", 1) for a in args[1:] if "=" in a)
 coverage = Path(os.environ["TLTEST_VCS_COVERAGE_DIR"])
@@ -125,13 +125,13 @@ class CoverageSuiteTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="tltest-suite-test-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        (self.root / "vcs").mkdir()
+        (self.root / "vcs/scripts").mkdir(parents=True)
         (self.root / "traces").mkdir()
         (self.root / "configs").mkdir()
         self.assertTrue(RUNNER.is_file(), "suite runner is missing")
-        for source in VCS_DIR.glob("*.py"):
-            shutil.copy2(source, self.root / "vcs" / source.name)
-        fake = self.root / "vcs/run_vcs_remote.sh"
+        for source in (VCS_DIR / "scripts").glob("*.py"):
+            shutil.copy2(source, self.root / "vcs/scripts" / source.name)
+        fake = self.root / "vcs/scripts/run_vcs_remote.sh"
         fake.write_text(FAKE_LAUNCHER)
         fake.chmod(0o755)
         self.trace = self.root / "traces/shared.ops"
@@ -161,7 +161,7 @@ class CoverageSuiteTests(unittest.TestCase):
         data = raw if raw is not None else dict(
             version=1, name="test-suite", defaults=defaults or {}, jobs=jobs)
         suite.write_text(json.dumps(data))
-        cmd = [sys.executable, str(self.root / "vcs/run_coverage_suite.py")]
+        cmd = [sys.executable, str(self.root / "vcs/scripts/run_coverage_suite.py")]
         if not default_suite:
             cmd.append(str(suite))
         cmd += ["--output", str(self.output)]

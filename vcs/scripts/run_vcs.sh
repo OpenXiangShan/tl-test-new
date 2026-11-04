@@ -4,24 +4,24 @@
 # NUM_CORE=1 NUM_SLICE=1' (matches configs/coupledL2-test-matrix-trace).
 #
 # Usage:
-#   vcs/run_vcs.sh build                  compile simv (no coverage instrumentation)
-#   vcs/run_vcs.sh run                    compile if needed, replay the trace in
+#   vcs/scripts/run_vcs.sh build                  compile simv (no coverage instrumentation)
+#   vcs/scripts/run_vcs.sh run                    compile if needed, replay the trace in
 #                                         main/build/tltest.ini (the make-generated one)
-#   vcs/run_vcs.sh coverage-prepare       prepare shared coverage compiler cache only
-#   vcs/run_vcs.sh coverage [trace]       coverage run of one trace -> own vdb + report
+#   vcs/scripts/run_vcs.sh coverage-prepare       prepare shared coverage compiler cache only
+#   vcs/scripts/run_vcs.sh coverage [trace]       coverage run of one trace -> own vdb + report
 #                                         trace: a file under traces/ (extension optional,
 #                                         .ops/.trace/.txt tried in turn); TLTEST_VCS_TRACE=<path>
 #                                         overrides. Without an argument the trace configured
 #                                         in the ini is replayed and labeled matrix_trace.
 #                                         simv is compiled once and reused;
 #                                         TLTEST_VCS_REBUILD=1 forces recompilation.
-#   vcs/run_vcs.sh coverage-fuzz <name> <ini>
+#   vcs/scripts/run_vcs.sh coverage-fuzz <name> <ini>
 #                                         random-stimulus coverage run (no trace); the ini
 #                                         (e.g. a FUZZ_ARI config) drives everything, name
 #                                         labels the vdb/report
-#   vcs/run_vcs.sh coverage-case <name> <ini> <trace-path>
+#   vcs/scripts/run_vcs.sh coverage-case <name> <ini> <trace-path>
 #                                         named trace run with an explicit INI
-#   vcs/run_vcs.sh coverage-merge         urg-merge every vdb in the coverage output directory
+#   vcs/scripts/run_vcs.sh coverage-merge         urg-merge every vdb in the coverage output directory
 #
 # TLTEST_VCS_COVERAGE_DIR overrides the VDB/report/log output directory without
 # changing the compile cache at TLTEST_VCS_BUILD_DIR/coverage.
@@ -39,7 +39,7 @@
 # binaries; both are worked around by invoking them through bash with -full64.
 set -euo pipefail
 
-project_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+project_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 rtl_dir_default="$project_root/dut/XSCache/build/openllc"
 rtl_dir=${TLTEST_RTL_DIR:-$rtl_dir_default}
 # generated C++ companions (chisel_db.cpp / perfCCT.cpp) live one level above
@@ -51,8 +51,8 @@ coverage_output_dir=${TLTEST_VCS_COVERAGE_DIR:-$vcs_build_root/coverage}
 # Output overrides are relative to the project root, even when simv changes cwd.
 [[ "$run_root" == /* ]] || run_root="$project_root/$run_root"
 [[ "$coverage_output_dir" == /* ]] || coverage_output_dir="$project_root/$coverage_output_dir"
-tb_file="$project_root/vcs/vcs_tb.sv"
-coverage_hier="$project_root/vcs/coverage.hier"
+tb_file="$project_root/vcs/tb/vcs_tb.sv"
+coverage_hier="$project_root/vcs/config/coverage.hier"
 dpi_lib="$project_root/main/build/libtltest_dpi.so"
 mode=${1:-run}
 
@@ -171,7 +171,7 @@ ensure_coverage_cache() (
   exec 9>"$build_dir/.compile.lock"
   flock -x 9
   if [[ ! -f "$build_dir/simv" || ! -d "$build_dir/template.vdb" || "${TLTEST_VCS_REBUILD:-0}" == 1 ]]; then
-    bash "$project_root/vcs/prepare_coverage_rtl.sh" "$rtl_dir" "$coverage_rtl_dir"
+    bash "$project_root/vcs/scripts/prepare_coverage_rtl.sh" "$rtl_dir" "$coverage_rtl_dir"
     compile_simv "$build_dir" on "$coverage_rtl_dir"
   fi
 )
@@ -266,7 +266,7 @@ case "$mode" in
     # Compile from a prepared copy: the prepare step wraps the firtool
     # non-synthesis blocks in VCS coverage pragmas (see the script), which
     # keeps code-coverage numbers meaningful for the plain build as well.
-    bash "$project_root/vcs/prepare_coverage_rtl.sh" "$rtl_dir" "$vcs_build_root/test/rtl"
+    bash "$project_root/vcs/scripts/prepare_coverage_rtl.sh" "$rtl_dir" "$vcs_build_root/test/rtl"
     compile_simv "$vcs_build_root/test" off "$vcs_build_root/test/rtl"
     ;;
   run)
@@ -274,7 +274,7 @@ case "$mode" in
     # Plain simv is compiled once and reused (same reuse rule as coverage);
     # TLTEST_VCS_REBUILD=1 forces recompilation.
     if [[ ! -f "$vcs_build_root/test/simv" || "${TLTEST_VCS_REBUILD:-0}" == 1 ]]; then
-      bash "$project_root/vcs/prepare_coverage_rtl.sh" "$rtl_dir" "$vcs_build_root/test/rtl"
+      bash "$project_root/vcs/scripts/prepare_coverage_rtl.sh" "$rtl_dir" "$vcs_build_root/test/rtl"
       compile_simv "$vcs_build_root/test" off "$vcs_build_root/test/rtl"
     fi
     run_simv "$(cd "$vcs_build_root/test" && pwd)/simv" "" "" ""
