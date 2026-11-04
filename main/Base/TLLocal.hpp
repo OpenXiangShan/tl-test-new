@@ -59,6 +59,12 @@ public:
     uint64_t            startupCycle;                           // Start-up interval cycle count
     uint64_t            maximumCycle;                           // Maximum cycle count
 
+    // Optional periodic TL-C D backpressure, in agent clock ticks (one per handle_channel).
+    // low=0 disables it; otherwise low must be less than period.
+    uint64_t            cagentDReadyPeriod = 0;
+    uint64_t            cagentDReadyLow = 0;
+    uint64_t            cagentDReadyStart = 0;
+
     uint64_t            memoryEnable;                           // Memory (cacheable) region enable
     uint64_t            memoryStart;                            // Memory (cacheable) region start address
     uint64_t            memoryEnd;                              // Memory (cacheable) region end address
