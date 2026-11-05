@@ -4,21 +4,30 @@
 # NUM_CORE=1 NUM_SLICE=1' (matches configs/coupledL2-test-matrix-trace).
 #
 # Usage:
-#   vcs/run_vcs.sh build                  compile simv (no coverage instrumentation)
-#   vcs/run_vcs.sh run                    compile if needed, replay the trace in
+#   vcs/scripts/run_vcs.sh build                  compile simv (no coverage instrumentation)
+#   vcs/scripts/run_vcs.sh run                    compile if needed, replay the trace in
 #                                         main/build/tltest.ini (the make-generated one)
-#   vcs/run_vcs.sh coverage [trace]       coverage run of one trace -> own vdb + report
+#   vcs/scripts/run_vcs.sh coverage-prepare       prepare shared coverage compiler cache only
+#   vcs/scripts/run_vcs.sh coverage [trace]       coverage run of one trace -> own vdb + report
 #                                         trace: a file under traces/ (extension optional,
 #                                         .ops/.trace/.txt tried in turn); TLTEST_VCS_TRACE=<path>
 #                                         overrides. Without an argument the trace configured
 #                                         in the ini is replayed and labeled matrix_trace.
 #                                         simv is compiled once and reused;
 #                                         TLTEST_VCS_REBUILD=1 forces recompilation.
-#   vcs/run_vcs.sh coverage-fuzz <name> <ini>
+#   vcs/scripts/run_vcs.sh coverage-fuzz <name> <ini>
 #                                         random-stimulus coverage run (no trace); the ini
 #                                         (e.g. a FUZZ_ARI config) drives everything, name
 #                                         labels the vdb/report
-#   vcs/run_vcs.sh coverage-merge         urg-merge every vdb under build_vcs/coverage/vdb
+#   vcs/scripts/run_vcs.sh coverage-case <name> <ini> <trace-path>
+#                                         named trace run with an explicit INI
+#   vcs/scripts/run_vcs.sh coverage-merge         urg-merge every vdb in the coverage output directory
+#
+# TLTEST_VCS_COVERAGE_DIR overrides the VDB/report/log output directory without
+# changing the compile cache at TLTEST_VCS_BUILD_DIR/coverage.
+# TLTEST_VCS_RUN_ROOT overrides the simulation directory prefix (each named run
+# uses <prefix>_<name>). Defaults retain the existing build_vcs and run layout.
+# TLTEST_VCS_TIMEOUT optionally limits the simulator runtime in positive seconds.
 #
 # TLTEST_CLOGB_DISABLE=1 bypasses the CLog.B record pipeline (per-record
 # heap alloc + queue + file I/O dominate wall time on transaction-heavy
@@ -30,16 +39,20 @@
 # binaries; both are worked around by invoking them through bash with -full64.
 set -euo pipefail
 
-project_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+project_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 rtl_dir_default="$project_root/dut/XSCache/build/openllc"
 rtl_dir=${TLTEST_RTL_DIR:-$rtl_dir_default}
 # generated C++ companions (chisel_db.cpp / perfCCT.cpp) live one level above
 # the split-verilog directory
 db_dir=$(cd "$(dirname "$rtl_dir")" && pwd)
 vcs_build_root=${TLTEST_VCS_BUILD_DIR:-$project_root/build_vcs}
-run_root="$project_root/run/vcs_run"
-tb_file="$project_root/vcs/vcs_tb.sv"
-coverage_hier="$project_root/vcs/coverage.hier"
+run_root=${TLTEST_VCS_RUN_ROOT:-$project_root/run/vcs_run}
+coverage_output_dir=${TLTEST_VCS_COVERAGE_DIR:-$vcs_build_root/coverage}
+# Output overrides are relative to the project root, even when simv changes cwd.
+[[ "$run_root" == /* ]] || run_root="$project_root/$run_root"
+[[ "$coverage_output_dir" == /* ]] || coverage_output_dir="$project_root/$coverage_output_dir"
+tb_file="$project_root/vcs/tb/vcs_tb.sv"
+coverage_hier="$project_root/vcs/config/coverage.hier"
 dpi_lib="$project_root/main/build/libtltest_dpi.so"
 mode=${1:-run}
 
@@ -54,15 +67,20 @@ vcs() { bash "$VCS_HOME/bin/vcs" -full64 "$@"; }
 # from the inside — wrapping urg in bash is not enough. Patch a build-dir
 # copy: bash shebang plus routing the internal vcs -location / vcsMsgReport
 # calls through bash. -full64 is forced to skip the vdb auto-detect branch.
-urg() {
+urg() (
+  # Each parallel report process owns its launcher; no process truncates a
+  # wrapper another process is about to execute.
   mkdir -p "$vcs_build_root/tool"
+  local urg_wrapper
+  urg_wrapper=$(mktemp "$vcs_build_root/tool/urg.XXXXXX")
+  trap 'rm -f "$urg_wrapper"' EXIT
   sed -e '1s|^#!.*$|#!/usr/bin/env bash|' \
       -e 's|\${VCS_HOME}/bin/vcs -location|bash ${VCS_HOME}/bin/vcs -location|g' \
       -e 's|ERR_MSG_REPORT=${BASE_STRING}/bin/vcsMsgReport|ERR_MSG_REPORT="bash ${BASE_STRING}/bin/vcsMsgReport"|' \
-      "$VCS_HOME/bin/urg" > "$vcs_build_root/tool/urg"
-  chmod +x "$vcs_build_root/tool/urg"
-  bash "$vcs_build_root/tool/urg" -full64 "$@"
-}
+      "$VCS_HOME/bin/urg" > "$urg_wrapper"
+  chmod +x "$urg_wrapper"
+  bash "$urg_wrapper" -full64 "$@"
+)
 
 require_dpi_lib() {
   if [[ ! -f "$dpi_lib" ]]; then
@@ -141,6 +159,23 @@ compile_simv() {
   (cd "$compile_rtl_dir" && vcs "${command[@]}")
 }
 
+# Serialize compiler/cache mutation. Parallel simulations only read simv and
+# template.vdb after this function has completed successfully.
+ensure_coverage_cache() (
+  require_rtl
+  require_dpi_lib
+  local build_dir="$vcs_build_root/coverage"
+  local coverage_rtl_dir="$build_dir/rtl"
+  mkdir -p "$build_dir"
+  # A subshell limits the lock descriptor lifetime to cache preparation.
+  exec 9>"$build_dir/.compile.lock"
+  flock -x 9
+  if [[ ! -f "$build_dir/simv" || ! -d "$build_dir/template.vdb" || "${TLTEST_VCS_REBUILD:-0}" == 1 ]]; then
+    bash "$project_root/vcs/scripts/prepare_coverage_rtl.sh" "$rtl_dir" "$coverage_rtl_dir"
+    compile_simv "$build_dir" on "$coverage_rtl_dir"
+  fi
+)
+
 # run_simv SIMV COVERAGE_DIR(empty for plain runs) TRACE_FILE(empty for ini default) RUN_SUFFIX
 run_simv() {
   local simv=$1
@@ -165,7 +200,10 @@ run_simv() {
   fi
   cp "$ini_file" "$this_run_root/tltest.ini"
   if [[ -n "$trace_file" ]]; then
-    sed -i -E "s#^[[:space:]]*trace.filepath[[:space:]]*=.*#trace.filepath              = $trace_file#" \
+    local trace_replacement=${trace_file//\\/\\\\}
+    trace_replacement=${trace_replacement//&/\\&}
+    trace_replacement=${trace_replacement//#/\\#}
+    sed -i -E "s#^[[:space:]]*trace.filepath[[:space:]]*=.*#trace.filepath              = $trace_replacement#" \
       "$this_run_root/tltest.ini"
   fi
   printf '#!SV_LIBRARIES\n%s\n' "${dpi_lib%.so}" > "$this_run_root/bootstrap_lib_files"
@@ -184,9 +222,24 @@ run_simv() {
     run_args+=(-cm line+cond+fsm+tgl -cm_dir "$coverage_dir" -cm_name "$run_suffix")
   fi
 
+  local timeout_seconds=${TLTEST_VCS_TIMEOUT:-}
+  local -a simv_command=("$simv" "${run_args[@]}")
+  if [[ -n "$timeout_seconds" ]]; then
+    if [[ ! "$timeout_seconds" =~ ^[1-9][0-9]*$ ]]; then
+      echo "error: TLTEST_VCS_TIMEOUT must be a positive integer in seconds" >&2
+      exit 2
+    fi
+    simv_command=(timeout --signal=TERM --kill-after=10s "${timeout_seconds}s" "${simv_command[@]}")
+  fi
+
   echo "VCS run in $this_run_root (log: $log_file)"
-  (cd "$this_run_root" && "$simv" "${run_args[@]}") 2>&1 | tee "$log_file" || {
-    echo "error: VCS exited unsuccessfully; see $log_file" >&2
+  (cd "$this_run_root" && "${simv_command[@]}") 2>&1 | tee "$log_file" || {
+    local run_status=$?
+    if [[ "$run_status" -eq 124 ]]; then
+      echo "error: VCS simulation timed out after ${timeout_seconds}s; see $log_file" >&2
+    else
+      echo "error: VCS exited unsuccessfully; see $log_file" >&2
+    fi
     exit 1
   }
 
@@ -204,12 +257,16 @@ run_simv() {
 }
 
 case "$mode" in
+  coverage-prepare)
+    ensure_coverage_cache
+    echo "VCS coverage cache ready: $vcs_build_root/coverage"
+    ;;
   build)
     require_rtl
     # Compile from a prepared copy: the prepare step wraps the firtool
     # non-synthesis blocks in VCS coverage pragmas (see the script), which
     # keeps code-coverage numbers meaningful for the plain build as well.
-    bash "$project_root/vcs/prepare_coverage_rtl.sh" "$rtl_dir" "$vcs_build_root/test/rtl"
+    bash "$project_root/vcs/scripts/prepare_coverage_rtl.sh" "$rtl_dir" "$vcs_build_root/test/rtl"
     compile_simv "$vcs_build_root/test" off "$vcs_build_root/test/rtl"
     ;;
   run)
@@ -217,7 +274,7 @@ case "$mode" in
     # Plain simv is compiled once and reused (same reuse rule as coverage);
     # TLTEST_VCS_REBUILD=1 forces recompilation.
     if [[ ! -f "$vcs_build_root/test/simv" || "${TLTEST_VCS_REBUILD:-0}" == 1 ]]; then
-      bash "$project_root/vcs/prepare_coverage_rtl.sh" "$rtl_dir" "$vcs_build_root/test/rtl"
+      bash "$project_root/vcs/scripts/prepare_coverage_rtl.sh" "$rtl_dir" "$vcs_build_root/test/rtl"
       compile_simv "$vcs_build_root/test" off "$vcs_build_root/test/rtl"
     fi
     run_simv "$(cd "$vcs_build_root/test" && pwd)/simv" "" "" ""
@@ -250,70 +307,71 @@ case "$mode" in
     echo "VCS coverage trace: $trace_name ${trace_path:+($trace_path)}"
 
     build_dir="$vcs_build_root/coverage"
-    coverage_rtl_dir="$build_dir/rtl"
-    mkdir -p "$build_dir/vdb" "$build_dir/reports" "$build_dir/logs"
-    # The coverage simv is compiled once and reused across traces; only a
-    # missing simv (or TLTEST_VCS_REBUILD=1) redoes prepare + compile, so the
-    # vdbs of earlier traces survive.
-    if [[ ! -f "$build_dir/simv" || "${TLTEST_VCS_REBUILD:-0}" == 1 ]]; then
-      bash "$project_root/vcs/prepare_coverage_rtl.sh" "$rtl_dir" "$coverage_rtl_dir"
-      compile_simv "$build_dir" on "$coverage_rtl_dir"
-    fi
-    coverage_vdb="$build_dir/vdb/$trace_name.vdb"
+    ensure_coverage_cache
+    mkdir -p "$coverage_output_dir/vdb" "$coverage_output_dir/reports" "$coverage_output_dir/logs"
+    coverage_vdb="$coverage_output_dir/vdb/$trace_name.vdb"
     rm -rf "$coverage_vdb"
     cp -r "$build_dir/template.vdb" "$coverage_vdb"
     run_simv "$(cd "$build_dir" && pwd)/simv" "$coverage_vdb" "$trace_path" "$trace_name"
-    cp "$project_root/run/vcs_run_$trace_name/simv.log" "$build_dir/logs/$trace_name.log"
-    urg -dir "$coverage_vdb" -hier "$coverage_hier" -report "$build_dir/reports/$trace_name"
-    echo "VCS coverage report: $build_dir/reports/$trace_name/dashboard.html"
+    cp "${run_root}_$trace_name/simv.log" "$coverage_output_dir/logs/$trace_name.log"
+    urg -dir "$coverage_vdb" -hier "$coverage_hier" -report "$coverage_output_dir/reports/$trace_name"
+    echo "VCS coverage report: $coverage_output_dir/reports/$trace_name/dashboard.html"
     echo "Merge everything later with: $0 coverage-merge"
     ;;
-  coverage-fuzz)
-    # Random-stimulus coverage run (no trace file): the ini drives everything.
-    #   vcs/run_vcs.sh coverage-fuzz <name> <ini>
-    # <name> labels the vdb/report (include the seed, e.g. fuzz_ari_s1000).
-    require_rtl
-    fuzz_name=${2:-fuzz_ari}
-    if [[ -z "${3:-}" && -z "${TLTEST_VCS_INI:-}" ]]; then
-      echo "usage: $0 coverage-fuzz <name> <ini>   (e.g. a FUZZ_ARI config)" >&2
-      exit 2
+  coverage-fuzz|coverage-case)
+    # Both modes have explicit run labels; coverage-case also overrides the trace.
+    trace_path=""
+    if [[ "$mode" == coverage-case ]]; then
+      if [[ $# -ne 4 || ! "$2" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
+        echo "usage: $0 coverage-case <safe-name> <ini> <trace-path>" >&2
+        exit 2
+      fi
+      run_name=$2
+      export TLTEST_VCS_INI=$3
+      if [[ ! -f "$4" ]]; then
+        echo "error: trace file not found: $4" >&2
+        exit 2
+      fi
+      trace_path=$(realpath "$4")
+    else
+      run_name=${2:-fuzz_ari}
+      if [[ -z "${3:-}" && -z "${TLTEST_VCS_INI:-}" ]]; then
+        echo "usage: $0 coverage-fuzz <name> <ini>   (e.g. a FUZZ_ARI config)" >&2
+        exit 2
+      fi
+      export TLTEST_VCS_INI=${3:-${TLTEST_VCS_INI}}
     fi
-    export TLTEST_VCS_INI=${3:-${TLTEST_VCS_INI}}
     if [[ ! -f "$TLTEST_VCS_INI" ]]; then
-      echo "error: fuzz ini not found: $TLTEST_VCS_INI" >&2
+      echo "error: ini not found: $TLTEST_VCS_INI" >&2
       exit 2
     fi
-    echo "VCS coverage fuzz: $fuzz_name (ini: $TLTEST_VCS_INI)"
+    require_rtl
+    echo "VCS $mode: $run_name (ini: $TLTEST_VCS_INI)"
 
     build_dir="$vcs_build_root/coverage"
-    coverage_rtl_dir="$build_dir/rtl"
-    mkdir -p "$build_dir/vdb" "$build_dir/reports" "$build_dir/logs"
-    if [[ ! -f "$build_dir/simv" || "${TLTEST_VCS_REBUILD:-0}" == 1 ]]; then
-      bash "$project_root/vcs/prepare_coverage_rtl.sh" "$rtl_dir" "$coverage_rtl_dir"
-      compile_simv "$build_dir" on "$coverage_rtl_dir"
-    fi
-    coverage_vdb="$build_dir/vdb/$fuzz_name.vdb"
+    ensure_coverage_cache
+    mkdir -p "$coverage_output_dir/vdb" "$coverage_output_dir/reports" "$coverage_output_dir/logs"
+    coverage_vdb="$coverage_output_dir/vdb/$run_name.vdb"
     rm -rf "$coverage_vdb"
     cp -r "$build_dir/template.vdb" "$coverage_vdb"
-    run_simv "$(cd "$build_dir" && pwd)/simv" "$coverage_vdb" "" "$fuzz_name"
-    cp "$project_root/run/vcs_run_$fuzz_name/simv.log" "$build_dir/logs/$fuzz_name.log"
-    urg -dir "$coverage_vdb" -hier "$coverage_hier" -report "$build_dir/reports/$fuzz_name"
-    echo "VCS coverage report: $build_dir/reports/$fuzz_name/dashboard.html"
+    run_simv "$(cd "$build_dir" && pwd)/simv" "$coverage_vdb" "$trace_path" "$run_name"
+    cp "${run_root}_$run_name/simv.log" "$coverage_output_dir/logs/$run_name.log"
+    urg -dir "$coverage_vdb" -hier "$coverage_hier" -report "$coverage_output_dir/reports/$run_name"
+    echo "VCS coverage report: $coverage_output_dir/reports/$run_name/dashboard.html"
     echo "Merge everything later with: $0 coverage-merge"
     ;;
   coverage-merge)
-    build_dir="$vcs_build_root/coverage"
-    vdbs=("$build_dir"/vdb/*.vdb)
+    vdbs=("$coverage_output_dir"/vdb/*.vdb)
     if [[ ! -d "${vdbs[0]}" ]]; then
-      echo "error: no vdbs under $build_dir/vdb; run 'coverage <trace>' first" >&2
+      echo "error: no vdbs under $coverage_output_dir/vdb; run 'coverage <trace>' first" >&2
       exit 2
     fi
     echo "Merging ${#vdbs[@]} vdbs: ${vdbs[*]}"
-    urg -dir "${vdbs[@]}" -hier "$coverage_hier" -report "$build_dir/report_merged"
-    echo "VCS merged coverage report: $build_dir/report_merged/dashboard.html"
+    urg -dir "${vdbs[@]}" -hier "$coverage_hier" -report "$coverage_output_dir/report_merged"
+    echo "VCS merged coverage report: $coverage_output_dir/report_merged/dashboard.html"
     ;;
   *)
-    echo "usage: $0 {build|run|coverage [trace]|coverage-fuzz [name] [ini]|coverage-merge}" >&2
+    echo "usage: $0 {build|run|coverage-prepare|coverage [trace]|coverage-fuzz [name] [ini]|coverage-case <name> <ini> <trace>|coverage-merge}" >&2
     exit 2
     ;;
 esac

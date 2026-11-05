@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Run a Makefile target on the EDA host (default: eda01) from any machine.
 #
-#   vcs/run_vcs_remote.sh <make target> [VAR=value ...]
-#   vcs/run_vcs_remote.sh                 # defaults to vcs-run
+#   vcs/scripts/run_vcs_remote.sh <make target> [VAR=value ...]
+#   vcs/scripts/run_vcs_remote.sh                 # defaults to vcs-run
 #
 # Already on that host: runs locally. Otherwise ssh's over and runs it there.
 # The remote exit status is forwarded; TLTEST_* variables are passed through.
@@ -11,7 +11,7 @@ set -euo pipefail
 remote=${TLTEST_EDA_HOST:-eda01}
 modules=${TLTEST_EDA_MODULES:-license synopsys/vcs/Q-2020.03-SP2}
 devtoolset=${TLTEST_DEVTOOLSET:-devtoolset-11}
-project_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+project_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 
 args=("$@")
 ((${#args[@]})) || args=(vcs-run)

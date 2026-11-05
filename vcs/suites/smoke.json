@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "name": "smoke",
+  "description": "Short end-to-end suite, including the same trace under two D.ready settings.",
+  "defaults": {
+    "timeout_seconds": 300,
+    "run_args": [
+      "+vcd_start=0",
+      "+vcd_stop=0"
+    ]
+  },
+  "jobs": [
+    {
+      "name": "hit-no-backpressure",
+      "trace": "traces/directed3-hit-grant-observe.ops",
+      "ini": "configs/directed3-base.tltest.ini"
+    },
+    {
+      "name": "hit-with-backpressure",
+      "trace": "traces/directed3-hit-grant-observe.ops",
+      "ini": "configs/directed3-d-backpressure.tltest.ini"
+    },
+    {
+      "name": "mmio-read-fast",
+      "trace": "traces/directed3-mmio-read-burst.ops",
+      "ini": "configs/directed3-mmio-fast.tltest.ini"
+    }
+  ]
+}

@@ -116,6 +116,8 @@ namespace tl_agent {
         this->globalBoard = gb;
         this->uncachedBoards = ubs;
         this->cycles = cycles;
+        tlc_assert(cfg->cagentDReadyLow == 0 || cfg->cagentDReadyLow < cfg->cagentDReadyPeriod,
+            this, "cagent.d_ready.low must be less than period to allow D to drain");
         this->tick = 0;
         this->localBoard = new LocalScoreBoard();
         this->idMap = new IDMapScoreBoard();
@@ -1809,7 +1811,11 @@ namespace tl_agent {
     }
 
     void CAgent::update_signal() {
-        this->port->d.ready = true; // TODO: do random here
+        // Drive ready in the agent so fire_d() observes the same handshake as RTL.
+        // The default low=0 preserves always-ready behavior, including with period=0.
+        this->port->d.ready = cfg->cagentDReadyLow == 0
+            || tick < cfg->cagentDReadyStart
+            || (tick - cfg->cagentDReadyStart) % cfg->cagentDReadyPeriod >= cfg->cagentDReadyLow;
         this->port->b.ready = !(pendingB.is_pending());
 
         if (pendingA.is_pending()) {

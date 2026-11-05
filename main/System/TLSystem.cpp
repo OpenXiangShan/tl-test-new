@@ -159,6 +159,10 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
 
     INI_OVERRIDE_INT("tltest.config", "maximum_cycle",              tlcfg.maximumCycle);
 
+    INI_OVERRIDE_INT("tltest.config", "cagent.d_ready.period",      tlcfg.cagentDReadyPeriod);
+    INI_OVERRIDE_INT("tltest.config", "cagent.d_ready.low",         tlcfg.cagentDReadyLow);
+    INI_OVERRIDE_INT("tltest.config", "cagent.d_ready.start",       tlcfg.cagentDReadyStart);
+
     INI_OVERRIDE_INT("tltest.config", "memory.enable",              tlcfg.memoryEnable);
     INI_OVERRIDE_INT("tltest.config", "memory.start",               tlcfg.memoryStart);
     INI_OVERRIDE_INT("tltest.config", "memory.end",                 tlcfg.memoryEnd);

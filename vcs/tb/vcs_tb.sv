@@ -454,6 +454,26 @@ module tltest_vcs_tb;
   longint       mmio_pu_data;
   byte          mmio_pu_corrupt;
 
+  // Save TL-C D at the actual handshake edge. Reading live D at negedge
+  // can see the next queue head after ready rises and lose the consumed beat.
+  typedef struct packed {
+    logic valid;
+    logic [3:0] opcode;
+    logic [1:0] param;
+    logic [2:0] size;
+    logic [4:0] source;
+    logic [7:0] sink;
+    logic denied;
+    logic [255:0] data;
+    logic corrupt;
+  } cagent_d_sample_t;
+  cagent_d_sample_t p0_d_sampled;
+  always @(posedge clock) begin
+    if (reset) p0_d_sampled <= '0;
+    else p0_d_sampled <= '{p0_d_valid, p0_d_opcode, p0_d_param, p0_d_size,
+                           p0_d_source, p0_d_sink, p0_d_denied, p0_d_data, p0_d_corrupt};
+  end
+
   // AXI scratch holders (the memory Sv* wrappers use 11-bit id fields)
   logic [10:0]  axi_pu_id;
   logic [47:0]  axi_pu_addr;
@@ -468,15 +488,16 @@ module tltest_vcs_tb;
       TileLinkSystemTick(sim_time);
 
       // ---- Push valid+bits (DUT outputs -> tl-test) ----
-      // Registered DUT outputs: their post-posedge values are exactly what
-      // fired at the preceding posedge, so sampling here (still with the
-      // previous cycle's inputs applied) matches v3_main's PushB/PushD.
+      // TL-C D uses the saved posedge fields so changing D.ready cannot
+      // make Tock observe a queue head from the next transaction.
+      // The other channels retain their existing adapter sampling.
       SvTileLinkPushChannelB(DEV_L1D, 1'b1, p0_b_valid, p0_b_opcode, p0_b_param,
                              p0_b_size, {{59{1'b0}}, p0_b_source},
                              p0_b_address, p0_b_mask, p0_b_data, p0_b_corrupt);
-      SvTileLinkPushChannelD(DEV_L1D, 1'b1, p0_d_valid, p0_d_opcode, p0_d_param,
-                             p0_d_size, {{59{1'b0}}, p0_d_source},
-                             {{56{1'b0}}, p0_d_sink}, p0_d_denied, p0_d_data, p0_d_corrupt);
+      SvTileLinkPushChannelD(DEV_L1D, 1'b1, p0_d_sampled.valid, p0_d_sampled.opcode, p0_d_sampled.param,
+                             p0_d_sampled.size, {{59{1'b0}}, p0_d_sampled.source},
+                             {{56{1'b0}}, p0_d_sampled.sink}, p0_d_sampled.denied,
+                             p0_d_sampled.data, p0_d_sampled.corrupt);
 
       SvTileLinkPushChannelD(DEV_MATRIX, 1'b1, p2_d_valid, p2_d_opcode, p2_d_param,
                              p2_d_size, {{59{1'b0}}, p2_d_source},

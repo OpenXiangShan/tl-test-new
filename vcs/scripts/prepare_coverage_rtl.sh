@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-project_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-filter="$project_root/vcs/exclude_nonsynth_coverage.awk"
+project_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+filter="$project_root/vcs/scripts/exclude_nonsynth_coverage.awk"
 source_dir=${1:-}
 output_dir=${2:-}
 

@@ -23,8 +23,8 @@ Every module is classified into buckets (see CLASSIFY below):
 
 Usage:
   coverage_gap_report.py [REPORT_DIR] [-o OUTPUT.md]
-  REPORT_DIR defaults to build_vcs/coverage/report_merged (this directory's
-  parent), OUTPUT.md defaults to <repo>/../../docs/coverage-gap-notes.md.
+  REPORT_DIR defaults to <repo>/build_vcs/coverage/report_merged;
+  OUTPUT.md defaults to <repo>/../docs/coverage-gap-notes.md.
 """
 
 import argparse
@@ -193,7 +193,7 @@ def classify(name):
 
 
 def main():
-    default_report = Path(__file__).resolve().parent.parent / \
+    default_report = Path(__file__).resolve().parents[2] / \
         'build_vcs/coverage/report_merged'
     ap = argparse.ArgumentParser()
     ap.add_argument('report_dir', nargs='?', default=default_report,
@@ -412,7 +412,7 @@ def main():
     text = '\n'.join(lines)
     out = args.output
     if out is None:
-        out = Path(__file__).resolve().parent.parent.parent / 'docs' / \
+        out = Path(__file__).resolve().parents[3] / 'docs' / \
             'coverage-gap-notes.md'
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(text, encoding='utf-8')
