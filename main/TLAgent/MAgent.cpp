@@ -87,6 +87,10 @@ void MAgent::fire_a() {
         this->localBoard->query(this, pendingA.info->source)->update_status(this, S_A_WAITING_D);
 
         if (hasData) {
+            // Keep this Put's payload by source; a concurrent Release can replace global pending_data.
+            auto info = this->localBoard->query(this, pendingA.info->source);
+            std::memcpy(info->data.data(), pendingA.info->data->data, DATASIZE);
+
             auto global_SBEntry = std::make_shared<Global_SBEntry>();
             global_SBEntry->pending_data = pendingA.info->data;
             if (this->globalBoard->get().count(pendingA.info->address) == 0)
@@ -171,8 +175,14 @@ void MAgent::fire_d() {
                 uncachedBoards->verify(this, id, info->address, pendingD.info->source, pendingD.info->data);
                 uncachedBoards->finish(this, id, info->address, pendingD.info->source);
             } else if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck)) {
-                this->globalBoard->unpending(this, info->address);
-                uncachedBoards->appendAll(this, info->address, this->globalBoard->query(this, info->address)->data);
+                tlc_assert(TLEnumEquals(info->req_type, TLOpcodeA::PutFullData), this,
+                    "AccessAck without a tracked PutFullData!");
+                auto global_SBEntry = std::make_shared<Global_SBEntry>();
+                global_SBEntry->data = make_shared_tldata<DATASIZE>();
+                std::memcpy(global_SBEntry->data->data, info->data.data(), DATASIZE);
+                global_SBEntry->status = Global_SBEntry::SB_VALID;
+                this->globalBoard->update(this, info->address, global_SBEntry);
+                uncachedBoards->appendAll(this, info->address, global_SBEntry->data);
             }
 
             localBoard->erase(this, chnD.source);
