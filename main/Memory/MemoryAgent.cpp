@@ -577,7 +577,6 @@ namespace axi_agent {
                             .ToString());
                 }
 
-                int offset = 0;
                 for (int i = 0; i < burstLen; i++)
                 {
                     auto& dataR = trans->data.emplace_back();
@@ -587,13 +586,11 @@ namespace axi_agent {
                     dataR.bundle.last   = (i + 1) == burstLen;
                     dataR.bundle.data   = make_shared_tldata_zero<BEATSIZE_MEMORY>();
 
-                    size_t paddr = (address & ~size_t(BEATSIZE_MEMORY - 1)) - cfg->memoryStart;
+                    size_t paddr = address - cfg->memoryStart;
+                    size_t lane = address & size_t(BEATSIZE_MEMORY - 1);
 
-                    for (int j = 0; j < numBytes; j++, offset++)
+                    for (int j = 0; j < numBytes; j++)
                     {
-                        if (offset == numBytes)
-                            offset = 0;
-
                         size_t bytePAddr = paddr + j;
 
                         if (bytePAddr >= size())
@@ -609,7 +606,7 @@ namespace axi_agent {
                                 .Append(")")
                                 .ToString());
                         
-                        dataR.bundle.data->data[offset] = pmem[bytePAddr];
+                        dataR.bundle.data->data[lane + j] = pmem[bytePAddr];
                     }
 
                     switch (burst)
