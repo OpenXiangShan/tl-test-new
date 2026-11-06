@@ -51,7 +51,9 @@ coverage_output_dir=${TLTEST_VCS_COVERAGE_DIR:-$vcs_build_root/coverage}
 # Output overrides are relative to the project root, even when simv changes cwd.
 [[ "$run_root" == /* ]] || run_root="$project_root/$run_root"
 [[ "$coverage_output_dir" == /* ]] || coverage_output_dir="$project_root/$coverage_output_dir"
-tb_file="$project_root/vcs/tb/vcs_tb.sv"
+# TLTEST_VCS_TB swaps the testbench (e.g. vcs/tb/vcs_tb_l2sn.sv for the
+# L2-only TestTopMatrixL2SN + ChiSnCore SN backend).
+tb_file=${TLTEST_VCS_TB:-$project_root/vcs/tb/vcs_tb.sv}
 coverage_hier="$project_root/vcs/config/coverage.hier"
 dpi_lib="$project_root/main/build/libtltest_dpi.so"
 mode=${1:-run}
@@ -207,6 +209,12 @@ run_simv() {
       "$this_run_root/tltest.ini"
   fi
   printf '#!SV_LIBRARIES\n%s\n' "${dpi_lib%.so}" > "$this_run_root/bootstrap_lib_files"
+  # Space-separated extra DPI shared objects (e.g. the ChiSnCore SN model for
+  # the L2SN testbench, see vcs/scripts/build_chisn_dpi.sh), one per line.
+  local extra_lib
+  for extra_lib in ${TLTEST_VCS_EXTRA_DPI_LIBS:-}; do
+    printf '%s\n' "${extra_lib%.so}" >> "$this_run_root/bootstrap_lib_files"
+  done
 
   # Match the Verilator zero-initialization semantics: registers and memory
   # arrays start at 0 instead of X (chosen at runtime; the compile only
