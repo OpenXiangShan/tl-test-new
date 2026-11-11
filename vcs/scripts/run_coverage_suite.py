@@ -336,8 +336,7 @@ def run_suite(suite, output, local=False, parallelism=8):
         def submit(index):
             job = summary['jobs'][index]
             job['status'] = 'running'
-            print('[{}/{}] {}: running (D.ready {})'.format(index + 1, len(suite['jobs']), job['name'],
-                  'backpressure' if job['d_ready_backpressure']['enabled'] else 'always ready'), flush=True)
+            print('[{}/{}] {}: running'.format(index + 1, len(suite['jobs']), job['name']), flush=True)
             future = pool.submit(run_job, suite['jobs'][index], base_env, coverage_dir, run_root, output, local)
             pending[future] = index
 
