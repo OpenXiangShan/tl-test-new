@@ -192,7 +192,7 @@ module tltest_vcs_tb;
   logic  [3:0]  mmio_a_opcode;
   logic  [2:0]  mmio_a_param;
   logic  [1:0]  mmio_a_size;
-  logic         mmio_a_source;
+  logic  [3:0]  mmio_a_source;
   logic  [47:0] mmio_a_address;
   logic  [7:0]  mmio_a_mask;
   logic  [63:0] mmio_a_data;
@@ -203,7 +203,7 @@ module tltest_vcs_tb;
   wire  [3:0]   mmio_d_opcode;
   wire  [1:0]   mmio_d_param;
   wire          mmio_d_size;
-  wire          mmio_d_source;
+  wire   [3:0]  mmio_d_source;
   wire          mmio_d_sink;
   wire          mmio_d_denied;
   wire  [63:0]  mmio_d_data;
@@ -781,7 +781,7 @@ module tltest_vcs_tb;
       SvTileLinkMMIOPushChannelA(DEV_MMIO, !reset, mmio_a_ready_v);
       SvTileLinkMMIOPushChannelD(DEV_MMIO, !reset, mmio_d_valid_v, mmio_d_opcode,
                                  mmio_d_param, {2'b0, mmio_d_size},
-                                 {{63{1'b0}}, mmio_d_source},
+                                 {{60{1'b0}}, mmio_d_source},
                                  {{63{1'b0}}, mmio_d_sink},
                                  mmio_d_denied, mmio_d_data, mmio_d_corrupt);
       TileLinkMatrixPushChannelM(DEV_MATRIX, mdat_valid,
@@ -844,7 +844,7 @@ module tltest_vcs_tb;
       mmio_a_opcode  <= mmio_pu_opcode[3:0];
       mmio_a_param   <= mmio_pu_param[2:0];
       mmio_a_size    <= mmio_pu_size[1:0];
-      mmio_a_source  <= mmio_pu_source[0];
+      mmio_a_source  <= mmio_pu_source[3:0];
       mmio_a_address <= mmio_pu_address;
       mmio_a_mask    <= mmio_pu_mask;
       mmio_a_data    <= mmio_pu_data;

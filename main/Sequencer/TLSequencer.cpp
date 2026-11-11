@@ -7,12 +7,6 @@
 
 #include "../Events/TLSystemEvent.hpp"
 
-namespace {
-// The generated MMIO A/D source fields are one bit wide for this single-core
-// TestTop; keep the agent's source pool in sync with the port.
-constexpr unsigned MMIO_TRACE_SOURCE_LIMIT = 2;
-}
-
 
 #define ASSERTION_FAILURE_CAPTURE(exception) \
     auto& event = exception.GetCopiedEvent(); \
@@ -360,7 +354,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
             //
             mmio        [j] = new MMIOPort;
-            mmioAgents  [j] = new MMIOAgent(&this->config, mmioGlobalStatus, j, cfg.seed, &cycles, MMIO_TRACE_SOURCE_LIMIT);
+            mmioAgents  [j] = new MMIOAgent(&this->config, mmioGlobalStatus, j, cfg.seed, &cycles);
             mmioAgents  [j]->connect(mmio[j]);
 
             mmioFuzzers [j] = new MMIOFuzzer(mmioAgents[j]);
