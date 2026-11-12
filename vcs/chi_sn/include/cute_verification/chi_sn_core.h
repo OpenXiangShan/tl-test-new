@@ -39,20 +39,46 @@ enum ChiReqOpcode : uint32_t {
 };
 
 enum ChiRspOpcode : uint32_t {
+  kChiSnpResp = 0x1,
   kChiCompAck = 0x2,
   kChiComp = 0x4,
   kChiCompDbidResp = 0x5,
   kChiDbidResp = 0x6,
+  kChiSnpRespFwded = 0x9,
 };
 
 enum ChiDatOpcode : uint32_t {
+  kChiSnpRespData = 0x1,
   kChiCompData = 0x4,
+  kChiSnpRespDataPtl = 0x5,
+  kChiSnpRespDataFwded = 0x6,
+};
+
+// RXSNP opcodes the SN model may inject (values mirror Opcode.scala). Only
+// the non-Fwd, non-Stash, non-Query subset is allowed: Fwd variants make the
+// L2 answer with DCT data aimed at fwdNID (which does not exist in the L2SN
+// topology) and Stash/Query are never issued by this HN-less SN.
+enum ChiSnpOpcode : uint32_t {
+  kChiSnpShared = 0x01,
+  kChiSnpClean = 0x02,
+  kChiSnpOnce = 0x03,
+  kChiSnpNotSharedDirty = 0x04,
+  kChiSnpUnique = 0x07,
+  kChiSnpCleanShared = 0x08,
+  kChiSnpCleanInvalid = 0x09,
+  kChiSnpMakeInvalid = 0x0A,
 };
 
 // DAT flit geometry for this DUT: 256-bit data flits carrying a 64-byte
 // cache line as two beats (dataID 0 = first 32B, dataID 1 = second 32B).
 constexpr size_t kChiDataBytes = 32;
 constexpr size_t kChiLineBytes = 64;
+
+// Snoop txnIDs live in the top slice of the 12-bit space (the L2's own REQ
+// txnIDs are MSHR indices, well below this range) so responses keyed by
+// txnID cannot be confused with read/write/grant traffic.
+constexpr uint32_t kSnpTxnBase = 0x800;
+constexpr uint32_t kSnpTxnCount = 0x800;
 
 struct ChiReq {
   uint32_t opcode = 0;
@@ -65,15 +91,27 @@ struct ChiRsp {
   uint32_t opcode = 0;
   uint32_t txn_id = 0;
   uint32_t db_id = 0;
+  uint32_t resp = 0;  // CHIRSP resp field (coherent state + PassDirty, 3 bits)
 };
 
 struct ChiDat {
   uint32_t opcode = 0;
   uint32_t txn_id = 0;
   uint32_t data_id = 0;  // 0/1: which 32B half of the 64B line
+  uint32_t resp = 0;     // CHIDAT resp field (carried on SnpRespData beats)
   uint32_t be = 0;       // byte enable, bit i covers data[i]
   uint32_t data_check = 0;  // odd parity per byte, bit i covers data[i]
   std::array<uint8_t, kChiDataBytes> data{};
+};
+
+// RXSNP flit. addr is the full line address; the wire carries addr >> 3
+// (coupledL2 RXSNP rebuilds it with Cat(snp.addr, 0.U(3.W))).
+struct ChiSnp {
+  uint32_t opcode = 0;
+  uint32_t txn_id = 0;
+  uint64_t addr = 0;
+  uint32_t src_id = 0;
+  bool ret_to_src = false;
 };
 
 // Cycle-driven functional model of the CHI Subordinate Node (the memory
@@ -107,6 +145,16 @@ class ChiSnCore {
   void rsp_out_consume();
   void dat_out_consume();
 
+  // Active snoop injection (SN -> DUT on RXSNP). opcode must be one of the
+  // ChiSnpOpcode values above; the snoop is queued and presented on the SNP
+  // slot as soon as it is free. txnIDs are allocated from a dedicated high
+  // range so they never collide with the requester's own REQ txnIDs.
+  bool issue_snoop(uint64_t addr, uint32_t opcode, bool ret_to_src);
+  bool snp_out_valid() const { return snp_out_.valid; }
+  const ChiSnp& snp_out() const { return snp_out_.bits; }
+  void snp_out_consume();
+  uint64_t cycle() const { return cycle_; }
+
   void tick();
 
   // Configuration knobs (kept minimal for the first integration; the JSON
@@ -130,6 +178,25 @@ class ChiSnCore {
   uint64_t compack_count() const { return compack_count_; }
   uint64_t accepted_reads() const { return accepted_reads_; }
   uint64_t accepted_writes() const { return accepted_writes_; }
+
+  // Active-snoop counters and a per-snoop audit trail (last completions
+  // first) so a stimulus script can check SnpResp vs SnpRespData, the
+  // resp field encoding (state | PassDirty<<2) and returned data.
+  uint64_t snoops_issued() const { return snoops_issued_; }
+  uint64_t snoops_completed() const { return snoops_completed_; }
+  struct SnoopRecord {
+    uint32_t txn_id = 0;
+    uint32_t opcode = 0;
+    uint64_t addr = 0;
+    bool ret_to_src = false;
+    bool returned_data = false;  // completed via SnpRespData beats
+    uint32_t resp_value = 0;     // resp field of the terminal response
+    std::array<uint8_t, kChiLineBytes> data{};
+  };
+  const std::deque<SnoopRecord>& snoop_history() const {
+    return snoop_history_;
+  }
+  std::string snoop_summary() const;
 
   // Completion-class counters for the progress watchdog: rx rsp/dat flits
   // actually taken by the DUT and accepted TXDAT write beats.  Request-side
@@ -195,9 +262,31 @@ class ChiSnCore {
     uint64_t fired_cycle = 0;
   };
 
+  // An injected RXSNP waiting for the snoopee's terminal response. The L2
+  // answers either SnpResp(/Fwded) on TXRSP or SnpRespData* beats on TXDAT
+  // keyed by the snoop's txnID (dbID is 0 on both, see MainPipe fromB) --
+  // whichever arrives first is terminal.
+  struct PendingSnoop {
+    uint32_t txn_id = 0;
+    uint32_t opcode = 0;
+    uint64_t addr = 0;
+    bool ret_to_src = false;
+    bool sent = false;          // RXSNP flit taken by the DUT at least once
+    uint32_t beats_received = 0;
+    uint32_t beats_mask = 0;    // dataID bits already seen
+    uint32_t last_data_id = 0;
+    std::array<uint8_t, kChiLineBytes> line{};
+    uint64_t fired_cycle = 0;
+  };
+
   void fail(const std::string& message);
   bool allocate_dbid(uint32_t* db_id);
   void release_dbid(uint32_t db_id);
+  bool allocate_snoop_txn(uint32_t* txn_id);
+  bool txn_id_in_use(uint32_t txn_id) const;
+  PendingSnoop* find_snoop(uint32_t txn_id);
+  void complete_snoop(PendingSnoop* snoop, bool returned_data,
+                      uint32_t resp_value);
   void present_next_flits();
 
   // Sparse 64B-line memory.
@@ -206,6 +295,10 @@ class ChiSnCore {
   std::deque<PendingRead> reads_;
   std::vector<PendingWrite> writes_;
   std::deque<PendingGrant> grants_;
+  std::deque<PendingSnoop> snoops_;
+  // Ring of completed-snoop audit records, newest at the back.
+  std::deque<SnoopRecord> snoop_history_;
+  uint32_t next_snoop_txn_ = kSnpTxnBase;
   std::vector<uint32_t> free_dbids_;
 
   // txnIDs whose CompData has been fully delivered and may still be CompAcked.
@@ -218,6 +311,7 @@ class ChiSnCore {
 
   Flit<ChiRsp> rsp_out_;
   Flit<ChiDat> dat_out_;
+  Flit<ChiSnp> snp_out_;
 
   uint64_t cycle_ = 0;
   uint64_t response_latency_ = 4;
@@ -229,6 +323,8 @@ class ChiSnCore {
   uint64_t rsp_consumed_count_ = 0;
   uint64_t dat_consumed_count_ = 0;
   uint64_t dat_tx_fire_count_ = 0;
+  uint64_t snoops_issued_ = 0;
+  uint64_t snoops_completed_ = 0;
 
   std::string error_;
 };

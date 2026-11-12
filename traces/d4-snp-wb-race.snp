@@ -1,0 +1,28 @@
+# d4-snp-wb-race schedule: 8 old lines raced against their own eviction
+# writeback (dues 850-1410, phase-2 stream), 8 new resident-dirty lines
+# snooped after they land (dues 1700-2120). Opcodes alternate the two
+# families we still need: data-capable (01 SnpShared / 07 SnpUnique,
+# rts=1) vs invalidating (09 SnpCleanInvalid / 0A SnpMakeInvalid).
+# Cycle units: model cycles. Measured (first pass): phase-2 eviction
+# stream issues model 587-601 and drains by model ~671 (FE), readback
+# runs to ~747, sim ends ~824. Old dues 598-654 sit in the writeback
+# race window, new dues 672-735 after the evictors land.
+# Interesting outcomes on old lines: resp=0x0 (already evicted, missed
+# the race), SnpRespData with PD (won the race, dirty data handed over
+# while the writeback was in flight), or any protocol error -> [ChiSnSnp-FATAL].
+598 6000 01 1     # old n0 raced by SnpShared rts
+606 46000 09 0    # old n1 SnpCleanInvalid
+614 86000 07 1   # old n2 SnpUnique rts
+622 c6000 0a 0   # old n3 SnpMakeInvalid
+630 106000 01 1  # old n4 SnpShared rts
+638 146000 09 0  # old n5 SnpCleanInvalid
+646 186000 07 1  # old n6 SnpUnique rts
+654 1c6000 0a 0  # old n7 SnpMakeInvalid
+672 206000 01 1  # new n8 resident dirty, SnpShared rts
+681 246000 09 0  # new n9 SnpCleanInvalid
+690 286000 07 1  # new n10 SnpUnique rts
+699 2c6000 0a 0  # new n11 SnpMakeInvalid
+708 306000 01 1  # new n12 SnpShared rts
+717 346000 09 0  # new n13 SnpCleanInvalid
+726 386000 07 1  # new n14 SnpUnique rts
+735 3c6000 0a 0  # new n15 SnpMakeInvalid

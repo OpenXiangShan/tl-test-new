@@ -1,0 +1,14 @@
+# l2sn-snp-selftest snoop schedule (+chisnp=...): one injection per line
+#   <model cycle> <hex addr> <snp opcode> <retToSrc 0|1>
+# opcodes: 01 SnpShared 02 SnpClean 03 SnpOnce 04 SnpNotSharedDirty
+#          07 SnpUnique 08 SnpCleanShared 09 SnpCleanInvalid 0A SnpMakeInvalid
+# Cycle calibration (measured 2026-11-11): the whole 63-entry trace replays
+# in ~807 model cycles (clock half period 10ns, sim ends near 8075000ps);
+# the TraceDispatcher counter runs ~2x faster than model cycles. Setup
+# (4 ops + FE) drains by model ~615; the readback phase starts at model
+# ~780. Dues below land inside the filler window with holders built.
+650 11000 01 0     # A SnpShared -> SnpResp SC resp=0x1 (measured)
+665 13000 07 1     # B SnpUnique rts -> SnpRespData resp=0x4 (I+PD) data=000102030485c667 (measured)
+680 15000 03 0     # C SnpOnce -> SnpResp SC resp=0x1, no data (measured)
+695 17000 07 1     # D cold -> SnpResp I resp=0x0 (measured)
+710 19000 0a 0     # E SnpMakeInvalid -> SnpResp I resp=0x0 (measured)

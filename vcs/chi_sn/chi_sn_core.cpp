@@ -1,6 +1,7 @@
 #include "cute_verification/chi_sn_core.h"
 
 #include <algorithm>
+#include <iomanip>
 #include <sstream>
 
 namespace cute {
@@ -13,6 +14,9 @@ constexpr uint64_t kDbidPoolSize = 8;
 // the 8-entry DBID pool; a requester that stalls simply stops acking and the
 // deque rotates its old tail out.
 constexpr size_t kCompackTrackLimit = 64;
+
+// Completed-snoop audit records kept for the summary / DPI getters.
+constexpr size_t kSnoopHistoryLimit = 64;
 
 uint64_t line_base(uint64_t address) { return address & ~(kChiLineBytes - 1); }
 
@@ -72,6 +76,33 @@ bool is_writeback_opcode(uint32_t opcode) {
     case kChiWriteBackPtl:
     case kChiWriteBackFull:
     case kChiWriteEvictOrEvict:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool is_snp_dat_opcode(uint32_t opcode) {
+  switch (opcode) {
+    case kChiSnpRespData:
+    case kChiSnpRespDataPtl:
+    case kChiSnpRespDataFwded:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool is_injectable_snp_opcode(uint32_t opcode) {
+  switch (opcode) {
+    case kChiSnpShared:
+    case kChiSnpClean:
+    case kChiSnpOnce:
+    case kChiSnpNotSharedDirty:
+    case kChiSnpUnique:
+    case kChiSnpCleanShared:
+    case kChiSnpCleanInvalid:
+    case kChiSnpMakeInvalid:
       return true;
     default:
       return false;
@@ -152,6 +183,16 @@ void ChiSnCore::on_req_fire(const ChiReq& req) {
       return;
     }
   }
+  // The snoop txnID range is disjoint from the requester's MSHR ids, so a
+  // hit here means the DUT started using ids it never did before -- worth
+  // failing loudly rather than silently corrupting snoop response matching.
+  if (req.txn_id >= kSnpTxnBase) {
+    std::ostringstream message;
+    message << "CHI SN: REQ txnID " << req.txn_id
+            << " inside the reserved snoop range";
+    fail(message.str());
+    return;
+  }
   if (is_grant_opcode(req.opcode)) {
     PendingGrant grant;
     grant.txn_id = req.txn_id;
@@ -213,6 +254,73 @@ void ChiSnCore::on_req_fire(const ChiReq& req) {
 }
 
 void ChiSnCore::on_dat_fire(const ChiDat& dat) {
+  // Snoop response data is keyed by the snoop's txnID (the L2 sends
+  // dbID=0 and the terminal SnpResp was never sent on RSP); classify by
+  // opcode before the write-beat dbID matching below.
+  if (is_snp_dat_opcode(dat.opcode)) {
+    PendingSnoop* snoop = find_snoop(dat.txn_id);
+    if (snoop == nullptr) {
+      std::ostringstream message;
+      message << "CHI SN: SnpRespData beat for txnID " << dat.txn_id
+              << " without an outstanding snoop";
+      fail(message.str());
+      return;
+    }
+    if (dat.data_id >= 2) {
+      std::ostringstream message;
+      message << "CHI SN: snoop DAT dataID " << dat.data_id
+              << " outside the modelled 64B line";
+      fail(message.str());
+      return;
+    }
+    if (snoop->beats_mask & (1u << dat.data_id)) {
+      std::ostringstream message;
+      message << "CHI SN: duplicate snoop DAT dataID " << dat.data_id
+              << " for txnID " << dat.txn_id;
+      fail(message.str());
+      return;
+    }
+    if (snoop->beats_received > 0 && dat.data_id <= snoop->last_data_id) {
+      std::ostringstream message;
+      message << "CHI SN: snoop DAT dataID " << dat.data_id << " after "
+              << snoop->last_data_id << " (beats out of order, txnID "
+              << dat.txn_id << ")";
+      fail(message.str());
+      return;
+    }
+    for (size_t i = 0; i < kChiDataBytes; ++i) {
+      const bool bit_set = ((dat.data_check >> i) & 1u) != 0;
+      const bool want_set = (__builtin_popcount(dat.data[i]) & 1) == 0;
+      if (bit_set != want_set) {
+        std::ostringstream message;
+        message << "CHI SN: snoop DAT dataCheck parity wrong on byte " << i
+                << " (dataID " << dat.data_id << ", txnID " << dat.txn_id
+                << ")";
+        fail(message.str());
+        return;
+      }
+    }
+    snoop->beats_mask |= 1u << dat.data_id;
+    snoop->last_data_id = dat.data_id;
+    std::copy(dat.data.begin(), dat.data.end(),
+              snoop->line.begin() + dat.data_id * kChiDataBytes);
+    if (++snoop->beats_received >= 2) {
+      // The snoopee held the newest copy: its beats win over whatever the
+      // SN memory had (matches "RN had the dirty line" semantics).
+      auto& line = memory_[snoop->addr];
+      line = snoop->line;
+      complete_snoop(snoop, true, dat.resp);
+      for (auto it = snoops_.begin(); it != snoops_.end(); ++it) {
+        if (it->txn_id == dat.txn_id) {
+          snoops_.erase(it);
+          break;
+        }
+      }
+    }
+    ++dat_tx_fire_count_;  // a returned snoop beat is a completion
+    return;
+  }
+
   // After the DBIDResp the DUT carries the granted dbID in txnID; match
   // pending writes on that key. Data arriving before the grant is tolerated
   // as long as the dbID matches.
@@ -284,7 +392,109 @@ void ChiSnCore::on_dat_fire(const ChiDat& dat) {
   ++dat_tx_fire_count_;  // watchdog: an accepted write beat is a completion
 }
 
+bool ChiSnCore::txn_id_in_use(uint32_t txn_id) const {
+  for (const auto& read : reads_) {
+    if (read.txn_id == txn_id) return true;
+  }
+  for (const auto& write : writes_) {
+    if (!write.dbid_delivered && write.req_txn_id == txn_id) return true;
+  }
+  for (const auto& grant : grants_) {
+    if (grant.txn_id == txn_id) return true;
+  }
+  for (const auto& snoop : snoops_) {
+    if (snoop.txn_id == txn_id) return true;
+  }
+  return false;
+}
+
+bool ChiSnCore::allocate_snoop_txn(uint32_t* txn_id) {
+  for (uint32_t offset = 0; offset < kSnpTxnCount; ++offset) {
+    const uint32_t candidate = kSnpTxnBase + ((next_snoop_txn_ - kSnpTxnBase + offset) % kSnpTxnCount);
+    if (!txn_id_in_use(candidate)) {
+      next_snoop_txn_ = kSnpTxnBase + ((candidate - kSnpTxnBase + 1) % kSnpTxnCount);
+      *txn_id = candidate;
+      return true;
+    }
+  }
+  return false;
+}
+
+ChiSnCore::PendingSnoop* ChiSnCore::find_snoop(uint32_t txn_id) {
+  for (auto& snoop : snoops_) {
+    if (snoop.txn_id == txn_id) return &snoop;
+  }
+  return nullptr;
+}
+
+void ChiSnCore::complete_snoop(PendingSnoop* snoop, bool returned_data,
+                               uint32_t resp_value) {
+  SnoopRecord record;
+  record.txn_id = snoop->txn_id;
+  record.opcode = snoop->opcode;
+  record.addr = snoop->addr;
+  record.ret_to_src = snoop->ret_to_src;
+  record.returned_data = returned_data;
+  record.resp_value = resp_value;
+  record.data = snoop->line;
+  snoop_history_.push_back(record);
+  if (snoop_history_.size() > kSnoopHistoryLimit) snoop_history_.pop_front();
+  ++snoops_completed_;
+}
+
+bool ChiSnCore::issue_snoop(uint64_t addr, uint32_t opcode, bool ret_to_src) {
+  if (!is_injectable_snp_opcode(opcode)) {
+    std::ostringstream message;
+    message << "CHI SN: snoop opcode 0x" << std::hex << opcode
+            << " is not injectable (Fwd/Stash/Query or unknown)";
+    fail(message.str());
+    return false;
+  }
+  uint32_t txn_id = 0;
+  if (!allocate_snoop_txn(&txn_id)) {
+    fail("CHI SN: snoop txnID pool exhausted");
+    return false;
+  }
+  PendingSnoop snoop;
+  snoop.txn_id = txn_id;
+  snoop.opcode = opcode;
+  snoop.addr = line_base(addr);
+  snoop.ret_to_src = ret_to_src;
+  snoop.fired_cycle = cycle_;
+  snoops_.push_back(snoop);
+  ++snoops_issued_;
+  // Present immediately when the SNP slot is free so the flit is on the
+  // wires the same negedge the DPI layer issued it.
+  present_next_flits();
+  return true;
+}
+
 void ChiSnCore::on_rsp_fire(const ChiRsp& rsp) {
+  if (rsp.opcode == kChiSnpResp || rsp.opcode == kChiSnpRespFwded) {
+    PendingSnoop* snoop = find_snoop(rsp.txn_id);
+    if (snoop == nullptr) {
+      std::ostringstream message;
+      message << "CHI SN: SnpResp for txnID " << rsp.txn_id
+              << " without an outstanding snoop";
+      fail(message.str());
+      return;
+    }
+    if (snoop->beats_received > 0) {
+      std::ostringstream message;
+      message << "CHI SN: SnpResp after SnpRespData beats for snoop txnID "
+              << rsp.txn_id;
+      fail(message.str());
+      return;
+    }
+    complete_snoop(snoop, false, rsp.resp);
+    for (auto it = snoops_.begin(); it != snoops_.end(); ++it) {
+      if (it->txn_id == rsp.txn_id) {
+        snoops_.erase(it);
+        break;
+      }
+    }
+    return;
+  }
   if (rsp.opcode != kChiCompAck) return;
   ++compack_count_;
   // CompAck must reference a read whose CompData was fully delivered, and
@@ -337,6 +547,8 @@ void ChiSnCore::dat_out_consume() {
   if (dat_out_.valid) ++dat_consumed_count_;
   dat_out_.valid = false;
 }
+
+void ChiSnCore::snp_out_consume() { snp_out_.valid = false; }
 
 void ChiSnCore::tick() {
   ++cycle_;
@@ -438,15 +650,72 @@ void ChiSnCore::present_next_flits() {
       }
     }
   }
+
+  // Injected snoops take the SNP slot strictly FIFO: the snoopee's ordering
+  // obligations are trivial with one outstanding flit at a time, and the
+  // L2-side RXSNP queue is only 2 deep anyway. An entry stays in the deque
+  // until its response arrives, so only unsent heads are presented.
+  if (!snp_out_.valid) {
+    for (auto& snoop : snoops_) {
+      if (snoop.sent) continue;
+      ChiSnp snp;
+      snp.opcode = snoop.opcode;
+      snp.txn_id = snoop.txn_id;
+      snp.addr = snoop.addr;
+      snp.src_id = 1;  // arbitrary non-zero SN node id, echoed in SnpResp.srcID
+      snp.ret_to_src = snoop.ret_to_src;
+      snp_out_ = {true, snp};
+      snoop.sent = true;
+      break;
+    }
+  }
+}
+
+std::string ChiSnCore::snoop_summary() const {
+  std::ostringstream out;
+  out << "snoops issued=" << snoops_issued_
+      << " completed=" << snoops_completed_
+      << " outstanding=" << (snoops_issued_ - snoops_completed_);
+  for (const auto& snoop : snoops_) {
+    out << "; pending snoop txn 0x" << std::hex << snoop.txn_id << std::dec
+        << " op=0x" << std::hex << snoop.opcode << std::dec << " addr 0x"
+        << std::hex << snoop.addr << std::dec;
+    if (snoop.beats_received > 0) {
+      out << " (" << snoop.beats_received << "/2 data beats)";
+    }
+  }
+  // Newest records last; cap the dump so a stress run stays readable.
+  // Directed traces stay well under 64 records, so show them all.
+  size_t shown = 0;
+  for (const auto& record : snoop_history_) {
+    if (shown++ >= 64) {
+      out << "; (+ " << (snoop_history_.size() - 64) << " more records)";
+      break;
+    }
+    out << "; snoop txn 0x" << std::hex << record.txn_id << std::dec
+        << " op=0x" << std::hex << record.opcode << std::dec << " addr 0x"
+        << std::hex << record.addr << std::dec << " -> "
+        << (record.returned_data ? "SnpRespData" : "SnpResp")
+        << " resp=0x" << std::hex << record.resp_value << std::dec;
+    if (record.returned_data) {
+      out << " data[0..7]=";
+      for (size_t i = 0; i < 8 && i < record.data.size(); ++i) {
+        out << std::hex << std::setw(2) << std::setfill('0')
+            << static_cast<uint32_t>(record.data[i]) << std::dec;
+      }
+    }
+  }
+  return out.str();
 }
 
 std::string ChiSnCore::outstanding_summary() const {
   std::ostringstream out;
   out << "SN outstanding: " << reads_.size() << " read(s), "
       << writes_.size() << " write(s), " << grants_.size() << " grant(s), "
+      << snoops_.size() << " snoop(s), "
       << (compack_pending_.size() >= kCompackTrackLimit ? ">= " : "")
       << compack_pending_.size() << " unacked CompData line(s)";
-  if (rsp_out_.valid || dat_out_.valid) {
+  if (rsp_out_.valid || dat_out_.valid || snp_out_.valid) {
     out << "; presented and waiting DUT ready:";
     if (rsp_out_.valid) {
       out << " RSP op=0x" << std::hex << rsp_out_.bits.opcode << " txn "
@@ -455,6 +724,10 @@ std::string ChiSnCore::outstanding_summary() const {
     if (dat_out_.valid) {
       out << " CompData txn " << dat_out_.bits.txn_id << " dataID "
           << dat_out_.bits.data_id;
+    }
+    if (snp_out_.valid) {
+      out << " SNP op=0x" << std::hex << snp_out_.bits.opcode << " txn "
+          << snp_out_.bits.txn_id << std::dec;
     }
   }
   // Oldest entries first: the first stuck transaction is usually the story.
@@ -492,6 +765,15 @@ std::string ChiSnCore::outstanding_summary() const {
     line << "grant txn " << grant.txn_id << " addr 0x" << std::hex
          << grant.addr << std::dec << " waiting Comp";
     entries.push_back({cycle_ - grant.fired_cycle, line.str()});
+  }
+  for (const auto& snoop : snoops_) {
+    std::ostringstream line;
+    line << "snoop txn 0x" << std::hex << snoop.txn_id << std::dec
+         << " op=0x" << std::hex << snoop.opcode << std::dec << " addr 0x"
+         << std::hex << snoop.addr << std::dec << " waiting "
+         << (snoop.beats_received > 0 ? "remaining data beat(s)"
+                                      : "SnpResp/SnpRespData");
+    entries.push_back({cycle_ - snoop.fired_cycle, line.str()});
   }
   std::stable_sort(entries.begin(), entries.end(),
                    [](const Entry& a, const Entry& b) { return a.age > b.age; });
