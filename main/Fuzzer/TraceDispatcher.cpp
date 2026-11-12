@@ -95,6 +95,12 @@ TraceDispatcher::TraceDispatcher(
             mappedOp = TraceOp::MMIO_GET;
         else if (op == "MP" || op == "MPF")
             mappedOp = TraceOp::MMIO_PUT;
+        else if (op == "CL")
+            mappedOp = TraceOp::CBO_CLEAN;
+        else if (op == "FL")
+            mappedOp = TraceOp::CBO_FLUSH;
+        else if (op == "IV")
+            mappedOp = TraceOp::CBO_INVAL;
         else
             continue;
 
@@ -171,8 +177,33 @@ tl_agent::ActionDenialEnum TraceDispatcher::send_single_request(const TraceEntry
         if (entry.op == TraceOp::READ)
             return cAgent->do_acquireBlock(entry.addr, TLParamAcquire::NtoB, 0);
 
+        // CR on a cached client: promote the held copy to unique (B->T,
+        // exercises the probe path against other copies). If the line is
+        // no longer held (evicted), refetch it at NtoT instead; if it is
+        // already TIP both acquires return PERMISSION and the entry is
+        // dropped, which matches the "nothing to do on a T-held hit".
+        if (entry.op == TraceOp::CREAD)
+        {
+            auto denial = cAgent->do_acquireBlock(entry.addr, TLParamAcquire::BtoT, 0);
+            if (denial.ordinal == tl_agent::ActionDenial::PERMISSION.ordinal)
+                return cAgent->do_acquireBlock(entry.addr, TLParamAcquire::NtoT, 0);
+            return denial;
+        }
+
         if (entry.op == TraceOp::WRITE)
             return cAgent->do_acquirePerm(entry.addr, TLParamAcquire::NtoT, 0);
+
+        // CBO hints. alwaysHit=false: hit/miss is decided by the block's
+        // actual state (built by earlier trace ops), matching how the d4
+        // traces induce states. A CMO still in flight rejects other ops on
+        // the same address, so a readback right after the hint backpressures
+        // until the CBOAck lands.
+        if (entry.op == TraceOp::CBO_CLEAN)
+            return cAgent->do_cbo_clean(entry.addr, false);
+        if (entry.op == TraceOp::CBO_FLUSH)
+            return cAgent->do_cbo_flush(entry.addr, false);
+        if (entry.op == TraceOp::CBO_INVAL)
+            return cAgent->do_cbo_inval(entry.addr, false);
 
         if (entry.op == TraceOp::EVICT)
             return cAgent->do_releaseDataAuto(entry.addr, 0, false, false);
