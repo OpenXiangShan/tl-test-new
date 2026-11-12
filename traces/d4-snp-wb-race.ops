@@ -1,0 +1,49 @@
+# d4-snp-wb-race: F20 injection edition. Dirty writebacks forced in a
+# burst while the ChiSnCore snoops race the eviction stream.
+# Geometry: all 16 lines share L2 set 0x180 AND one L3 set (stride
+# 0x40000), so the 8 fresh dirty evictors in phase 2 must write back the
+# 8 old dirty holders one after another; the .snp schedule interleaves
+# SnpShared/SnpUnique/SnpCleanInvalid/SnpMakeInvalid with that stream
+# (old lines: snoop-vs-writeback race; new lines: resident-dirty snoop).
+# Readback refetches all 16 lines afterwards; data check = the matrix
+# write formula (addr>>(i%8))+i per byte.
+# phase 1: 8 old dirty holders (agent1 PutFullData)
+MW 0x000000006000 1
+MW 0x000000046000 1
+MW 0x000000086000 1
+MW 0x0000000c6000 1
+MW 0x000000106000 1
+MW 0x000000146000 1
+MW 0x000000186000 1
+MW 0x0000001c6000 1
+FE 0x000000000000 0
+# phase 2: 8 fresh dirty lines evict the holders -- writeback burst races
+# the injected snoops (no fence inside the stream)
+MW 0x000000206000 1
+MW 0x000000246000 1
+MW 0x000000286000 1
+MW 0x0000002c6000 1
+MW 0x000000306000 1
+MW 0x000000346000 1
+MW 0x000000386000 1
+MW 0x0000003c6000 1
+FE 0x000000000000 0
+# phase 3: readback all 16 lines (old-line hits are now misses refetched
+# from L3 with the written-back data)
+MR 0x000000006000 1
+MR 0x000000046000 1
+MR 0x000000086000 1
+MR 0x0000000c6000 1
+MR 0x000000106000 1
+MR 0x000000146000 1
+MR 0x000000186000 1
+MR 0x0000001c6000 1
+MR 0x000000206000 1
+MR 0x000000246000 1
+MR 0x000000286000 1
+MR 0x0000002c6000 1
+MR 0x000000306000 1
+MR 0x000000346000 1
+MR 0x000000386000 1
+MR 0x0000003c6000 1
+FE 0x000000000000 0

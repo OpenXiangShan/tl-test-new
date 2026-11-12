@@ -10,9 +10,11 @@
 // ChiSnDrive runs at the negedge (rx valid/bits + tx readys settle a
 // half-cycle before the posedge), ChiSnObserve samples the handshake fires
 // in the posedge active region and aborts on model protocol errors. The
-// model never backpressures; rx_snp is quiet in this baseline, so traces
-// must not depend on external snoops. Build the model library with
-// vcs/scripts/build_chisn_dpi.sh and load it via
+// model never backpressures. Active snoops are injectable with
+// +chisnp=<schedule file> (one "<cycle> <addr> <opcode> <retToSrc>" per
+// line): ChiSnCore emits them on RXSNP and audits the SnpResp /
+// SnpRespData answers (printed as [ChiSnSnp-FINAL] at the end). Build the
+// model library with vcs/scripts/build_chisn_dpi.sh and load it via
 // TLTEST_VCS_EXTRA_DPI_LIBS=.../libchisn_dpi.so (run_vcs.sh wires it in).
 
 `timescale 1ns/1ps
@@ -50,6 +52,10 @@ module tltest_vcs_tb;
   // semantics (never backpressure, dataID = beat*2, odd-parity dataCheck)
   // follow CUTE-Test's cute_vcs_dpi_l2.cpp.
   import "DPI-C" function void ChiSnInit();
+  import "DPI-C" function void ChiSnQueueSnoop(
+    input int due_cycle, input longint unsigned addr,
+    input int opcode, input bit ret_to_src
+  );
   import "DPI-C" function void ChiSnDrive(
     output logic tx_req_ready, output logic tx_rsp_ready,
     output logic tx_dat_ready,
@@ -58,7 +64,10 @@ module tltest_vcs_tb;
     output logic rx_dat_valid, output logic [3:0] rx_dat_opcode,
     output logic [11:0] rx_dat_txn, output logic [1:0] rx_dat_dataid,
     output logic [3:0] rx_dat_datasrc, output logic [255:0] rx_dat_data,
-    output logic [31:0] rx_dat_check
+    output logic [31:0] rx_dat_check,
+    output logic rx_snp_valid, output logic [4:0] rx_snp_opcode,
+    output logic [11:0] rx_snp_txn, output logic [10:0] rx_snp_srcid,
+    output logic [44:0] rx_snp_addr, output logic rx_snp_ret
   );
   import "DPI-C" function void ChiSnObserve(
     input logic tx_req_valid, input logic [6:0] tx_req_opcode,
@@ -70,10 +79,16 @@ module tltest_vcs_tb;
     input logic [11:0] tx_dat_txn, input logic [1:0] tx_dat_dataid,
     input logic [31:0] tx_dat_be, input logic [31:0] tx_dat_check,
     input logic [255:0] tx_dat_data,
-    input logic rx_rsp_ready, input logic rx_dat_ready
+    input logic rx_rsp_ready, input logic rx_dat_ready,
+    input logic [2:0] tx_rsp_resp, input logic [2:0] tx_dat_resp,
+    input logic rx_snp_ready
   );
   import "DPI-C" function bit ChiSnHasError();
   import "DPI-C" function string ChiSnGetMessage();
+  import "DPI-C" function string ChiSnSnoopSummary();
+  import "DPI-C" function string ChiSnDumpMem(
+    input longint unsigned addr, input int len
+  );
 
   // =====================================================================
   // Clock / reset / misc DUT inputs
@@ -333,17 +348,17 @@ module tltest_vcs_tb;
   logic [31:0]     io_chi_0_rx_dat_bits_dataCheck;
   wire  [3:0]      io_chi_0_rx_dat_bits_poison;
   wire             io_chi_0_rx_snp_ready;
-  wire             io_chi_0_rx_snp_valid;
+  logic            io_chi_0_rx_snp_valid;
   wire  [3:0]      io_chi_0_rx_snp_bits_qos;
-  wire  [10:0]     io_chi_0_rx_snp_bits_srcID;
-  wire  [11:0]     io_chi_0_rx_snp_bits_txnID;
+  logic [10:0]     io_chi_0_rx_snp_bits_srcID;
+  logic [11:0]     io_chi_0_rx_snp_bits_txnID;
   wire  [10:0]     io_chi_0_rx_snp_bits_fwdNID;
   wire  [11:0]     io_chi_0_rx_snp_bits_fwdTxnID;
-  wire  [4:0]      io_chi_0_rx_snp_bits_opcode;
-  wire  [44:0]     io_chi_0_rx_snp_bits_addr;
+  logic [4:0]      io_chi_0_rx_snp_bits_opcode;
+  logic [44:0]     io_chi_0_rx_snp_bits_addr;
   wire             io_chi_0_rx_snp_bits_ns;
   wire             io_chi_0_rx_snp_bits_doNotGoToSD;
-  wire             io_chi_0_rx_snp_bits_retToSrc;
+  logic            io_chi_0_rx_snp_bits_retToSrc;
   wire             io_chi_0_rx_snp_bits_traceTag;
   wire             io_chi_0_rx_snp_bits_mpam_perfMonGroup;
   wire  [8:0]      io_chi_0_rx_snp_bits_mpam_partID;
@@ -352,8 +367,10 @@ module tltest_vcs_tb;
   // SN-side inputs the model never asserts are tied to zero (same policy as
   // CUTE-Test vcs/vcs_tb_l2.sv): resp/respErr are valid as 0 for every
   // opcode ChiSnCore emits, and the L2 does not consume the tag/mpam/qos
-  // fields on the rx side. rx_snp stays quiet in this baseline; active
-  // snoop injection is the follow-up extension.
+  // fields on the rx side. rx_snp valid/srcID/txnID/opcode/addr/retToSrc
+  // are driven by ChiSnDrive (active snoop injection); the fields it never
+  // touches stay tied to zero, fwdNID/fwdTxnID included because the model
+  // only injects non-Fwd snoops.
   assign io_chi_0_rx_rsp_bits_qos = '0;
   assign io_chi_0_rx_rsp_bits_tgtID = '0;
   assign io_chi_0_rx_rsp_bits_srcID = '0;
@@ -380,17 +397,11 @@ module tltest_vcs_tb;
   assign io_chi_0_rx_dat_bits_rsvdc = '0;
   assign io_chi_0_rx_dat_bits_be = '0;
   assign io_chi_0_rx_dat_bits_poison = '0;
-  assign io_chi_0_rx_snp_valid = '0;
   assign io_chi_0_rx_snp_bits_qos = '0;
-  assign io_chi_0_rx_snp_bits_srcID = '0;
-  assign io_chi_0_rx_snp_bits_txnID = '0;
   assign io_chi_0_rx_snp_bits_fwdNID = '0;
   assign io_chi_0_rx_snp_bits_fwdTxnID = '0;
-  assign io_chi_0_rx_snp_bits_opcode = '0;
-  assign io_chi_0_rx_snp_bits_addr = '0;
   assign io_chi_0_rx_snp_bits_ns = '0;
   assign io_chi_0_rx_snp_bits_doNotGoToSD = '0;
-  assign io_chi_0_rx_snp_bits_retToSrc = '0;
   assign io_chi_0_rx_snp_bits_traceTag = '0;
   assign io_chi_0_rx_snp_bits_mpam_perfMonGroup = '0;
   assign io_chi_0_rx_snp_bits_mpam_partID = '0;
@@ -676,9 +687,41 @@ module tltest_vcs_tb;
     io_chi_0_rx_dat_bits_opcode = '0; io_chi_0_rx_dat_bits_txnID = '0;
     io_chi_0_rx_dat_bits_dataID = '0; io_chi_0_rx_dat_bits_dataSource = '0;
     io_chi_0_rx_dat_bits_data = '0; io_chi_0_rx_dat_bits_dataCheck = '0;
+    io_chi_0_rx_snp_valid = 1'b0;
+    io_chi_0_rx_snp_bits_srcID = '0; io_chi_0_rx_snp_bits_txnID = '0;
+    io_chi_0_rx_snp_bits_opcode = '0; io_chi_0_rx_snp_bits_addr = '0;
+    io_chi_0_rx_snp_bits_retToSrc = 1'b0;
 
     TileLinkSystemInitialize();
     ChiSnInit();
+
+    // Active-snoop schedule: +chisnp=<file>, one injection per line
+    //   "<model cycle> <hex addr> <snp opcode> <retToSrc 0|1>"
+    // (format reference: traces/l2sn-snp-selftest.snp). The due cycles
+    // are model cycles counted from ChiSnInit.
+    begin
+      string chisnp_file;
+      if ($value$plusargs("chisnp=%s", chisnp_file)) begin
+        int fd, queued, parsed;
+        string line;
+        int cyc, sop, sret;
+        longint unsigned saddr;
+        fd = $fopen(chisnp_file, "r");
+        if (fd == 0)
+          $fatal(1, "chisnp schedule file cannot be opened: %s", chisnp_file);
+        queued = 0;
+        while ($fgets(line, fd) > 0) begin
+          parsed = $sscanf(line, "%d %h %h %h", cyc, saddr, sop, sret);
+          if (parsed >= 3) begin
+            if (parsed == 3) sret = 0;
+            ChiSnQueueSnoop(cyc, saddr, sop, sret[0]);
+            queued++;
+          end
+        end
+        $fclose(fd);
+        $display("[ChiSnSnp] queued %0d snoop(s) from %s", queued, chisnp_file);
+      end
+    end
 
     repeat (10) @(negedge clock);
     #1 reset = 1'b0;
@@ -755,7 +798,10 @@ module tltest_vcs_tb;
         io_chi_0_rx_dat_valid, io_chi_0_rx_dat_bits_opcode,
         io_chi_0_rx_dat_bits_txnID, io_chi_0_rx_dat_bits_dataID,
         io_chi_0_rx_dat_bits_dataSource, io_chi_0_rx_dat_bits_data,
-        io_chi_0_rx_dat_bits_dataCheck
+        io_chi_0_rx_dat_bits_dataCheck,
+        io_chi_0_rx_snp_valid, io_chi_0_rx_snp_bits_opcode,
+        io_chi_0_rx_snp_bits_txnID, io_chi_0_rx_snp_bits_srcID,
+        io_chi_0_rx_snp_bits_addr, io_chi_0_rx_snp_bits_retToSrc
       );
 
       // ---- Tick ----
@@ -890,10 +936,14 @@ module tltest_vcs_tb;
         io_chi_0_tx_dat_bits_txnID, io_chi_0_tx_dat_bits_dataID,
         io_chi_0_tx_dat_bits_be, io_chi_0_tx_dat_bits_dataCheck,
         io_chi_0_tx_dat_bits_data,
-        io_chi_0_rx_rsp_ready, io_chi_0_rx_dat_ready
+        io_chi_0_rx_rsp_ready, io_chi_0_rx_dat_ready,
+        io_chi_0_tx_rsp_bits_resp, io_chi_0_tx_dat_bits_resp,
+        io_chi_0_rx_snp_ready
       );
-      if (ChiSnHasError())
+      if (ChiSnHasError()) begin
+        $display("[ChiSnSnp-FATAL] %s", ChiSnSnoopSummary());
         $fatal(1, "ChiSnCore: %s", ChiSnGetMessage());
+      end
     end
   end
 
@@ -930,9 +980,13 @@ module tltest_vcs_tb;
       if (TileLinkSystemIsAlive() == 0) begin
         if (TileLinkSystemIsFinished() != 0) begin
           $display("[%0d] [tl-test-new-FINAL] tl-test subsystem FINISHED.", sim_time);
+          // Active-snoop audit: issued/completed/outstanding plus the last
+          // response records (SnpResp vs SnpRespData, resp field, data).
+          $display("[ChiSnSnp-FINAL] %s", ChiSnSnoopSummary());
           TileLinkSystemFinalize();
           $finish;
         end else begin
+          $display("[ChiSnSnp-FINAL] %s", ChiSnSnoopSummary());
           TileLinkSystemFinalize();
           $fatal(1, "[%0d] [tl-test-new-FINAL] tl-test subsystem FAILED / no longer alive", sim_time);
         end

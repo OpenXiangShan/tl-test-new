@@ -1,0 +1,27 @@
+# d4-snp-tob schedule: 3 holder states x 5 opcodes, one line per cell.
+# Rows: UD = dirty TIP (MW agent1), UC = clean TIP (MR agent1),
+#       SC+ = client0 holds Branch after LD (directory TRUNK).
+# Opcodes: 01 SnpShared, 02 SnpClean, 03 SnpOnce, 04 SnpNotSharedDirty,
+#          08 SnpCleanShared. rts=1 only where data return is plausible
+#          (dirty holder x data-capable opcode).
+# Cycle units: model cycles (dispatcher checks sim_time/20). Measured
+# (first pass): phase 1 drains by model ~585, filler window model
+# 586-760, sim ends model ~771. Dues 600-740 sit inside the filler.
+# Expected responses (selftest-measured baseline): dirty holder answers
+# SnpRespData (PassDirty), clean answers SnpResp with post-snoop state,
+# SC+ rows must probe l1d (SourceB) before answering.
+600 4000 01 1    # UD x SnpShared rts -> SnpRespData PD
+610 4040 02 0    # UD x SnpClean
+620 4080 03 1    # UD x SnpOnce rts -> SnpRespData PD
+630 40c0 04 0    # UD x SnpNotSharedDirty
+640 4100 08 0    # UD x SnpCleanShared
+650 4140 01 0    # UC x SnpShared -> clean SnpResp
+660 4180 02 0    # UC x SnpClean
+670 41c0 03 0    # UC x SnpOnce
+680 4200 04 0    # UC x SnpNotSharedDirty
+690 4240 08 0    # UC x SnpCleanShared
+700 4280 01 0    # SC+ x SnpShared -> probe l1d, snpToB family
+710 42c0 02 0    # SC+ x SnpClean
+720 4300 03 0    # SC+ x SnpOnce
+730 4340 04 0    # SC+ x SnpNotSharedDirty
+740 4380 08 0    # SC+ x SnpCleanShared -> snpStable family

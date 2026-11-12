@@ -19,3 +19,6 @@ run/vcs_run*
 # Python bytecode
 __pycache__/
 *.py[cod]
+
+# L2SN variant build products (separate from build_vcs/)
+build_vcs-l2sn/

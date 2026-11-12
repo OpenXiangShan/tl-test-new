@@ -1,0 +1,75 @@
+# l2sn-snp-selftest: active-snoop smoke for the L2SN mode (ChiSnCore
+# RXSNP injection via +chisnp=traces/l2sn-snp-selftest.snp). The snoop
+# schedule fires inside the phase-2 filler window; phase 1 builds the
+# holder states, phase 3 reads everything back.
+#   A 0x11000 LD      agent0 -> L2 BRANCH clean   ; SnpShared     -> SnpResp SC (0x1)
+#   B 0x13000 MW      agent1 -> L2 TIP dirty      ; SnpUnique rts -> SnpRespData I+PD (0x4) + line data
+#   C 0x15000 MR      agent1 -> L2 TIP clean      ; SnpOnce       -> SnpResp SC (0x1), no data
+#   D 0x17000 (cold)                            ; SnpUnique rts -> SnpResp I (0x0)
+#   E 0x19000 MW      agent1 -> L2 TIP dirty      ; SnpMakeInvalid-> SnpResp I (0x0, data dropped by design)
+# phase 1: holder states
+LD 0x000000011000 0
+FE 0x000000000000 0
+MW 0x000000013000 1
+FE 0x000000000000 0
+MR 0x000000015000 1
+FE 0x000000000000 0
+MW 0x000000019000 1
+FE 0x000000000000 0
+# phase 2: filler stream so the dispatcher keeps issuing while snoops land
+MR 0x000000030000 1
+MR 0x000000030040 1
+MR 0x000000030080 1
+MR 0x0000000300c0 1
+MR 0x000000030100 1
+MR 0x000000030140 1
+MR 0x000000030180 1
+MR 0x0000000301c0 1
+MR 0x000000030200 1
+MR 0x000000030240 1
+MR 0x000000030280 1
+MR 0x0000000302c0 1
+MR 0x000000030300 1
+MR 0x000000030340 1
+MR 0x000000030380 1
+MR 0x0000000303c0 1
+MR 0x000000030400 1
+MR 0x000000030440 1
+MR 0x000000030480 1
+MR 0x0000000304c0 1
+MR 0x000000030500 1
+MR 0x000000030540 1
+MR 0x000000030580 1
+MR 0x0000000305c0 1
+MR 0x000000030600 1
+MR 0x000000030640 1
+MR 0x000000030680 1
+MR 0x0000000306c0 1
+MR 0x000000030700 1
+MR 0x000000030740 1
+MR 0x000000030780 1
+MR 0x0000000307c0 1
+MR 0x000000030800 1
+MR 0x000000030840 1
+MR 0x000000030880 1
+MR 0x0000000308c0 1
+MR 0x000000030900 1
+MR 0x000000030940 1
+MR 0x000000030980 1
+MR 0x0000000309c0 1
+MR 0x000000030a00 1
+MR 0x000000030a40 1
+MR 0x000000030a80 1
+MR 0x000000030ac0 1
+MR 0x000000030b00 1
+MR 0x000000030b40 1
+MR 0x000000030b80 1
+MR 0x000000030bc0 1
+FE 0x000000000000 0
+# phase 3: readback (B/E refetch the snooped/dropped copies from the SN)
+MR 0x000000011000 1
+MR 0x000000013000 1
+MR 0x000000015000 1
+MR 0x000000017000 1
+MR 0x000000019000 1
+FE 0x000000000000 0
