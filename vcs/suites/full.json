@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "full",
-  "description": "L2 coverage regression: 43 distinct trace/configuration jobs and 4 bounded fuzz jobs. Two legacy toggle scenarios use documented restored inputs.",
+  "description": "L2 coverage regression: 51 distinct trace/configuration jobs and 4 bounded fuzz jobs. Two legacy toggle scenarios use documented restored inputs.",
   "defaults": {
     "timeout_seconds": 600,
     "run_args": [
@@ -10,6 +10,54 @@
     ]
   },
   "jobs": [
+    {
+      "name": "d4-merge-window",
+      "mode": "trace",
+      "trace": "traces/d4-merge-window.ops",
+      "ini": "configs/d4-merge-window.tltest.ini"
+    },
+    {
+      "name": "d4-promote-burst",
+      "mode": "trace",
+      "trace": "traces/d4-promote-burst.ops",
+      "ini": "configs/d4-promote-burst.tltest.ini"
+    },
+    {
+      "name": "d4-promote-burst-slowd",
+      "mode": "trace",
+      "trace": "traces/d4-promote-burst.ops",
+      "ini": "configs/d4-promote-burst-slowd.tltest.ini"
+    },
+    {
+      "name": "d4-put-miss-burst",
+      "mode": "trace",
+      "trace": "traces/d4-put-miss-burst.ops",
+      "ini": "configs/d4-put-miss-burst.tltest.ini"
+    },
+    {
+      "name": "d4-snp-dirty-mix",
+      "mode": "trace",
+      "trace": "traces/d4-snp-dirty-mix.ops",
+      "ini": "configs/d4-snp-dirty-mix.tltest.ini"
+    },
+    {
+      "name": "d4-snp-state-matrix",
+      "mode": "trace",
+      "trace": "traces/d4-snp-state-matrix.ops",
+      "ini": "configs/d4-snp-state-matrix.tltest.ini"
+    },
+    {
+      "name": "d4-wb-4state",
+      "mode": "trace",
+      "trace": "traces/d4-wb-4state.ops",
+      "ini": "configs/d4-wb-4state.tltest.ini"
+    },
+    {
+      "name": "d4-get-trunk-probe",
+      "mode": "trace",
+      "trace": "traces/d4-get-trunk-probe.ops",
+      "ini": "configs/d4-get-trunk-probe.tltest.ini"
+    },
     {
       "name": "cache-mmio-contention",
       "mode": "trace",
