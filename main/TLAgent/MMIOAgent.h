@@ -39,9 +39,16 @@ namespace tl_agent {
     class MMIOGlobalStatus {
     private:
         std::unordered_set<paddr_t> inflightAddress;
+        // 8B-granule MMIO writes that left the A channel but whose AccessAck
+        // has not returned yet (counted, so concurrent writers compose).
+        std::unordered_map<paddr_t, int> pendingWrite;
         uint8_t*                    data;
         size_t                      dataSize;
         const TLLocalConfig*        tlcfg;
+
+    public:
+        uint64_t                    getVerified = 0;
+        uint64_t                    getSkipped  = 0;
 
     public:
         MMIOGlobalStatus(const TLLocalConfig* tlcfg) noexcept;
@@ -53,6 +60,10 @@ namespace tl_agent {
         bool            isInflight(const TLLocalContext* ctx, paddr_t address) const noexcept;
         bool            isInflightGet(const TLLocalContext* ctx, paddr_t address) const noexcept;
         bool            isInflightPut(const TLLocalContext* ctx, paddr_t address) const noexcept;
+
+        void            incPendingWrite(const TLLocalContext* ctx, paddr_t address);
+        void            decPendingWrite(const TLLocalContext* ctx, paddr_t address);
+        bool            hasPendingWrite(paddr_t address) const noexcept;
 
         void            updateData(const TLLocalContext* ctx, paddr_t address, uint8_t size, uint8_t mask, uint8_t* data);
         void            verifyData(const TLLocalContext* ctx, paddr_t address, uint8_t size, uint8_t mask, uint8_t* data) const;

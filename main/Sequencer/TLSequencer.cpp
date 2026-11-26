@@ -498,6 +498,28 @@ void TLSequencer::Finalize() noexcept
     {
         TLSystemFinalizationPreEvent(this).Fire();
 
+        // Per-agent data-check accounting, printed before the agents are torn down.
+        for (size_t i = 0; i < GetMAgentCount(); i++)
+        {
+            if (mAgents[i])
+                LogFinal(cycles, Append("M-channel stats: agent#", i,
+                    " fired=",   mAgents[i]->get_m_fired(),
+                    " verified=", mAgents[i]->get_m_verified(),
+                    " dropped=", mAgents[i]->get_m_dropped()).EndLine());
+        }
+
+        if (mmioGlobalStatus)
+            LogFinal(cycles, Append("MMIO get stats: verified=", mmioGlobalStatus->getVerified,
+                " skipped=", mmioGlobalStatus->getSkipped).EndLine());
+
+        // Golden memory compare. Only meaningful on a clean finish: the
+        // dispatcher drains every response before firing the finish event,
+        // so no write is still in flight here. Exceptions from Finalize
+        // cannot flip the simulator verdict, hence the log-only contract
+        // (run_vcs.sh greps the MEMCHK line).
+        if (state == State::FINISHED && traceDispatcher)
+            traceDispatcher->final_memory_verify(pmem, config.memoryStart, config.memoryEnd);
+
         Gravity::UnregisterListener<TLSystemFinishEvent>(
             Gravity::StringAppender("tltest.sequencer.finish:", uint64_t(this)).ToString());
 

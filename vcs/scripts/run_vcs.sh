@@ -261,6 +261,10 @@ run_simv() {
     echo "error: replay did not reach FINISHED; see $log_file" >&2
     exit 1
   fi
+  if grep -q 'MEMCHK: FAIL' "$log_file"; then
+    echo "error: final memory golden compare failed; see $log_file" >&2
+    exit 1
+  fi
   grep -m1 'FINISHED' "$log_file" || true
 }
 
