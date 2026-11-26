@@ -255,10 +255,18 @@ namespace tl_agent {
         {
             case TLOpcodeA::Get:
             {
-                auto entry = std::make_shared<InflightMMIO>(
-                    this, !hitInflight, TLOpcodeA::Get, S_SENDING_A, a->address, a->size, a->mask);
+                // update_signal re-enters send_a every cycle until A fires.
+                // Create the tracking entry once, on the first call: rebuilding
+                // it per cycle would flip dataCheck to false on the second
+                // pass (hitInflight is true after setInflight), disabling both
+                // the freeInflight owner and any data check for this Get.
+                if (!localStatus->contains(this, a->source))
+                {
+                    auto entry = std::make_shared<InflightMMIO>(
+                        this, !hitInflight, TLOpcodeA::Get, S_SENDING_A, a->address, a->size, a->mask);
 
-                localStatus->update(this, a->source, entry);
+                    localStatus->update(this, a->source, entry);
+                }
 
                 break;
             }
