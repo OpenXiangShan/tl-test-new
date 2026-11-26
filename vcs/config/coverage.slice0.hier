@@ -1,0 +1,4 @@
+begin
+  line+cond+fsm+tgl
+  +tree tltest_vcs_tb.dut.l2_nodes.slices_0 0
+end
