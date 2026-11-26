@@ -1,0 +1,51 @@
+# d4-cbo-clean: F28 CBOClean (CL) smoke through the new TraceOp mapping.
+# Three block states x 4 lines each, every group on its own L2 set
+# (stride 0x8000 = 512 sets x 64B):
+#   dirty  0x640+n*0x8000   CR then ST -> l1d holds T dirty
+#   clean  0xe40+n*0x8000   LD        -> resident, not dirty-marked
+#   miss   0x1640+n*0x8000  cold      -> CBOClean on a miss
+# Readback goes through the matrix port (MR agent1) so the L2-side view
+# of each line after the hint is observable. A CMO in flight rejects
+# same-address ops, so the readback backpressures until CBOAck lands.
+# phase 1: build the three holder flavors
+CR 0x000000000640 0
+ST 0x000000000640 0
+CR 0x000000008640 0
+ST 0x000000008640 0
+CR 0x000000010640 0
+ST 0x000000010640 0
+CR 0x000000018640 0
+ST 0x000000018640 0
+LD 0x000000000e40 0
+LD 0x000000008e40 0
+LD 0x000000010e40 0
+LD 0x000000018e40 0
+FE 0x000000000000 0
+# phase 2: CBOClean on all 12 lines (dirty 4, clean 4, miss 4)
+CL 0x000000000640 0
+CL 0x000000008640 0
+CL 0x000000010640 0
+CL 0x000000018640 0
+CL 0x000000000e40 0
+CL 0x000000008e40 0
+CL 0x000000010e40 0
+CL 0x000000018e40 0
+CL 0x00000001640 0
+CL 0x000000009640 0
+CL 0x000000011640 0
+CL 0x000000019640 0
+FE 0x000000000000 0
+# phase 3: matrix readback of every line
+MR 0x000000000640 1
+MR 0x000000008640 1
+MR 0x000000010640 1
+MR 0x000000018640 1
+MR 0x000000000e40 1
+MR 0x000000008e40 1
+MR 0x000000010e40 1
+MR 0x000000018e40 1
+MR 0x00000001640 1
+MR 0x000000009640 1
+MR 0x000000011640 1
+MR 0x000000019640 1
+FE 0x000000000000 0

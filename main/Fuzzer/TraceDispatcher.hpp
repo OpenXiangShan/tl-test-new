@@ -26,7 +26,10 @@ private:
         EVICT,
         FENCE,
         MMIO_GET,
-        MMIO_PUT
+        MMIO_PUT,
+        CBO_CLEAN, // CL: cache block operation clean hint
+        CBO_FLUSH, // FL: cache block operation flush
+        CBO_INVAL  // IV: cache block operation invalidate
     };
 
 private:
