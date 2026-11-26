@@ -4,6 +4,7 @@
 //
 
 #include <cstddef>
+#include <cstring>
 
 #include "../Events/TLSystemEvent.hpp"
 
@@ -236,6 +237,10 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 
         //
         pmem        = new uint8_t       [cfg.memoryEnd - cfg.memoryStart];
+        // Fresh heap blocks are not guaranteed to be zeroed. Zero explicitly:
+        // scoreboard allocateZero checks and the final memory golden compare
+        // both rely on never-written addresses reading back 0.
+        std::memset(pmem, 0, cfg.memoryEnd - cfg.memoryStart);
         memoryAXI   = new MemoryAXIPort*[cfg.memoryPortCount];
         memories    = new MemoryAgent*  [cfg.memoryPortCount];
 
