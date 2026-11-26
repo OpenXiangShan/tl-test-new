@@ -203,12 +203,20 @@ void MAgent::fire_m() {
         auto data = make_shared_tldata<DATASIZE>();
         std::memcpy(data->data, chnM.data->data, DATASIZE);
 
-        // Matrix M channel may return data with ordering different from generic UL scoreboard assumptions.
-        // For minimal bring-up, accept returned data and retire the tracked transaction.
+        // All matrix reads (MR matrix=0x1 and CR matrix=0x3 alike) return on the
+        // M channel. Verify the payload against the global scoreboard instead
+        // of self-approving it: SB_PENDING accepts old/new data, memoryAlt
+        // falls back to the memory image, no entry expects zeros.
         if (uncachedBoards->haskey(id, info->address, chnM.source)) {
-            uncachedBoards->appendAll(this, info->address, data);
+            this->globalBoard->verify(this, mem, info->address, data, nullptr);
+            mVerified++;
             uncachedBoards->finish(this, id, info->address, chnM.source);
+        } else {
+            // No issue-time expectation bookkeeping survived for this
+            // transaction; retire it unverified instead of guessing.
+            mDropped++;
         }
+        mFired++;
 
         localBoard->erase(this, chnM.source);
         this->idpool.freeid(chnM.source);

@@ -19,6 +19,11 @@ private:
     PendingTrans<BundleChannelD<RespField, EchoField, DATASIZE>> pendingD;
     LocalScoreBoard* localBoard;
 
+    // M-channel data-return accounting (all matrix reads return on M).
+    uint64_t mFired    = 0;
+    uint64_t mVerified = 0;
+    uint64_t mDropped  = 0;
+
     void timeout_check() override;
 
 public:
@@ -54,6 +59,10 @@ public:
     ActionDenialEnum do_getAuto(paddr_t address, bool modify = false);
     ActionDenialEnum do_get(paddr_t address, uint8_t size, uint32_t mask);
     ActionDenialEnum do_putfulldata(paddr_t address, shared_tldata_t<DATASIZE> data);
+
+    uint64_t get_m_fired()    const noexcept { return mFired; }
+    uint64_t get_m_verified() const noexcept { return mVerified; }
+    uint64_t get_m_dropped()  const noexcept { return mDropped; }
 };
 
 } // namespace tl_agent

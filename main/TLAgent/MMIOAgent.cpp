@@ -134,6 +134,32 @@ namespace tl_agent {
         return inflightAddress.count(address);
     }
 
+    void MMIOGlobalStatus::incPendingWrite(const TLLocalContext* ctx, paddr_t address)
+    {
+        address &= ~paddr_t(0x07);
+        ++pendingWrite[address];
+        (void)ctx;
+    }
+
+    void MMIOGlobalStatus::decPendingWrite(const TLLocalContext* ctx, paddr_t address)
+    {
+        address &= ~paddr_t(0x07);
+        auto iter = pendingWrite.find(address);
+
+        tlc_assert(iter != pendingWrite.end() && iter->second > 0, ctx,
+            Gravity::StringAppender().Hex().ShowBase()
+                .Append("MMIO pending-write underflow at ", address)
+            .ToString());
+
+        if (--iter->second == 0)
+            pendingWrite.erase(iter);
+    }
+
+    bool MMIOGlobalStatus::hasPendingWrite(paddr_t address) const noexcept
+    {
+        return pendingWrite.count(address & ~paddr_t(0x07)) != 0;
+    }
+
     void MMIOGlobalStatus::updateData(const TLLocalContext* ctx, paddr_t address, uint8_t size, uint8_t mask, uint8_t* data)
     {
         address &= ~paddr_t(0x07);
@@ -255,10 +281,18 @@ namespace tl_agent {
         {
             case TLOpcodeA::Get:
             {
-                auto entry = std::make_shared<InflightMMIO>(
-                    this, !hitInflight, TLOpcodeA::Get, S_SENDING_A, a->address, a->size, a->mask);
+                // update_signal re-enters send_a every cycle until A fires.
+                // Create the tracking entry once, on the first call: rebuilding
+                // it per cycle would flip dataCheck to false on the second
+                // pass (hitInflight is true after setInflight), disabling both
+                // the freeInflight owner and any data check for this Get.
+                if (!localStatus->contains(this, a->source))
+                {
+                    auto entry = std::make_shared<InflightMMIO>(
+                        this, !hitInflight, TLOpcodeA::Get, S_SENDING_A, a->address, a->size, a->mask);
 
-                localStatus->update(this, a->source, entry);
+                    localStatus->update(this, a->source, entry);
+                }
 
                 break;
             }
@@ -409,7 +443,9 @@ namespace tl_agent {
             
                 if (hasData)
                 {
-                    // nothing to be done here for now
+                    // A write beat left the A channel: its data is not in the
+                    // shadow (nor in the device) until the AccessAck lands.
+                    this->globalStatus->incPendingWrite(this, pendingA.info->address);
                 }
                 else if (recvData)
                 {
@@ -475,12 +511,25 @@ namespace tl_agent {
                 LogEx(std::cout << std::endl);
             }
 
-            if (hasData && status->dataCheck)
-                this->globalStatus->verifyData(this, status->address, 1 << int(status->size), status->mask, chnD.data->data);
+            if (hasData)
+            {
+                // Verify-time gating: the shadow is only authoritative once
+                // every write to this granule has been acked. A read racing
+                // an un-acked put is skipped; a read after the ack that still
+                // returns stale data is a real bug and must fail here.
+                if (this->globalStatus->hasPendingWrite(status->address))
+                    this->globalStatus->getSkipped++;
+                else
+                {
+                    this->globalStatus->verifyData(this, status->address, 1 << int(status->size), status->mask, chnD.data->data);
+                    this->globalStatus->getVerified++;
+                }
+            }
             else if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck))
             {
                 // sync data into global status
                 this->globalStatus->updateData(this, status->address, 1 << int(status->size), status->mask, status->data->data);
+                this->globalStatus->decPendingWrite(this, status->address);
             }
 
             if (status->dataCheck)

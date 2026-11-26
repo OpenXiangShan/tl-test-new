@@ -266,6 +266,26 @@ void TraceDispatcher::send()
                       << " op=" << static_cast<unsigned>(entry.op)
                       << " addr=0x" << std::hex << entry.addr << std::dec
                       << " cycle=" << *cycles << std::endl;
+
+            // Golden-write snapshot: keep the exact payload bytes this run
+            // issued, so the end-of-run memory compare does not have to
+            // re-derive them (and stays self-consistent for unaligned or
+            // overlapping addresses).
+            if (entry.op == TraceOp::MMIO_PUT)
+            {
+                auto payload = BuildTraceMMIOData(entry.addr);
+                auto& slot   = mmioWritten[entry.addr & ~uint64_t(0x7)];
+                std::copy(payload->data, payload->data + DATASIZE_MMIO, slot.begin());
+            }
+            else if (entry.op == TraceOp::WRITE && static_cast<size_t>(entry.agentId) >= cAgentCount)
+            {
+                // TL-side full-block writes (UL/M agents). A CAgent WRITE is
+                // a permission-only acquire and carries no data.
+                auto payload = BuildTraceWriteData(entry.addr);
+                auto& slot   = tlWritten[entry.addr & ~uint64_t(0x3F)];
+                std::copy(payload->data, payload->data + DATASIZE, slot.begin());
+            }
+
             if (entry.op == TraceOp::READ || entry.op == TraceOp::CREAD)
                 numReadSent++;
             else if (entry.op == TraceOp::WRITE)
@@ -340,4 +360,124 @@ void TraceDispatcher::tick()
 bool TraceDispatcher::empty() const noexcept
 {
     return entries.empty();
+}
+
+void TraceDispatcher::final_memory_verify(const uint8_t* pmem, uint64_t memStart, uint64_t memEnd) const noexcept
+{
+    uint64_t tlChecked = 0, tlOk = 0, tlResident = 0, tlFail = 0;
+    uint64_t mmioChecked = 0, mmioOk = 0, mmioFail = 0;
+    uint64_t ambiguous = 0;
+
+    auto dumpFirstMismatch = [](uint64_t addr, const uint8_t* got, const uint8_t* exp, size_t n) {
+        for (size_t i = 0; i < n; i++)
+        {
+            if (got[i] != exp[i])
+            {
+                std::cout << "[MEMCHK] first mismatch at 0x" << std::hex << addr + i << std::dec
+                          << ": got 0x" << std::hex << unsigned(got[i])
+                          << ", expected 0x" << unsigned(exp[i]) << std::dec << std::endl;
+                return;
+            }
+        }
+    };
+
+    for (const auto& [block, bytes] : tlWritten)
+    {
+        if (block < memStart || block + DATASIZE > memEnd)
+        {
+            std::cout << "[MEMCHK] TL block 0x" << std::hex << block << std::dec
+                      << " outside memory image, skipped" << std::endl;
+            ambiguous++;
+            continue;
+        }
+
+        // The MMIO window is mapped inside the memory image; a TL block
+        // overlapping a written MMIO granule cannot be judged (two different
+        // write patterns cover the same bytes).
+        bool overlapsMmio = false;
+        for (const auto& [granule, gbytes] : mmioWritten)
+        {
+            (void)gbytes;
+            if (granule < block + DATASIZE && granule + DATASIZE_MMIO > block)
+            {
+                overlapsMmio = true;
+                break;
+            }
+        }
+        if (overlapsMmio)
+        {
+            ambiguous++;
+            continue;
+        }
+
+        tlChecked++;
+        const uint8_t* img = pmem + (block - memStart);
+
+        bool matches = true, allZero = true;
+        for (size_t i = 0; i < DATASIZE; i++)
+        {
+            if (img[i] != bytes[i]) matches = false;
+            if (img[i] != 0)        allZero = false;
+        }
+
+        if (matches)
+            tlOk++;
+        else if (allZero)
+            tlResident++; // dirty line may still be resident in L2/L3
+        else
+        {
+            tlFail++;
+            dumpFirstMismatch(block, img, bytes.data(), DATASIZE);
+        }
+    }
+
+    for (const auto& [granule, bytes] : mmioWritten)
+    {
+        if (granule < memStart || granule + DATASIZE_MMIO > memEnd)
+        {
+            std::cout << "[MEMCHK] MMIO granule 0x" << std::hex << granule << std::dec
+                      << " outside memory image, skipped" << std::endl;
+            ambiguous++;
+            continue;
+        }
+
+        bool overlapsTl = false;
+        for (const auto& [block, bbytes] : tlWritten)
+        {
+            (void)bbytes;
+            if (block < granule + DATASIZE_MMIO && block + DATASIZE > granule)
+            {
+                overlapsTl = true;
+                break;
+            }
+        }
+        if (overlapsTl)
+        {
+            ambiguous++;
+            continue;
+        }
+
+        mmioChecked++;
+        const uint8_t* img = pmem + (granule - memStart);
+
+        bool matches = true;
+        for (size_t i = 0; i < DATASIZE_MMIO; i++)
+            if (img[i] != bytes[i]) { matches = false; break; }
+
+        if (matches)
+            mmioOk++;
+        else
+        {
+            mmioFail++;
+            dumpFirstMismatch(granule, img, bytes.data(), DATASIZE_MMIO);
+        }
+    }
+
+    bool pass = (tlFail == 0 && mmioFail == 0);
+    std::cout << "MEMCHK: TL checked=" << tlChecked << " ok=" << tlOk
+              << " resident=" << tlResident << " fail=" << tlFail
+              << " | MMIO checked=" << mmioChecked << " ok=" << mmioOk
+              << " fail=" << mmioFail
+              << " | ambiguous=" << ambiguous
+              << " -> MEMCHK: " << (pass ? "PASS" : "FAIL") << std::endl;
 }

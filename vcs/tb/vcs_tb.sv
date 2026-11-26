@@ -149,9 +149,10 @@ module tltest_vcs_tb;
   wire  [255:0] p2_d_data;
   wire          p2_d_corrupt;
 
-  // L2 -> Matrix data return path. In the current TestTop build this
-  // channel never fires (matrix read data returns on channel D), matching
-  // the Verilator host mode where the PortGen leaves it undriven/unobserved.
+  // L2 -> Matrix data return path. All matrix reads (MR matrix=0x1 and CR
+  // matrix=0x3 alike, set by MAgent::do_getAuto) return their data on this
+  // channel; channel D carries only AccessAcks for matrix puts. The DPI
+  // MAgent drives mdat_ready and verifies the returned payload.
   logic         mdat_ready;
   wire          mdat_valid;
   wire  [63:0]  mdat_sourceId;
